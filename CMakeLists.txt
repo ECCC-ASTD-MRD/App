@@ -29,18 +29,19 @@ set(CMAKE_C_COMPILER ${MPI_C_COMPILER})
 
 find_package(OpenMP REQUIRED COMPONENTS)
 
+#----- Generate the config file for the project to be usable via cmake's find_package command
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR     lib)
+set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
+
 add_subdirectory(src src)
 add_subdirectory(test)
 
 configure_file(config.in ${CMAKE_BINARY_DIR}/${NAME}-config @ONLY)
 install(PROGRAMS ${CMAKE_BINARY_DIR}/${NAME}-config DESTINATION bin)
 
-#----- Generate the config file for the project to be usable via cmake's find_package command
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR     lib)
-set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
-
 include(CMakePackageConfigHelpers)
+# TODO: Could simply install the file, no configure needed
 configure_package_config_file(
     "Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"

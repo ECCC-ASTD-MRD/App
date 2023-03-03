@@ -10,7 +10,7 @@ foreach(target IN ITEMS App App-ompi)
    
    message(STATUS "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
    add_dependencies(${target} ${PROJECT_NAME}_build_info)
-   target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+   target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
    if(rmn_FOUND)
       target_link_libraries(${target} PRIVATE rmn)
    endif()
@@ -21,7 +21,7 @@ foreach(target IN ITEMS App App-ompi)
       PUBLIC_HEADER "${PROJECT_INCLUDE_FILES}"
       Fortran_MODULE_DIRECTORY ${FORTRAN_MODULE_DIR}
       POSITION_INDEPENDENT_CODE  ON)
-   target_include_directories(${target} INTERFACE ${FORTRAN_MODULE_DIR})
+   target_include_directories(${target} INTERFACE $<BUILD_INTERFACE:${FORTRAN_MODULE_DIR}>)
 endforeach()
 
 # TODO: Replace with target_compile_options(...) and target_link_options(...)
@@ -36,9 +36,15 @@ target_compile_definitions(App-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
 target_link_libraries(App-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
 
 install(TARGETS App App-ompi 
+   EXPORT AppTargets
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
-   PUBLIC_HEADER DESTINATION include)
+   PUBLIC_HEADER DESTINATION include
+   INCLUDES DESTINATION)
+
+install(EXPORT AppTargets
+    NAMESPACE App::
+    DESTINATION ${CONFIG_INSTALL_DIR})
 
 # TODO: Have a separate module install path for each different targets
 install(FILES ${FORTRAN_MODULE_DIR}/app.mod TYPE INCLUDE)
