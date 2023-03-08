@@ -10,10 +10,11 @@ foreach(target IN ITEMS App App-ompi)
    
    message(STATUS "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
    add_dependencies(${target} ${PROJECT_NAME}_build_info)
-   target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+   target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
    if(rmn_FOUND)
       target_link_libraries(${target} PRIVATE rmn)
    endif()
+   add_library(App::${target} ALIAS ${target})
 endforeach()
 
 set_target_properties(App PROPERTIES 
@@ -35,6 +36,7 @@ target_compile_definitions(App-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
 target_link_libraries(App-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
 
 install(TARGETS App App-ompi 
+   EXPORT App-targets
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
    PUBLIC_HEADER DESTINATION include)
