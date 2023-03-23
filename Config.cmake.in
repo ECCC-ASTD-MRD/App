@@ -18,7 +18,20 @@ if(@WITH_OMPI@) # WITH_OMPI
     #
     # If a user has already done find_package(MPI) then maybe we would need to do
     # some extra work to ensure the find-module is reexecuted.
-    enable_language(C Fortran)
+    #
+    # I wanted to put an 'enable_language(C Fortran)' here but ...
+    # https://discourse.cmake.org/t/is-it-appropriate-to-use-enable-language-in-a-cmake-package-file/4335
+    # Craig Scott (author of Professional CMake) says to check ENABLED_LANGUAGES
+    # and to error out if C or Fortran is not enabled.  He doens't give reasons
+    # but he says he's pretty sure there are some, he just doesn't remember them.
+    get_property(_enabled_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    message(STATUS "ENABLED_LANGUAGES = ${_enabled_languages}")
+    if(NOT C IN_LIST _enabled_languages)
+        message(FATAL_ERROR "C lanugage must be enabled to use App-ompi")
+    endif()
+    if(NOT Fortran IN_LIST _enabled_languages)
+        message(FATAL_ERROR "Fortran lanugage must be enabled to use App-ompi")
+    endif()
     find_dependency(OpenMP REQUIRED)
     find_dependency(MPI REQUIRED)
     set(app_targets "${app_targets}, App::App-ompi")
@@ -32,3 +45,4 @@ if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
 endif()
 maybe_message(STATUS "Imported targets: ${_app_targets} for static libraries")
 unset(_app_targets)
+unset(_enabled_languages)
