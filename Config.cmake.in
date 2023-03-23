@@ -1,3 +1,5 @@
+set(App_VERSION @PROJECT_VERSION@ CACHE INTERNAL "App version")
+
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
@@ -25,7 +27,6 @@ if(@WITH_OMPI@) # WITH_OMPI
     # and to error out if C or Fortran is not enabled.  He doens't give reasons
     # but he says he's pretty sure there are some, he just doesn't remember them.
     get_property(_enabled_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-    message(STATUS "ENABLED_LANGUAGES = ${_enabled_languages}")
     if(NOT C IN_LIST _enabled_languages)
         message(FATAL_ERROR "C lanugage must be enabled to use App-ompi")
     endif()
@@ -39,7 +40,7 @@ endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/App-targets.cmake)
 
-maybe_message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME} in ${PACKAGE_PREFIX_DIR}")
+maybe_message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME} ${App_VERSION} in ${PACKAGE_PREFIX_DIR}")
 if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
     maybe_message(STATUS "Components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS}")
 endif()
