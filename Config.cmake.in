@@ -9,7 +9,7 @@ function(maybe_message type message)
     endif()
 endfunction()
 
-set(app_targets App::App)
+set(_app_targets App::App)
 if(@WITH_OMPI@) # WITH_OMPI
     maybe_message(STATUS "Finding dependencies MPI and OpenMP for App")
 
