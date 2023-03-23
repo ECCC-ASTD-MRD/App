@@ -1,8 +1,16 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
+function(maybe_message type message)
+    if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY )
+        message(${type} "${message}")
+    endif()
+endfunction()
 
+set(app_targets App::App)
 if(@WITH_OMPI@) # WITH_OMPI
+    maybe_message(STATUS "Finding dependencies MPI and OpenMP for App")
+
     # If C language is not enabled, the target MPI::MPI_C will not be created by
     # the find-module for MPI, same thing for Fortran.  Since they are dependencies
     # of App::App-ompi but the user may be using just C or just Fortran, we need
@@ -13,5 +21,14 @@ if(@WITH_OMPI@) # WITH_OMPI
     enable_language(C Fortran)
     find_dependency(OpenMP REQUIRED)
     find_dependency(MPI REQUIRED)
+    set(app_targets "${app_targets}, App::App-ompi")
 endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/App-targets.cmake)
+
+maybe_message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME} in ${PACKAGE_PREFIX_DIR}")
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+    maybe_message(STATUS "Components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS}")
+endif()
+maybe_message(STATUS "Imported targets: ${_app_targets} for static libraries")
+unset(_app_targets)
