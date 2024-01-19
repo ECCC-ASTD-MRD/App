@@ -27,7 +27,7 @@ static inline void strrep(char *Str,char Tok,char Rep) {
 static inline void strblank2end(char *Str,int Length) {
    int i;
 
-   for (i=strlen(Str)-1;i<Length;i++) {
+   for (i=strlen(Str);i<Length;i++) {
       Str[i]=' ';
    }
    Str[Length-1] = '\0';
