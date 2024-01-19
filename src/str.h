@@ -32,3 +32,10 @@ static inline void strblank2end(char *Str,int Length) {
    }
    Str[Length-1] = '\0';
 }
+
+static inline void strblank_full(char *Str, int Length) {
+   for (int i = 0; i < Length - 1; i++) {
+      Str[i] = ' ';
+   }
+   Str[Length - 1] = '\0';
+}

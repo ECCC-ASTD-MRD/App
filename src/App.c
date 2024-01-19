@@ -135,16 +135,12 @@ void App_InitEnv(){
    if ((c=getenv("APP_VERBOSE_FST"))) {
       Lib_LogLevel(APP_LIBFST,c);
    }
-   if ((c=getenv("APP_VERBOSE_META"))) {
-      Lib_LogLevel(APP_LIBMETA,c);
-   }
    if ((c=getenv("APP_VERBOSE_WB"))) {
       Lib_LogLevel(APP_LIBWB,c);
    }
    if ((c=getenv("APP_VERBOSE_GMM"))) {
       Lib_LogLevel(APP_LIBGMM,c);
    }
-
    if ((c=getenv("APP_VERBOSE_VGRID"))) {
       Lib_LogLevel(APP_LIBVGRID,c);
    }
@@ -175,11 +171,20 @@ void App_InitEnv(){
    if ((c=getenv("APP_VERBOSE_MIDAS"))) {
       Lib_LogLevel(APP_LIBMIDAS,c);
    }
+   if ((c=getenv("APP_VERBOSE_EER"))) {
+      Lib_LogLevel(APP_LIBEER,c);
+   }
+   if ((c=getenv("APP_VERBOSE_TDPACK"))) {
+      Lib_LogLevel(APP_LIBTDPACK,c);
+   }
    if ((c=getenv("APP_VERBOSE_MACH"))) {
       Lib_LogLevel(APP_LIBMACH,c);
    }
-   if ((c=getenv("APP_VERBOSE_EER"))) {
-      Lib_LogLevel(APP_LIBEER,c);
+   if ((c=getenv("APP_VERBOSE_SPSDYN"))) {
+      Lib_LogLevel(APP_LIBSPSDYN,c);
+   }
+   if ((c=getenv("APP_VERBOSE_META"))) {
+      Lib_LogLevel(APP_LIBMETA,c);
    }
 
    // Check the language in the environment 
