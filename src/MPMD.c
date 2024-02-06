@@ -304,7 +304,11 @@ int* get_clean_component_list(
 //! \return The communicator for all PEs part of the same component as me.
 MPI_Comm Mpmd_Get_own_comm(void) {
     TApp* app = get_app_instance();
-    return app->self_component->comm;
+    if (app) {
+        return app->self_component->comm;
+    }
+
+    return MPI_COMM_NULL;
 }
 
 //! \return The (Fortran) communicator for all PEs part of the same component as me.
