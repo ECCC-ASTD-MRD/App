@@ -55,54 +55,124 @@
 #endif
 #define APP_MAXONCE 1024
 
-typedef enum { APP_MAIN=0,APP_LIBRMN=1,APP_LIBFST=2,APP_LIBWB=3,APP_LIBGMM=4,APP_LIBVGRID=5,APP_LIBINTERPV=6,APP_LIBGEOREF=7,APP_LIBRPNMPI=8,APP_LIBIRIS=9,APP_LIBIO=10,
-               APP_LIBMDLUTIL=11,APP_LIBDYN=12,APP_LIBPHY=13,APP_LIBMIDAS=14,APP_LIBEER=15,APP_LIBTDPACK=16,APP_LIBMACH=17,APP_LIBSPSDYN=18,APP_LIBMETA=19 } TApp_Lib;
-typedef enum { APP_VERBATIM=-1,APP_ALWAYS=0,APP_FATAL=1,APP_SYSTEM=2,APP_ERROR=3,APP_WARNING=4,APP_INFO=5,APP_TRIVIAL=6,APP_DEBUG=7,APP_EXTRA=8,APP_QUIET=9 } TApp_LogLevel;
-typedef enum { APP_NODATE=0,APP_DATETIME=1,APP_TIME=2,APP_SECOND=3,APP_MSECOND=4 } TApp_LogTime;
-typedef enum { APP_STOP,APP_RUN,APP_DONE } TApp_State;
-typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_CHAR=0x02,APP_UINT32=0x04,APP_INT32=0x06,APP_UINT64=0x08,APP_INT64=0x0A,APP_FLOAT32=0x0C,APP_FLOAT64=0x0E } TApp_Type;
-typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
-typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
-typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2,APP_AFFINITY_SOCKET=3 } TApp_Affinity;
+typedef enum {
+    APP_MAIN = 0,
+    APP_LIBRMN = 1,
+    APP_LIBFST = 2,
+    APP_LIBWB = 3,
+    APP_LIBGMM = 4,
+    APP_LIBVGRID = 5,
+    APP_LIBINTERPV = 6,
+    APP_LIBGEOREF = 7,
+    APP_LIBRPNMPI = 8,
+    APP_LIBIRIS = 9,
+    APP_LIBIO = 10,
+    APP_LIBMDLUTIL = 11,
+    APP_LIBDYN = 12,
+    APP_LIBPHY = 13,
+    APP_LIBMIDAS = 14,
+    APP_LIBEER = 15,
+    APP_LIBTDPACK = 16,
+    APP_LIBMACH = 17,
+    APP_LIBSPSDYN = 18,
+    APP_LIBMETA = 19
+} TApp_Lib;
 
-#define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
-#define APP_ASRT_OK_END(x) if( (x)!=APP_OK ) goto end
+typedef enum {
+    APP_VERBATIM = -1,
+    APP_ALWAYS = 0,
+    APP_FATAL = 1,
+    APP_SYSTEM = 2,
+    APP_ERROR = 3,
+    APP_WARNING = 4,
+    APP_INFO = 5,
+    APP_TRIVIAL = 6,
+    APP_DEBUG = 7,
+    APP_EXTRA = 8,
+    APP_QUIET = 9
+} TApp_LogLevel;
+
+typedef enum {
+    APP_NODATE = 0,
+    APP_DATETIME = 1,
+    APP_TIME = 2,
+    APP_SECOND = 3,
+    APP_MSECOND = 4
+} TApp_LogTime;
+
+typedef enum {
+    APP_STOP,
+    APP_RUN,
+    APP_DONE
+} TApp_State;
+
+typedef enum {
+    APP_NIL = 0x00,
+    APP_FLAG = 0x01,
+    APP_CHAR = 0x02,
+    APP_UINT32 = 0x04,
+    APP_INT32 = 0x06,
+    APP_UINT64 = 0x08,
+    APP_INT64 = 0x0A,
+    APP_FLOAT32 = 0x0C,
+    APP_FLOAT64 = 0x0E
+} TApp_Type;
+
+typedef enum {
+    APP_FR = 0x00,
+    APP_EN = 0x01
+} TApp_Lang;
+
+typedef enum {
+    APP_OK = 1,
+    APP_ERR = 0
+} TApp_RetCode;
+
+typedef enum {
+    APP_AFFINITY_NONE = 0,
+    APP_AFFINITY_COMPACT = 1,
+    APP_AFFINITY_SCATTER = 2,
+    APP_AFFINITY_SOCKET = 3
+} TApp_Affinity;
+
+#define APP_ASRT_OK(x) if( (x) != APP_OK ) return APP_ERR
+#define APP_ASRT_OK_END(x) if( (x) != APP_OK ) goto end
 #define APP_ASRT_OK_M(Fct, ...) \
-   if( (Fct)!=APP_OK ) { \
-      Lib_Log(APP_MAIN,APP_ERROR, __VA_ARGS__); \
-      return(APP_ERR); \
+   if( (Fct) != APP_OK ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, __VA_ARGS__); \
+      return APP_ERR; \
    }
 
 // Check FST function and return the specified value if an error was encountered
 #define APP_FST_ASRT_H(Fct, ...) \
    if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN,APP_ERROR, __VA_ARGS__); \
-      return(APP_ERR); \
+      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+      return APP_ERR; \
    }
 #define APP_FST_ASRT_H_END(Fct, ...) \
    if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN,APP_ERROR, __VA_ARGS__); \
+      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
       goto end; \
    }
 #define APP_FST_ASRT(Fct, ...) \
    if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN,APP_ERROR, __VA_ARGS__); \
-      return(APP_ERR); \
+      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+      return APP_ERR; \
    }
 #define APP_FST_ASRT_END(Fct, ...) \
    if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN,APP_ERROR, __VA_ARGS__); \
+      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
       goto end; \
    }
 // Memory helpers
-#define APP_MEM_ASRT(Buf,Fct) \
-   if( !(Buf=(Fct)) ) { \
-      Lib_Log(APP_MAIN,APP_ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
-      return(APP_ERR); \
+#define APP_MEM_ASRT(Buf, Fct) \
+   if( !(Buf = (Fct)) ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+      return APP_ERR; \
    }
-#define APP_MEM_ASRT_END(Buf,Fct) \
-   if( !(Buf=(Fct)) ) { \
-      Lib_Log(APP_MAIN,APP_ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
+#define APP_MEM_ASRT_END(Buf, Fct) \
+   if( !(Buf = (Fct)) ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
       goto end; \
    }
 
@@ -112,22 +182,22 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
 #ifdef HAVE_MPI
 #define APP_MPI_ASRT(Fct) { \
    int err = (Fct); \
-   if( err!=MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN,APP_ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
-      return(APP_ERR); \
+   if( err != MPI_SUCCESS ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+      return APP_ERR; \
    } \
 }
 #define APP_MPI_ASRT_END(Fct) { \
    int err = (Fct); \
-   if( err!=MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN,APP_ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
+   if( err != MPI_SUCCESS ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
       goto end; \
    } \
 }
 #define APP_MPI_CHK(Fct) { \
    int err = (Fct); \
-   if( err!=MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN,APP_ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
+   if( err != MPI_SUCCESS ) { \
+      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
    } \
 }
 #define APP_MPI_IN_PLACE(Fld) (App->RankMPI?(Fld):MPI_IN_PLACE)
@@ -142,7 +212,7 @@ typedef struct TApp_Arg {
    TApp_Type    Type;                    // Argument type
    void         *Var;                    // Where to put the argument value(s)
    int          Multi;                   // Multiplicity of the argument (Maximum number of values for a list)
-   char         *Short,*Long,*Info;      // Argument flags and description
+   char         *Short, *Long, *Info;      // Argument flags and description
 } TApp_Arg;
 
 // Application controller definition
@@ -170,23 +240,24 @@ typedef struct TApp {
    double         Percent;               ///< Percentage of execution done (0=not started, 100=finished)
    int            UTC;                   ///< Use UTC or local time
    struct timeval Time;                  ///< Timer for execution time
-   int            Type;                  ///< App object type (APP_MASTER,APP_THREAD)
+   int            Type;                  ///< App object type (APP_MASTER, APP_THREAD)
    int            Step;                  ///< Model step
 
    char*          LibsVersion[APP_LIBSMAX];
 
-   int            Seed,*OMPSeed;         ///< Random number generator seed
+   int            Seed, *OMPSeed;        ///< Random number generator seed
    int           *TotalsMPI;             ///< MPI total number of items arrays
    int           *CountsMPI;             ///< MPI count gathering arrays
    int           *DisplsMPI;             ///< MPI displacement gathering arrays
-   int            NbMPI,RankMPI;         ///< Number of MPI process
+   int            NbMPI;                 ///< Number of MPI process
+   int            RankMPI;               ///< Rank of MPI process
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal
    TApp_Affinity  Affinity;              ///< Thread placement affinity
-   int            NbNodeMPI,NodeRankMPI; ///< Number of MPI process on the current node
+   int            NbNodeMPI, NodeRankMPI; ///< Number of MPI process on the current node
 #ifdef HAVE_MPI
    MPI_Comm       Comm;
-   MPI_Comm       NodeComm,NodeHeadComm; ///< Communicator for the current node and the head nodes
+   MPI_Comm       NodeComm, NodeHeadComm; ///< Communicator for the current node and the head nodes
 
    MPI_Comm       main_comm;             ///< Communicator that groups all executables from this context
    int            world_rank;            ///< Global rank of this PE
@@ -206,18 +277,18 @@ typedef struct TApp {
 extern __thread TApp *App;               ///< Per thread App pointer
 #endif
 
-typedef int (TApp_InputParseProc) (void *Def,char *Token,char *Value,int Index);
+typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Index);
 
-#define App_Log(LEVEL, ...) Lib_Log(APP_MAIN,LEVEL,__VA_ARGS__)
+#define App_Log(LEVEL, ...) Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__)
 
-TApp *App_Init(int Type,const char* Name,char* Version,char* Desc,char* Stamp);
-void  App_LibRegister(TApp_Lib Lib,char *Version);
+TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
+void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
-void  Lib_Log(TApp_Lib Lib,TApp_LogLevel Level,const char *Format,...);
-int   Lib_LogLevel(TApp_Lib Lib,char *Val);
-int   Lib_LogLevelNo(TApp_Lib Lib,TApp_LogLevel Val);
+void  Lib_Log(const TApp_Lib Lib, const TApp_LogLevel Level, const char * const Format, ...);
+int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);
+int   Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val);
 void  App_LogStream(char *Stream);
 int   App_LogLevel(char *Val);
 int   App_LogLevelNo(TApp_LogLevel Val);
@@ -227,13 +298,13 @@ void  App_LogOpen(void);
 void  App_LogClose(void);
 int   App_LogTime(char *Val);
 int   App_LogRank(int NewRank);
-void  App_Progress(float Percent,const char *Format,...);
-int   App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags);
-int   App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc);
-int   App_ParseBool(char *Param,char *Value,char *Var);
-int   App_ParseDate(char *Param,char *Value,time_t *Var);
-int   App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
-int   App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index);
+void  App_Progress(float Percent, const char *Format, ...);
+int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
+int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
+int   App_ParseBool(char *Param, char *Value, char *Var);
+int   App_ParseDate(char *Param, char *Value, time_t *Var);
+int   App_ParseDateSplit(char *Param, char *Value, int *Year, int *Month, int *Day, int *Hour, int *Min);
+int   App_ParseCoords(char *Param, char *Value, double *Lat, double *Lon, int Index);
 void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
@@ -248,7 +319,7 @@ int   App_NodePrint();
 
 #ifdef HAVE_MPI
 void  App_SetMPIComm(MPI_Comm Comm);
-int   App_MPIProcCmp(const void *a,const void *b);
+int   App_MPIProcCmp(const void *a, const void *b);
 
 #include "MPMD.h"
 #endif

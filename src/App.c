@@ -33,18 +33,18 @@ static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RE
 
 //! Return last error
 char* App_ErrorGet(void) {
-   return(APP_LASTERROR);
+    return APP_LASTERROR;
 }
 
 TApp* get_app_instance(void) { return &AppInstance; }
 
 unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 
-int App_IsDone(void)       { return(App->State == APP_DONE); }
-int App_IsMPI(void)        { return(App->NbMPI > 1); }
-int App_IsOMP(void)        { return(App->NbThread > 1); }
-int App_IsSingleNode(void) { return(App->NbNodeMPI == App->NbMPI); }
-int App_IsAloneNode(void)  { return(App->NbNodeMPI == 1); }
+int App_IsDone(void)       { return App->State == APP_DONE; }
+int App_IsMPI(void)        { return App->NbMPI > 1; }
+int App_IsOMP(void)        { return App->NbThread > 1; }
+int App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
+int App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
 #ifdef HAVE_MPI
 int App_MPIProcCmp(const void *a, const void *b) {
@@ -52,463 +52,434 @@ int App_MPIProcCmp(const void *a, const void *b) {
 }
 
 void App_SetMPIComm(MPI_Comm Comm) {
-   App->Comm = Comm;
+    App->Comm = Comm;
 }
 #endif
 
-/**----------------------------------------------------------------------------
- * @brief  Ajouter une librairie (info pour header de log)
- * @author Jean-Philippe Gauthier
- * @date   November 2022
- *    @param[in]  Lib      Library name
- *    @param[in]  Version  Library  version
- *
- *    @return              Parametres de l'application initialisee
-*/
-void App_LibRegister(TApp_Lib Lib, char *Version) {
-   App->LibsVersion[Lib] = strdup(Version);
+//! Ajouter une librairie (info pour header de log)
+void App_LibRegister(
+    //! [in] Library
+    const TApp_Lib Lib,
+    //! [in] Version
+    const char * const Version
+) {
+    App->LibsVersion[Lib] = strdup(Version);
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialiser l'environnement dans la structure App
- * @author Jean-Philippe Gauthier
- * @date   Decembre 2022
-*/
+//! Initialiser l'environnement dans la structure App
 void App_InitEnv(){
-   gettimeofday(&App->Time, NULL);
+    gettimeofday(&App->Time, NULL);
 
-   App->TimerLog = App_TimerCreate();
-   App->Tolerance = APP_QUIET;
-   App->Language = APP_EN;
-   App->LogWarning = 0;
-   App->LogError = 0;
-   App->LogColor = FALSE;
-   App->LogNoBox = FALSE;
-   App->LogTime = FALSE;
-   App->LogSplit = FALSE;
-   App->LogFlush = FALSE;
-   App->LogRank = 0;
-   App->UTC = FALSE;
+    App->TimerLog = App_TimerCreate();
+    App->Tolerance = APP_QUIET;
+    App->Language = APP_EN;
+    App->LogWarning = 0;
+    App->LogError = 0;
+    App->LogColor = FALSE;
+    App->LogNoBox = FALSE;
+    App->LogTime = FALSE;
+    App->LogSplit = FALSE;
+    App->LogFlush = FALSE;
+    App->LogRank = 0;
+    App->UTC = FALSE;
 
-   // Default log level is WARNING
-   for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
+    // Default log level is WARNING
+    for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
 
-   char *c;
+    char *c;
 
-   // Check the log parameters in the environment
-   if ((c = getenv("APP_VERBOSE"))) {
-      App_LogLevel(c);
-   }
-   if ((c = getenv("APP_VERBOSE_NOBOX"))) {
-      App->LogNoBox = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_COLOR"))) {
-      App->LogColor = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_TIME"))) {
-      App_LogTime(c);
-   }
-   if ((c = getenv("APP_VERBOSE_UTC"))) {
-      App->UTC = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_RANK"))) {
-      App->LogRank = atoi(c);
-   }
-   if ((c = getenv("APP_LOG_SPLIT"))) {
-      App->LogSplit = TRUE;
-   }
-   if ((c = getenv("APP_LOG_STREAM"))) {
-      App->LogFile = strdup(c);
-   }
-   if ((c = getenv("APP_LOG_FLUSH"))) {
-      App->LogFlush = TRUE;
-   }
-   if ((c = getenv("APP_TOLERANCE"))) {
-      App_ToleranceLevel(c);
-   }
+    // Check the log parameters in the environment
+    if ((c = getenv("APP_VERBOSE"))) {
+        App_LogLevel(c);
+    }
+    if ((c = getenv("APP_VERBOSE_NOBOX"))) {
+        App->LogNoBox = TRUE;
+    }
+    if ((c = getenv("APP_VERBOSE_COLOR"))) {
+        App->LogColor = TRUE;
+    }
+    if ((c = getenv("APP_VERBOSE_TIME"))) {
+        App_LogTime(c);
+    }
+    if ((c = getenv("APP_VERBOSE_UTC"))) {
+        App->UTC = TRUE;
+    }
+    if ((c = getenv("APP_VERBOSE_RANK"))) {
+        App->LogRank = atoi(c);
+    }
+    if ((c = getenv("APP_LOG_SPLIT"))) {
+        App->LogSplit = TRUE;
+    }
+    if ((c = getenv("APP_LOG_STREAM"))) {
+        App->LogFile = strdup(c);
+    }
+    if ((c = getenv("APP_LOG_FLUSH"))) {
+        App->LogFlush = TRUE;
+    }
+    if ((c = getenv("APP_TOLERANCE"))) {
+        App_ToleranceLevel(c);
+    }
 
-   // Check verbose level of libraries
-   if ((c = getenv("APP_VERBOSE_RMN"))) {
-      Lib_LogLevel(APP_LIBRMN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_FST"))) {
-      Lib_LogLevel(APP_LIBFST, c);
-   }
-   if ((c = getenv("APP_VERBOSE_WB"))) {
-      Lib_LogLevel(APP_LIBWB, c);
-   }
-   if ((c = getenv("APP_VERBOSE_GMM"))) {
-      Lib_LogLevel(APP_LIBGMM, c);
-   }
-   if ((c = getenv("APP_VERBOSE_VGRID"))) {
-      Lib_LogLevel(APP_LIBVGRID, c);
-   }
-   if ((c = getenv("APP_VERBOSE_INTERPV"))) {
-      Lib_LogLevel(APP_LIBINTERPV, c);
-   }
-   if ((c = getenv("APP_VERBOSE_GEOREF"))) {
-      Lib_LogLevel(APP_LIBGEOREF, c);
-   }
-   if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
-      Lib_LogLevel(APP_LIBRPNMPI, c);
-   }
-   if ((c = getenv("APP_VERBOSE_IRIS"))) {
-      Lib_LogLevel(APP_LIBIRIS, c);
-   }
-   if ((c = getenv("APP_VERBOSE_IO"))) {
-      Lib_LogLevel(APP_LIBIO, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
-      Lib_LogLevel(APP_LIBMDLUTIL, c);
-   }
-   if ((c = getenv("APP_VERBOSE_DYN"))) {
-      Lib_LogLevel(APP_LIBDYN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_PHY"))) {
-      Lib_LogLevel(APP_LIBPHY, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MIDAS"))) {
-      Lib_LogLevel(APP_LIBMIDAS, c);
-   }
-   if ((c = getenv("APP_VERBOSE_EER"))) {
-      Lib_LogLevel(APP_LIBEER, c);
-   }
-   if ((c = getenv("APP_VERBOSE_TDPACK"))) {
-      Lib_LogLevel(APP_LIBTDPACK, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MACH"))) {
-      Lib_LogLevel(APP_LIBMACH, c);
-   }
-   if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
-      Lib_LogLevel(APP_LIBSPSDYN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_META"))) {
-      Lib_LogLevel(APP_LIBMETA, c);
-   }
+    // Check verbose level of libraries
+    if ((c = getenv("APP_VERBOSE_RMN"))) {
+        Lib_LogLevel(APP_LIBRMN, c);
+    }
+    if ((c = getenv("APP_VERBOSE_FST"))) {
+        Lib_LogLevel(APP_LIBFST, c);
+    }
+    if ((c = getenv("APP_VERBOSE_WB"))) {
+        Lib_LogLevel(APP_LIBWB, c);
+    }
+    if ((c = getenv("APP_VERBOSE_GMM"))) {
+        Lib_LogLevel(APP_LIBGMM, c);
+    }
+    if ((c = getenv("APP_VERBOSE_VGRID"))) {
+        Lib_LogLevel(APP_LIBVGRID, c);
+    }
+    if ((c = getenv("APP_VERBOSE_INTERPV"))) {
+        Lib_LogLevel(APP_LIBINTERPV, c);
+    }
+    if ((c = getenv("APP_VERBOSE_GEOREF"))) {
+        Lib_LogLevel(APP_LIBGEOREF, c);
+    }
+    if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
+        Lib_LogLevel(APP_LIBRPNMPI, c);
+    }
+    if ((c = getenv("APP_VERBOSE_IRIS"))) {
+        Lib_LogLevel(APP_LIBIRIS, c);
+    }
+    if ((c = getenv("APP_VERBOSE_IO"))) {
+        Lib_LogLevel(APP_LIBIO, c);
+    }
+    if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
+        Lib_LogLevel(APP_LIBMDLUTIL, c);
+    }
+    if ((c = getenv("APP_VERBOSE_DYN"))) {
+        Lib_LogLevel(APP_LIBDYN, c);
+    }
+    if ((c = getenv("APP_VERBOSE_PHY"))) {
+        Lib_LogLevel(APP_LIBPHY, c);
+    }
+    if ((c = getenv("APP_VERBOSE_MIDAS"))) {
+        Lib_LogLevel(APP_LIBMIDAS, c);
+    }
+    if ((c = getenv("APP_VERBOSE_EER"))) {
+        Lib_LogLevel(APP_LIBEER, c);
+    }
+    if ((c = getenv("APP_VERBOSE_TDPACK"))) {
+        Lib_LogLevel(APP_LIBTDPACK, c);
+    }
+    if ((c = getenv("APP_VERBOSE_MACH"))) {
+        Lib_LogLevel(APP_LIBMACH, c);
+    }
+    if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
+        Lib_LogLevel(APP_LIBSPSDYN, c);
+    }
+    if ((c = getenv("APP_VERBOSE_META"))) {
+        Lib_LogLevel(APP_LIBMETA, c);
+    }
 
-   // Check the language in the environment
-   if ((c = getenv("CMCLNG"))) {
-      App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
-   }
+    // Check the language in the environment
+    if ((c = getenv("CMCLNG"))) {
+        App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
+    }
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialiser la structure App
- * @author Jean-Philippe Gauthier
- * @date   Janvier 2017
- *    @param[in]  Type     App type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
- *    @param[in]  Name     Application name
- *    @param[in]  Version  Application version
- *    @param[in]  Desc     Application description
- *    @param[in]  Stamp    TimeStamp
- *
- *    @return              Parametres de l'application initialisee
-*/
-TApp *App_Init(int Type, const char *Name, char *Version, char *Desc, char* Stamp) {
+//! Initialiser la structure App
+TApp *App_Init(
+    //! [in] App type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
+    int Type,
+    //! [in] Application name
+    const char * const Name,
+    //! [in] Application version
+    const char * const Version,
+    //! [in] Application description
+    const char * const Desc,
+    //! [in] TimeStamp
+    const char * const Stamp
+) {
+    // In coprocess threaded mode, we need a different App object than the master thread
+    App = (Type == APP_THREAD)?(TApp*)malloc(sizeof(TApp)):&AppInstance;
 
-   // In coprocess threaded mode, we need a different App object than the master thread
-   App = (Type == APP_THREAD)?(TApp*)malloc(sizeof(TApp)):&AppInstance;
-
-   App->Type = Type;
-   App->Name = Name ? strdup(Name) : strdup("");
-   App->Version = Version ? strdup(Version) : strdup("");
-   App->Desc = Desc ? strdup(Desc) : strdup("");
-   App->TimeStamp = Stamp ? strdup(Stamp) : strdup("");
-   App->LogFile = strdup("stderr");
-   App->LogStream = (FILE*)NULL;
-   App->Tag = NULL;
-   App->State = APP_STOP;
-   App->Percent = 0.0;
-   App->Step = 0;
-   App->Affinity = APP_AFFINITY_NONE;
-   App->NbThread = 0;
-   App->NbMPI = 1;
-   App->RankMPI = 0;
-   App->NbNodeMPI = 1;
-   App->NodeRankMPI = 0;
-   App->CountsMPI = NULL;
-   App->DisplsMPI = NULL;
-   App->OMPSeed = NULL;
-   App->Seed = time(NULL);
-   App->Signal = 0;
-   App->LogWarning = 0;
-   App->LogError = 0;
+    App->Type = Type;
+    App->Name = Name ? strdup(Name) : strdup("");
+    App->Version = Version ? strdup(Version) : strdup("");
+    App->Desc = Desc ? strdup(Desc) : strdup("");
+    App->TimeStamp = Stamp ? strdup(Stamp) : strdup("");
+    App->LogFile = strdup("stderr");
+    App->LogStream = (FILE*)NULL;
+    App->Tag = NULL;
+    App->State = APP_STOP;
+    App->Percent = 0.0;
+    App->Step = 0;
+    App->Affinity = APP_AFFINITY_NONE;
+    App->NbThread = 0;
+    App->NbMPI = 1;
+    App->RankMPI = 0;
+    App->NbNodeMPI = 1;
+    App->NodeRankMPI = 0;
+    App->CountsMPI = NULL;
+    App->DisplsMPI = NULL;
+    App->OMPSeed = NULL;
+    App->Seed = time(NULL);
+    App->Signal = 0;
+    App->LogWarning = 0;
+    App->LogError = 0;
 
 #ifdef HAVE_MPI
-   App->Comm = MPI_COMM_WORLD;
-   App->NodeComm = MPI_COMM_NULL;
-   App->NodeHeadComm = MPI_COMM_NULL;
+    App->Comm = MPI_COMM_WORLD;
+    App->NodeComm = MPI_COMM_NULL;
+    App->NodeHeadComm = MPI_COMM_NULL;
 
-   App->main_comm = MPI_COMM_NULL;
-   App->world_rank = -1;
-   App->component_rank = -1;
-   App->self_component = NULL;
-   App->num_components = 0;
-   App->all_components = NULL;
-   App->num_sets = 0;
-   App->sets_size = 0;
-   App->sets = NULL;
+    App->main_comm = MPI_COMM_NULL;
+    App->world_rank = -1;
+    App->component_rank = -1;
+    App->self_component = NULL;
+    App->num_components = 0;
+    App->all_components = NULL;
+    App->num_sets = 0;
+    App->sets_size = 0;
+    App->sets = NULL;
 #endif
 
-   // Trap signals (preemption)
-   App_Trap(SIGUSR2);
-   App_Trap(SIGTERM);
+    // Trap signals (preemption)
+    App_Trap(SIGUSR2);
+    App_Trap(SIGTERM);
 
-   App_InitEnv();
+    App_InitEnv();
 
-   return(App);
+    //! \return L'application initialisée
+    return App;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Liberer une structure App
- * @author Jean-Philippe Gauthier
- * @date   Janvier 2017
-*/
+//! Liberer les ressources de l'App
 void App_Free(void) {
+    free(App->Name);
+    free(App->Version);
+    free(App->Desc);
+    free(App->LogFile);
+    free(App->TimeStamp);
 
-   free(App->Name);
-   free(App->Version);
-   free(App->Desc);
-   free(App->LogFile);
-   free(App->TimeStamp);
+    if (App->Tag) free(App->Tag);
 
-   if (App->Tag) free(App->Tag);
+    if (App->CountsMPI) free(App->CountsMPI);
+    if (App->DisplsMPI) free(App->DisplsMPI);
+    if (App->OMPSeed)   free(App->OMPSeed);
 
-   if (App->CountsMPI) free(App->CountsMPI);
-   if (App->DisplsMPI) free(App->DisplsMPI);
-   if (App->OMPSeed)   free(App->OMPSeed);
+    if (App->Type == APP_THREAD) App = NULL;
 
-   if (App->Type == APP_THREAD) App = NULL;
-
-   //TODO MPI stuff (MPMD)
+    //TODO MPI stuff (MPMD)
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialiser les communicateurs intra-node et inter-nodes
- * @author Jean-Philippe Gauthier
- * @date   Janvier 2017
- *
- * @note
- *    - On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur
- *      un meme CPU pour plusieurs job MPI sur un meme "socket@
- **/
+//! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
-   if ( App_IsMPI() ) {
+    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
+       if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
-      // Get the physical node unique name of mpi procs
-      char *names;
-      APP_MEM_ASRT(names, calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*names)));
+        // Get the physical node unique name of mpi procs
+        char *names;
+        APP_MEM_ASRT(names, calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*names)));
 
-      char *n = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
-      int nameLen;
-      APP_MPI_ASRT( MPI_Get_processor_name(n, &nameLen) );
-      APP_MPI_ASRT( MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, names, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, App->Comm) );
+        char *n = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
+        int nameLen;
+        APP_MPI_ASRT( MPI_Get_processor_name(n, &nameLen) );
+        APP_MPI_ASRT( MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, names, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, App->Comm) );
 
-      // Go through the names and check how many different nodes we have before our node
-      int color;
-      char *cptr;
-      int i;
-      for(i = 0, color = -1, cptr = names; i <= App->RankMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
-         ++color;
-         if( !strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
-            break;
-         }
-      }
+        // Go through the names and check how many different nodes we have before our node
+        int color;
+        char *cptr;
+        int i;
+        for (i = 0, color = -1, cptr = names; i <= App->RankMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
+            ++color;
+            if ( !strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
+                break;
+            }
+        }
 
-      // Check if we have more than one group
-      int mult = color;
-      for(cptr = names; !mult&&i<App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
-         if( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
-            mult = 1;
-         }
-      }
+        // Check if we have more than one group
+        int mult = color;
+        for(cptr = names; !mult && i < App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
+            if( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
+                mult = 1;
+            }
+        }
 
-      // If we have more than one node
-      if( mult ) {
-         // Split the MPI procs into node groups
-         APP_MPI_ASRT( MPI_Comm_split(App->Comm, color, App->RankMPI, &App->NodeComm) );
+        // If we have more than one node
+        if( mult ) {
+            // Split the MPI procs into node groups
+            APP_MPI_ASRT( MPI_Comm_split(App->Comm, color, App->RankMPI, &App->NodeComm) );
 
-         // Get the number and rank of each nodes in this new group
-         APP_MPI_ASRT( MPI_Comm_rank(App->NodeComm, &App->NodeRankMPI) );
-         APP_MPI_ASRT( MPI_Comm_size(App->NodeComm, &App->NbNodeMPI) );
+            // Get the number and rank of each nodes in this new group
+            APP_MPI_ASRT( MPI_Comm_rank(App->NodeComm, &App->NodeRankMPI) );
+            APP_MPI_ASRT( MPI_Comm_size(App->NodeComm, &App->NbNodeMPI) );
 
-         // Create a communicator for the head process of each node
-         APP_MPI_ASRT( MPI_Comm_split(App->Comm, App->NodeRankMPI?MPI_UNDEFINED:0, App->RankMPI, &App->NodeHeadComm) );
-      } else {
-         App->NbNodeMPI = App->NbMPI;
-         App->NodeRankMPI = App->RankMPI;
-         App->NodeComm = App->Comm;
-         App->NodeHeadComm = MPI_COMM_NULL;
-      }
+            // Create a communicator for the head process of each node
+            APP_MPI_ASRT( MPI_Comm_split(App->Comm, App->NodeRankMPI?MPI_UNDEFINED:0, App->RankMPI, &App->NodeHeadComm) );
+        } else {
+            App->NbNodeMPI = App->NbMPI;
+            App->NodeRankMPI = App->RankMPI;
+            App->NodeComm = App->Comm;
+            App->NodeHeadComm = MPI_COMM_NULL;
+        }
 #endif //HAVE_MPI
-   } else {
-      App->NbNodeMPI = App->NbMPI;
-      App->NodeRankMPI = App->RankMPI;
+    } else {
+        App->NbNodeMPI = App->NbMPI;
+        App->NodeRankMPI = App->RankMPI;
 #ifdef HAVE_MPI
-      App->NodeComm = MPI_COMM_NULL;
-      App->NodeHeadComm = MPI_COMM_NULL;
+        App->NodeComm = MPI_COMM_NULL;
+        App->NodeHeadComm = MPI_COMM_NULL;
 #endif //HAVE_MPI
-   }
+    }
 
    return APP_OK;
 }
 
 int App_NodePrint() {
-
-   if (App_IsMPI()) {
+    if (App_IsMPI()) {
 #ifdef HAVE_MPI
-      int i;
-      if (!App->RankMPI) {
-         char *nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
+        if (!App->RankMPI) {
+            char *nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
+            if ( nodes ) {
+                // Get the physical node unique name of mpi procs
+                int nameLen = 0;
+                APP_MPI_CHK( MPI_Get_processor_name(nodes, &nameLen) );
+                APP_MPI_CHK( MPI_Gather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, nodes, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, App->Comm) );
 
-         if( nodes ) {
-            // Get the physical node unique name of mpi procs
-            APP_MPI_CHK( MPI_Get_processor_name(nodes, &i) );
-            APP_MPI_CHK( MPI_Gather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, nodes, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, App->Comm) );
+                // Sort the names
+                qsort(nodes, App->NbMPI, MPI_MAX_PROCESSOR_NAME, App_MPIProcCmp);
 
-            // Sort the names
-            qsort(nodes, App->NbMPI, MPI_MAX_PROCESSOR_NAME, App_MPIProcCmp);
+                // Print the node names with a count of MPI per nodes
+                App_Log(APP_VERBATIM, "MPI nodes      :");
+                char *n;
+                int cnt;
+                int i;
+                for (i = 1, cnt = 1, n = nodes; i < App->NbMPI; ++i, n += MPI_MAX_PROCESSOR_NAME) {
+                    if ( strncmp(n, n + MPI_MAX_PROCESSOR_NAME, MPI_MAX_PROCESSOR_NAME) ) {
+                        App_Log(APP_VERBATIM, "%s%.*s (%d)", i != cnt ? ", " : " ", (int)MPI_MAX_PROCESSOR_NAME, n, cnt);
+                        cnt = 1;
+                    } else {
+                        ++cnt;
+                    }
+                }
+                App_Log(APP_VERBATIM, "%s%.*s (%d)\n", i != cnt ? ", " : " ", (int)MPI_MAX_PROCESSOR_NAME, n, cnt);
 
-            // Print the node names with a count of MPI per nodes
-            App_Log(APP_VERBATIM, "MPI nodes      :");
-            char *n;
-            int cnt;
-            for(i = 1, cnt = 1, n = nodes; i < App->NbMPI; ++i, n += MPI_MAX_PROCESSOR_NAME) {
-               if( strncmp(n, n + MPI_MAX_PROCESSOR_NAME, MPI_MAX_PROCESSOR_NAME) ) {
-                  App_Log(APP_VERBATIM, "%s%.*s (%d)", i != cnt ? ", " : " ", (int)MPI_MAX_PROCESSOR_NAME, n, cnt);
-                  cnt = 1;
-               } else {
-                  ++cnt;
-               }
+                free(nodes);
             }
-            App_Log(APP_VERBATIM, "%s%.*s (%d)\n", i != cnt ? ", " : " ", (int)MPI_MAX_PROCESSOR_NAME, n, cnt);
+        } else {
+             // Send the node name (hostname)
+            char node[MPI_MAX_PROCESSOR_NAME] = {'\0'};
+            int nameLen = 0;
+            APP_MPI_CHK( MPI_Get_processor_name(node, &nameLen) );
+            APP_MPI_CHK( MPI_Gather(node, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, NULL, 0, MPI_DATATYPE_NULL, 0, App->Comm) );
+        }
 
-            free(nodes);
-         }
-      } else {
-         // Send the node name (hostname)
-         char node[MPI_MAX_PROCESSOR_NAME] = {'\0'};
-         APP_MPI_CHK( MPI_Get_processor_name(node, &i) );
-         APP_MPI_CHK( MPI_Gather(node, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, NULL, 0, MPI_DATATYPE_NULL, 0, App->Comm) );
-      }
-
-      // Allow the master node time to print the list uninterrupted
-      APP_MPI_CHK( MPI_Barrier(App->Comm) );
+        // Allow the master node time to print the list uninterrupted
+        APP_MPI_CHK( MPI_Barrier(App->Comm) );
 #endif
-   }
-   return(APP_OK);
+    }
+    return APP_OK;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialiser l'emplacement des threads
- * @author Jean-Philippe Gauthier
- * @date   Janvier 2017
- *
- * @note
- *    - On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur
- *      un meme CPU pour plusieurs job MPI sur un meme "socket@
-*/
+//! Initialiser l'emplacement des threads
 int App_ThreadPlace(void) {
+    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
 
 #ifndef _AIX
-   // No thread affinity request
-   if (!App->Affinity) {
-      return TRUE;
-   }
+    // No thread affinity request
+    if (!App->Affinity) {
+        return TRUE;
+    }
 
 #ifdef HAVE_OPENMP
 #ifndef __APPLE__
-   if (App->NbThread > 1) {
-      int nbcpu = sysconf(_SC_NPROCESSORS_ONLN);   // Get number of available  cores
-      int incmpi = nbcpu / App->NbMPI;               // Number of cores per MPI job
+    if (App->NbThread > 1) {
+        int nbcpu = sysconf(_SC_NPROCESSORS_ONLN);   // Get number of available  cores
+        int incmpi = nbcpu / App->NbMPI;               // Number of cores per MPI job
 
-      #pragma omp parallel
-      {
-         // unsigned int nid = omp_get_thread_num();
-         pid_t tid = (pid_t) syscall(SYS_gettid);
+        #pragma omp parallel
+        {
+            // unsigned int nid = omp_get_thread_num();
+            pid_t tid = (pid_t) syscall(SYS_gettid);
 
-         cpu_set_t set;
-         CPU_ZERO(&set);
+            cpu_set_t set;
+            CPU_ZERO(&set);
 
-         switch(App->Affinity) {
-            case APP_AFFINITY_SCATTER:
+            switch(App->Affinity) {
+                case APP_AFFINITY_SCATTER:
                     // Scatter threads evenly across all processors
                     CPU_SET((App->NodeRankMPI * incmpi) + omp_get_thread_num() * incmpi / App->NbThread, &set);
                     break;
 
-            case APP_AFFINITY_COMPACT:
+                case APP_AFFINITY_COMPACT:
                     // Place threads closely packed
                     CPU_SET((App->NodeRankMPI * App->NbThread) + omp_get_thread_num(), &set);
                     break;
 
-            case APP_AFFINITY_SOCKET:
+                case APP_AFFINITY_SOCKET:
                     // Pack threads over scattered MPI (hope it fits with sockets)
                     CPU_SET((App->NodeRankMPI*incmpi)+omp_get_thread_num(), &set);
                     break;
 
-            case APP_AFFINITY_NONE:
+                case APP_AFFINITY_NONE:
                     break;
-         }
-         sched_setaffinity(tid, sizeof(set), &set);
-      }
-   }
+            }
+            sched_setaffinity(tid, sizeof(set), &set);
+        }
+    }
 #else
 #warning "App: Setting affinity is not yet implemented for Apple App_ThreadPlace will be a no-op"
 #endif
 #endif
 #endif
-   return TRUE;
+    return TRUE;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialiser l'execution de l'application et afficher l'entete
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2008
-*/
+//! Initialiser l'execution de l'application et afficher l'entete
 void App_Start(void) {
-   App->State = APP_RUN;
+    App->State = APP_RUN;
 
-   gettimeofday(&App->Time, NULL);
+    gettimeofday(&App->Time, NULL);
 
-   // Initialize MPI.
+
 #ifdef HAVE_MPI
-   int mpi;
-   MPI_Initialized(&mpi);
+    // Initialize MPI.
+    int mpi;
+    MPI_Initialized(&mpi);
 
-   if (mpi) {
-      MPI_Comm_size(App->Comm, &App->NbMPI);
-      MPI_Comm_rank(App->Comm, &App->RankMPI);
+    if (mpi) {
+        MPI_Comm_size(App->Comm, &App->NbMPI);
+        MPI_Comm_rank(App->Comm, &App->RankMPI);
 
-      App->TotalsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
-      App->CountsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
-      App->DisplsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
-   }
+        App->TotalsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
+        App->CountsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
+        App->DisplsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
+    }
 #endif
 
-   // Initialize OpenMP
 #ifdef HAVE_OPENMP
-   if (App->NbThread) {
-      // If a number of thread was specified on the command line
-      omp_set_num_threads(App->NbThread);
-   } else {
-      // Otherwise try to get it from the environement
-      char *env = NULL;
-      if ((env = getenv("OMP_NUM_THREADS"))) {
-         App->NbThread = atoi(env);
-      } else {
-         App->NbThread = 1;
-         omp_set_num_threads(0);
-      }
-   }
+    // Initialize OpenMP
+    if (App->NbThread) {
+        // If a number of thread was specified on the command line
+        omp_set_num_threads(App->NbThread);
+    } else {
+        // Otherwise try to get it from the environement
+        char *env = NULL;
+        if ((env = getenv("OMP_NUM_THREADS"))) {
+            App->NbThread = atoi(env);
+        } else {
+            App->NbThread = 1;
+            omp_set_num_threads(0);
+        }
+    }
 
-   // We need to initialize the per thread app pointer
-   #pragma omp parallel
-   {
-      App = &AppInstance;
-   }
-   App_ThreadPlace();
+    // We need to initialize the per thread app pointer
+    #pragma omp parallel
+    {
+        App = &AppInstance;
+    }
+    App_ThreadPlace();
 #else
-   App->NbThread = 1;
+    App->NbThread = 1;
 #endif
 
    // Modify seed value for current processor/thread for parallelization.
@@ -912,50 +883,47 @@ int App_LogLevel(char *Val) {
    return Lib_LogLevel(APP_MAIN, Val);
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de log courant pour une librairie
- * @author Jean-Philippe Gauthier
- * @date   Octobre 2022
- *
- * @param[in]  Lib     Librairie
- * @param[in]  Val     Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
- *
- * @return             Previous log level, or current if no level specified
- */
-int Lib_LogLevel(TApp_Lib Lib, char *Val) {
-   // If not initialized yet
-   if (!App->Tolerance){
-       App_InitEnv();
-   }
 
-   // Keep previous level
-   int pl = App->LogLevel[Lib];
+//! Definir le niveau de log courant pour une librairie
+int Lib_LogLevel(
+    //! Librarie
+    const TApp_Lib Lib,
+    //! Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
+    const char * const Val
+) {
+    // If not initialized yet
+    if (!App->Tolerance){
+        App_InitEnv();
+    }
 
-   if (Val && Val[0] != ' ' && strlen(Val)) {
-      if (strncasecmp(Val, "ERROR", 5) == 0) {
-         App->LogLevel[Lib] = APP_ERROR;
-      } else if (strncasecmp(Val, "WARN", 4) == 0) {
-         App->LogLevel[Lib] = APP_WARNING;
-      } else if (strncasecmp(Val, "INFO", 4) == 0) {
-         App->LogLevel[Lib] = APP_INFO;
-      } else if (strncasecmp(Val, "TRIVIAL", 7) == 0) {
-         App->LogLevel[Lib] = APP_TRIVIAL;
-      } else if (strncasecmp(Val, "DEBUG", 5) == 0) {
-         App->LogLevel[Lib] = APP_DEBUG;
-      } else if (strncasecmp(Val, "EXTRA", 5) == 0) {
-         App->LogLevel[Lib] = APP_EXTRA;
-      } else if (strncasecmp(Val, "QUIET", 5) == 0) {
-         App->LogLevel[Lib] = APP_QUIET;
-      } else {
-         char *endptr = NULL;
-         App->LogLevel[Lib] = strtoul(Val, &endptr, 10);
-      }
-      if (Lib == APP_MAIN) {
-         for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
-      }
-   }
-   // Return Previous level, or current if Level was NULL or empty string
-   return pl;
+    // Keep previous level
+    int pl = App->LogLevel[Lib];
+
+    if (Val && Val[0] != ' ' && strlen(Val)) {
+        if (strncasecmp(Val, "ERROR", 5) == 0) {
+            App->LogLevel[Lib] = APP_ERROR;
+        } else if (strncasecmp(Val, "WARN", 4) == 0) {
+            App->LogLevel[Lib] = APP_WARNING;
+        } else if (strncasecmp(Val, "INFO", 4) == 0) {
+            App->LogLevel[Lib] = APP_INFO;
+        } else if (strncasecmp(Val, "TRIVIAL", 7) == 0) {
+            App->LogLevel[Lib] = APP_TRIVIAL;
+        } else if (strncasecmp(Val, "DEBUG", 5) == 0) {
+            App->LogLevel[Lib] = APP_DEBUG;
+        } else if (strncasecmp(Val, "EXTRA", 5) == 0) {
+            App->LogLevel[Lib] = APP_EXTRA;
+        } else if (strncasecmp(Val, "QUIET", 5) == 0) {
+            App->LogLevel[Lib] = APP_QUIET;
+        } else {
+            char *endptr = NULL;
+            App->LogLevel[Lib] = strtoul(Val, &endptr, 10);
+        }
+        if (Lib == APP_MAIN) {
+            for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
+        }
+    }
+    //! \return Previous log level
+    return pl;
 }
 
 /**----------------------------------------------------------------------------
@@ -968,7 +936,7 @@ int Lib_LogLevel(TApp_Lib Lib, char *Val) {
  * @return             Previous log level, or current if no level specified
  */
 int App_LogLevelNo(TApp_LogLevel Val) {
-   return Lib_LogLevelNo(APP_MAIN, Val);
+    return Lib_LogLevelNo(APP_MAIN, Val);
 }
 
 /**----------------------------------------------------------------------------
