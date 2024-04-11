@@ -104,6 +104,7 @@ endforeach()
 foreach(APP_TARGET App-static App-shared)
    target_compile_options(${APP_TARGET} PRIVATE
       $<$<COMPILE_LANG_AND_ID:C,Intel>:-diag-disable=3180>
+      $<$<COMPILE_LANG_AND_ID:C,GNU>:-Wno-unknown-pragmas>
    )
 endforeach()
 
