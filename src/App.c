@@ -75,121 +75,127 @@ void App_LibRegister(TApp_Lib Lib, char *Version) {
  * @date   Decembre 2022
 */
 void App_InitEnv(){
-   gettimeofday(&App->Time, NULL);
+   #pragma omp critical (app_initenv)
+   {
+      if (!App->Tolerance) { // Only do it if not already initialized
 
-   App->TimerLog = App_TimerCreate();
-   App->Tolerance = APP_QUIET;
-   App->Language = APP_EN;
-   App->LogWarning = 0;
-   App->LogError = 0;
-   App->LogColor = FALSE;
-   App->LogNoBox = FALSE;
-   App->LogTime = FALSE;
-   App->LogSplit = FALSE;
-   App->LogFlush = FALSE;
-   App->LogRank = 0;
-   App->UTC = FALSE;
+         gettimeofday(&App->Time, NULL);
 
-   // Default log level is WARNING
-   for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
+         App->TimerLog = App_TimerCreate();
+         App->Tolerance = APP_QUIET;
+         App->Language = APP_EN;
+         App->LogWarning = 0;
+         App->LogError = 0;
+         App->LogColor = FALSE;
+         App->LogNoBox = FALSE;
+         App->LogTime = FALSE;
+         App->LogSplit = FALSE;
+         App->LogFlush = FALSE;
+         App->LogRank = 0;
+         App->UTC = FALSE;
 
-   char *c;
+         // Default log level is WARNING
+         for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
 
-   // Check the log parameters in the environment
-   if ((c = getenv("APP_VERBOSE"))) {
-      App_LogLevel(c);
-   }
-   if ((c = getenv("APP_VERBOSE_NOBOX"))) {
-      App->LogNoBox = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_COLOR"))) {
-      App->LogColor = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_TIME"))) {
-      App_LogTime(c);
-   }
-   if ((c = getenv("APP_VERBOSE_UTC"))) {
-      App->UTC = TRUE;
-   }
-   if ((c = getenv("APP_VERBOSE_RANK"))) {
-      App->LogRank = atoi(c);
-   }
-   if ((c = getenv("APP_LOG_SPLIT"))) {
-      App->LogSplit = TRUE;
-   }
-   if ((c = getenv("APP_LOG_STREAM"))) {
-      App->LogFile = strdup(c);
-   }
-   if ((c = getenv("APP_LOG_FLUSH"))) {
-      App->LogFlush = TRUE;
-   }
-   if ((c = getenv("APP_TOLERANCE"))) {
-      App_ToleranceLevel(c);
-   }
+         char *c;
 
-   // Check verbose level of libraries
-   if ((c = getenv("APP_VERBOSE_RMN"))) {
-      Lib_LogLevel(APP_LIBRMN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_FST"))) {
-      Lib_LogLevel(APP_LIBFST, c);
-   }
-   if ((c = getenv("APP_VERBOSE_WB"))) {
-      Lib_LogLevel(APP_LIBWB, c);
-   }
-   if ((c = getenv("APP_VERBOSE_GMM"))) {
-      Lib_LogLevel(APP_LIBGMM, c);
-   }
-   if ((c = getenv("APP_VERBOSE_VGRID"))) {
-      Lib_LogLevel(APP_LIBVGRID, c);
-   }
-   if ((c = getenv("APP_VERBOSE_INTERPV"))) {
-      Lib_LogLevel(APP_LIBINTERPV, c);
-   }
-   if ((c = getenv("APP_VERBOSE_GEOREF"))) {
-      Lib_LogLevel(APP_LIBGEOREF, c);
-   }
-   if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
-      Lib_LogLevel(APP_LIBRPNMPI, c);
-   }
-   if ((c = getenv("APP_VERBOSE_IRIS"))) {
-      Lib_LogLevel(APP_LIBIRIS, c);
-   }
-   if ((c = getenv("APP_VERBOSE_IO"))) {
-      Lib_LogLevel(APP_LIBIO, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
-      Lib_LogLevel(APP_LIBMDLUTIL, c);
-   }
-   if ((c = getenv("APP_VERBOSE_DYN"))) {
-      Lib_LogLevel(APP_LIBDYN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_PHY"))) {
-      Lib_LogLevel(APP_LIBPHY, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MIDAS"))) {
-      Lib_LogLevel(APP_LIBMIDAS, c);
-   }
-   if ((c = getenv("APP_VERBOSE_EER"))) {
-      Lib_LogLevel(APP_LIBEER, c);
-   }
-   if ((c = getenv("APP_VERBOSE_TDPACK"))) {
-      Lib_LogLevel(APP_LIBTDPACK, c);
-   }
-   if ((c = getenv("APP_VERBOSE_MACH"))) {
-      Lib_LogLevel(APP_LIBMACH, c);
-   }
-   if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
-      Lib_LogLevel(APP_LIBSPSDYN, c);
-   }
-   if ((c = getenv("APP_VERBOSE_META"))) {
-      Lib_LogLevel(APP_LIBMETA, c);
-   }
+         // Check the log parameters in the environment
+         if ((c = getenv("APP_VERBOSE"))) {
+            App_LogLevel(c);
+         }
+         if ((c = getenv("APP_VERBOSE_NOBOX"))) {
+            App->LogNoBox = TRUE;
+         }
+         if ((c = getenv("APP_VERBOSE_COLOR"))) {
+            App->LogColor = TRUE;
+         }
+         if ((c = getenv("APP_VERBOSE_TIME"))) {
+            App_LogTime(c);
+         }
+         if ((c = getenv("APP_VERBOSE_UTC"))) {
+            App->UTC = TRUE;
+         }
+         if ((c = getenv("APP_VERBOSE_RANK"))) {
+            App->LogRank = atoi(c);
+         }
+         if ((c = getenv("APP_LOG_SPLIT"))) {
+            App->LogSplit = TRUE;
+         }
+         if ((c = getenv("APP_LOG_STREAM"))) {
+            App->LogFile = strdup(c);
+         }
+         if ((c = getenv("APP_LOG_FLUSH"))) {
+            App->LogFlush = TRUE;
+         }
+         if ((c = getenv("APP_TOLERANCE"))) {
+            App_ToleranceLevel(c);
+         }
 
-   // Check the language in the environment
-   if ((c = getenv("CMCLNG"))) {
-      App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
-   }
+         // Check verbose level of libraries
+         if ((c = getenv("APP_VERBOSE_RMN"))) {
+            Lib_LogLevel(APP_LIBRMN, c);
+         }
+         if ((c = getenv("APP_VERBOSE_FST"))) {
+            Lib_LogLevel(APP_LIBFST, c);
+         }
+         if ((c = getenv("APP_VERBOSE_WB"))) {
+            Lib_LogLevel(APP_LIBWB, c);
+         }
+         if ((c = getenv("APP_VERBOSE_GMM"))) {
+            Lib_LogLevel(APP_LIBGMM, c);
+         }
+         if ((c = getenv("APP_VERBOSE_VGRID"))) {
+            Lib_LogLevel(APP_LIBVGRID, c);
+         }
+         if ((c = getenv("APP_VERBOSE_INTERPV"))) {
+            Lib_LogLevel(APP_LIBINTERPV, c);
+         }
+         if ((c = getenv("APP_VERBOSE_GEOREF"))) {
+            Lib_LogLevel(APP_LIBGEOREF, c);
+         }
+         if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
+            Lib_LogLevel(APP_LIBRPNMPI, c);
+         }
+         if ((c = getenv("APP_VERBOSE_IRIS"))) {
+            Lib_LogLevel(APP_LIBIRIS, c);
+         }
+         if ((c = getenv("APP_VERBOSE_IO"))) {
+            Lib_LogLevel(APP_LIBIO, c);
+         }
+         if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
+            Lib_LogLevel(APP_LIBMDLUTIL, c);
+         }
+         if ((c = getenv("APP_VERBOSE_DYN"))) {
+            Lib_LogLevel(APP_LIBDYN, c);
+         }
+         if ((c = getenv("APP_VERBOSE_PHY"))) {
+            Lib_LogLevel(APP_LIBPHY, c);
+         }
+         if ((c = getenv("APP_VERBOSE_MIDAS"))) {
+            Lib_LogLevel(APP_LIBMIDAS, c);
+         }
+         if ((c = getenv("APP_VERBOSE_EER"))) {
+            Lib_LogLevel(APP_LIBEER, c);
+         }
+         if ((c = getenv("APP_VERBOSE_TDPACK"))) {
+            Lib_LogLevel(APP_LIBTDPACK, c);
+         }
+         if ((c = getenv("APP_VERBOSE_MACH"))) {
+            Lib_LogLevel(APP_LIBMACH, c);
+         }
+         if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
+            Lib_LogLevel(APP_LIBSPSDYN, c);
+         }
+         if ((c = getenv("APP_VERBOSE_META"))) {
+            Lib_LogLevel(APP_LIBMETA, c);
+         }
+
+         // Check the language in the environment
+         if ((c = getenv("CMCLNG"))) {
+            App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
+         }
+      }
+   } // end OMP critical
 }
 
 /**----------------------------------------------------------------------------
@@ -265,22 +271,27 @@ TApp *App_Init(int Type, const char *Name, char *Version, char *Desc, char* Stam
  * @date   Janvier 2017
 */
 void App_Free(void) {
+   #pragma omp critical (app_free)
+   {
+      if (App->Name) { // only do it if not done already
+         free(App->Name);
+         App->Name = NULL;
+         free(App->Version);
+         free(App->Desc);
+         free(App->LogFile);
+         free(App->TimeStamp);
 
-   free(App->Name);
-   free(App->Version);
-   free(App->Desc);
-   free(App->LogFile);
-   free(App->TimeStamp);
+         if (App->Tag) free(App->Tag);
 
-   if (App->Tag) free(App->Tag);
+         if (App->CountsMPI) free(App->CountsMPI);
+         if (App->DisplsMPI) free(App->DisplsMPI);
+         if (App->OMPSeed)   free(App->OMPSeed);
 
-   if (App->CountsMPI) free(App->CountsMPI);
-   if (App->DisplsMPI) free(App->DisplsMPI);
-   if (App->OMPSeed)   free(App->OMPSeed);
+         if (App->Type == APP_THREAD) App = NULL;
+      }
 
-   if (App->Type == APP_THREAD) App = NULL;
-
-   //TODO MPI stuff (MPMD)
+      //TODO MPI stuff (MPMD)
+   } // end OMP critical
 }
 
 /**----------------------------------------------------------------------------
@@ -692,31 +703,34 @@ void App_LogStream(char *Stream) {
  * @date   Septembre 2014
 */
 void App_LogOpen(void) {
-   if (!App->LogStream) {
-      if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
-         App->LogStream = stdout;
-      } else if (strcmp(App->LogFile, "stderr") == 0) {
-         App->LogStream = stderr;
-      } else {
-         if (!App->RankMPI) {
-            App->LogStream = fopen(App->LogFile, "w");
+   #pragma omp critical (app_logopen)
+   {
+      if (!App->LogStream) {
+         if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
+            App->LogStream = stdout;
+         } else if (strcmp(App->LogFile, "stderr") == 0) {
+            App->LogStream = stderr;
          } else {
-            App->LogStream = fopen(App->LogFile, "a+");
+            if (!App->RankMPI) {
+               App->LogStream = fopen(App->LogFile, "w");
+            } else {
+               App->LogStream = fopen(App->LogFile, "a+");
+            }
+         }
+         if (!App->LogStream) {
+            App->LogStream = stdout;
+            fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
+         }
+
+         // Split log file per MPI rank
+         const int maxFilePathLen = 4096;
+         char file[maxFilePathLen];
+         if (App->LogSplit && App_IsMPI()) {
+            snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
+            App->LogStream = freopen(file, "a", App->LogStream);
          }
       }
-      if (!App->LogStream) {
-         App->LogStream = stdout;
-         fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
-      }
-
-      // Split log file per MPI rank
-      const int maxFilePathLen = 4096;
-      char file[maxFilePathLen];
-      if (App->LogSplit && App_IsMPI()) {
-         snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
-         App->LogStream = freopen(file, "a", App->LogStream);
-      }
-   }
+   } // end OMP critical
 }
 
 /**----------------------------------------------------------------------------
@@ -725,11 +739,14 @@ void App_LogOpen(void) {
  * @date   Septembre 2014
 */
 void App_LogClose(void) {
-   fflush(App->LogStream);
+   #pragma omp critical (app_logclose)
+   {
+      fflush(App->LogStream);
 
-   if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
-      fclose(App->LogStream);
-   }
+      if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
+         fclose(App->LogStream);
+      }
+   } // end OMP critical
 }
 
 /**----------------------------------------------------------------------------
@@ -785,6 +802,7 @@ void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
    // If this is within the request level
    if (Level <= App->LogLevel[Lib]) {
 
+      char prefix[256];
       if (Level >= APP_ALWAYS) {
          char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
 
@@ -823,26 +841,37 @@ void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
 #ifdef HAVE_MPI
          if (App_IsMPI() && App->LogRank == -1)
             if (App->Step) {
-               fprintf(App->LogStream, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+               sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
             } else {
-               fprintf(App->LogStream, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+               sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
             }
          else
 #endif
             if (App->Step) {
-               fprintf(App->LogStream, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+               sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
             } else {
-               fprintf(App->LogStream, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
+               sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
             }
       }
 
       va_list args;
-      va_start(args, Format);
-      vfprintf(App->LogStream, Format, args);
-      va_end(args);
 
-      if (App->LogColor) {
-         fprintf(App->LogStream, APP_COLOR_RESET);
+      #pragma omp critical (lib_log)
+      {
+         fprintf(App->LogStream, "%s", prefix);
+
+         va_start(args, Format);
+         vfprintf(App->LogStream, Format, args);
+         va_end(args);
+
+         if (App->LogColor) {
+            fprintf(App->LogStream, APP_COLOR_RESET);
+         }
+
+         // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
+         if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+            fflush(App->LogStream);
+         }
       }
 
       if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
@@ -855,11 +884,6 @@ void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
          if (Level == APP_SYSTEM) {
             perror(APP_LASTERROR);
          }
-      }
-
-      // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
-      if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
-         fflush(App->LogStream);
       }
    }
    App_TimerStop(App->TimerLog);

@@ -100,6 +100,13 @@ foreach(APP_TARGET ${shared_targets} ${static_targets})
    )
 endforeach()
 
+# Disable "unrecognized OpenMP pragma" for non-OpenMP builds
+foreach(APP_TARGET App-static App-shared)
+   target_compile_options(${APP_TARGET} PRIVATE
+      $<$<COMPILE_LANG_AND_ID:C,Intel>:-diag-disable=3180>
+   )
+endforeach()
+
 install(TARGETS ${shared_targets}
    EXPORT ${PROJECT_NAME}-shared-targets
    LIBRARY DESTINATION lib
