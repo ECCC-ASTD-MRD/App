@@ -803,6 +803,7 @@ void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
    if (Level <= App->LogLevel[Lib]) {
 
       char prefix[256];
+      prefix[0] = '\0';
       if (Level >= APP_ALWAYS) {
          char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
 
@@ -839,12 +840,13 @@ void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
          }
 
 #ifdef HAVE_MPI
-         if (App_IsMPI() && App->LogRank == -1)
+         if (App_IsMPI() && App->LogRank == -1) {
             if (App->Step) {
                sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
             } else {
                sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
             }
+         }
          else
 #endif
             if (App->Step) {
