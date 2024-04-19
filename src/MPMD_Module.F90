@@ -68,8 +68,9 @@ contains
 
       interface
          pure function Mpmd_Get_own_comm_c() result(comm) bind(C, name = 'Mpmd_Get_own_comm_f')
+            import :: C_INT32_T
             implicit none
-            integer :: comm
+            integer(C_INT32_T) :: comm
          end function Mpmd_Get_own_comm_c
       end interface
 
@@ -94,7 +95,7 @@ contains
             ! type(C_PTR),        value, intent(in) :: components
             integer(C_INT32_T),        intent(in) :: components
             integer(C_INT32_T), value, intent(in) :: num_components
-            integer :: comm
+            integer(C_INT32_T) :: comm
          end function Mpmd_Get_shared_comm_c
       end interface
 
