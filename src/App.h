@@ -207,16 +207,18 @@ typedef struct TComponentSet_ TComponentSet;
 
 #endif //HAVE_MPI
 
-// Argument definitions
-typedef struct TApp_Arg {
-   TApp_Type    Type;                    // Argument type
-   void         *Var;                    // Where to put the argument value(s)
-   int          Multi;                   // Multiplicity of the argument (Maximum number of values for a list)
-   char         *Short, *Long, *Info;      // Argument flags and description
+//! Argument definitions
+typedef struct {
+    TApp_Type  Type;    //!< Argument type
+    void      *Var;     //!< Where to put the argument value(s)
+    int        Multi;   //!< Multiplicity of the argument (Maximum number of values for a list)
+    char      *Short;   //!< Short description
+    char      *Long;    //!< Long description
+    char      *Info;    //!< Additional info
 } TApp_Arg;
 
 // Application controller definition
-typedef struct TApp {
+typedef struct {
    char*          Name;                  ///< Name of applicaton
    char*          Version;               ///< Version of application
    char*          Desc;                  ///< Description of application
@@ -286,19 +288,19 @@ void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
-void  Lib_Log(const TApp_Lib Lib, const TApp_LogLevel Level, const char * const Format, ...);
+void  Lib_Log(const TApp_Lib Lib, TApp_LogLevel Level, const char * const Format, ...);
 int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);
 int   Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val);
-void  App_LogStream(char *Stream);
-int   App_LogLevel(char *Val);
-int   App_LogLevelNo(TApp_LogLevel Val);
-int   App_ToleranceLevel(char *Val);
+void  App_LogStream(const char * const Stream);
+int   App_LogLevel(const char * const Level);
+int   App_LogLevelNo(const TApp_LogLevel Level);
+int   App_ToleranceLevel(const char * const Level);
 int   App_ToleranceNo(TApp_LogLevel Val);
 void  App_LogOpen(void);
 void  App_LogClose(void);
-int   App_LogTime(char *Val);
-int   App_LogRank(int NewRank);
-void  App_Progress(float Percent, const char *Format, ...);
+int   App_LogTime(const char * const Val);
+int   App_LogRank(const int NewRank);
+void  App_Progress(const float Percent, const char * const Format, ...);
 int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
@@ -308,7 +310,7 @@ int   App_ParseCoords(char *Param, char *Value, double *Lat, double *Lon, int In
 void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
-void  App_Trap(int Signal);
+void  App_Trap(const int Signal);
 int   App_IsDone(void); 
 int   App_IsMPI(void);
 int   App_IsOMP(void);

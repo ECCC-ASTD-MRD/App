@@ -548,339 +548,324 @@ void App_Start(void) {
 #endif //HAVE_MPI
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Finaliser l'execution du modele et afficher le footer
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2008
- *
- * @param[in] Status  User status to use (-1:Use error count)
- *
- * @return Process exit status to be used
- */
-int App_End(int Status) {
+//! Finaliser l'execution du modele et afficher le footer
+//! \return Process exit status
+int App_End(
+    //! Application exit status to use (-1:Use error count)
+    int Status
+) {
 #ifdef _MPI
-   // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
-   // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
-   if (App->NbMPI > 1 && Status != INT_MIN) {
-      if( !App->RankMPI ) {
-         MPI_Reduce(MPI_IN_PLACE, &App->LogWarning, 1, MPI_INT, MPI_SUM, 0, App->Comm);
-         MPI_Reduce(MPI_IN_PLACE, &App->LogError, 1, MPI_INT, MPI_SUM, 0, App->Comm);
-      } else {
-         MPI_Reduce(&App->LogWarning, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
-         MPI_Reduce(&App->LogError, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
-      }
-   }
+    // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
+    // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
+    if (App->NbMPI > 1 && Status != INT_MIN) {
+        if( !App->RankMPI ) {
+            MPI_Reduce(MPI_IN_PLACE, &App->LogWarning, 1, MPI_INT, MPI_SUM, 0, App->Comm);
+            MPI_Reduce(MPI_IN_PLACE, &App->LogError, 1, MPI_INT, MPI_SUM, 0, App->Comm);
+        } else {
+            MPI_Reduce(&App->LogWarning, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
+            MPI_Reduce(&App->LogError, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
+        }
+    }
 #endif
+    // Select status code based on error number
+    if (Status < 0) {
+        Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
+    }
 
-// #ifdef HAVE_MPI
-//    Mpmd_Finalize(&AppInstance);
-// #endif
+    if (!App->RankMPI) {
+        if (!App->LogNoBox) {
+            struct timeval end;
+            gettimeofday(&end, NULL);
+            struct timeval dif;
+            timersub(&end, &App->Time, &dif);
 
-   // Select status code based on error number
-   if (Status<0) {
-      Status = App->LogError?EXIT_FAILURE:EXIT_SUCCESS;
-   }
-
-   if (!App->RankMPI) {
-      if (!App->LogNoBox) {
-         struct timeval end;
-         gettimeofday(&end, NULL);
-         struct timeval dif;
-         timersub(&end, &App->Time, &dif);
-
-         App_Log(APP_VERBATIM, "\n-------------------------------------------------------------------------------------\n");
-         App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n\n", App->Name, App->Version, App->TimeStamp);
-         if (App->Signal) {
-            App_Log(APP_VERBATIM, "Trapped signal : %i\n", App->Signal);
-         }
-         if (App->UTC) {
-            App_Log(APP_VERBATIM, "Finish time    : (UTC) %s", asctime(gmtime(&end.tv_sec)));
-         } else {
-            App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
-         }
-         App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTime_ms(App->TimerLog));
+            App_Log(APP_VERBATIM, "\n-------------------------------------------------------------------------------------\n");
+            App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n\n", App->Name, App->Version, App->TimeStamp);
+            if (App->Signal) {
+                App_Log(APP_VERBATIM, "Trapped signal : %i\n", App->Signal);
+            }
+            if (App->UTC) {
+                App_Log(APP_VERBATIM, "Finish time    : (UTC) %s", asctime(gmtime(&end.tv_sec)));
+            } else {
+                App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
+            }
+            App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTime_ms(App->TimerLog));
 
 
-         if (Status != EXIT_SUCCESS) {
-            App_Log(APP_VERBATIM, "Status         : Error(%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
-         } else if (App->LogError) {
-            App_Log(APP_VERBATIM, "Status         : Ok (%i Errors) (%i Warnings)\n", App->LogError, App->LogWarning);
-         } else if (App->LogWarning) {
-            App_Log(APP_VERBATIM, "Status         : Ok (%i Warnings)\n", App->LogWarning);
-         } else {
-            App_Log(APP_VERBATIM, "Status         : Ok\n");
-         }
+            if (Status != EXIT_SUCCESS) {
+                App_Log(APP_VERBATIM, "Status         : Error(%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
+            } else if (App->LogError) {
+                App_Log(APP_VERBATIM, "Status         : Ok (%i Errors) (%i Warnings)\n", App->LogError, App->LogWarning);
+            } else if (App->LogWarning) {
+                App_Log(APP_VERBATIM, "Status         : Ok (%i Warnings)\n", App->LogWarning);
+            } else {
+                App_Log(APP_VERBATIM, "Status         : Ok\n");
+            }
 
-         App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
-      }
-      App_LogClose();
+            App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
+        }
+        App_LogClose();
 
-      App->State = APP_DONE;
-   }
+        App->State = APP_DONE;
+    }
 
-   return App->Signal ? 128 + App->Signal : Status;
+    return App->Signal ? 128 + App->Signal : Status;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Trap les signaux afin de terminer gracieusement
- * @author Jean-Philippe Gauthier
- * @date   Aout 2016
- *
- * @param[in] Signal Signal to be trapped
- */
-void App_TrapProcess(int Signal) {
-   App_Log(APP_INFO, "Trapped signal %i\n", Signal);
-   App->Signal = Signal;
+//! Trapper les signaux afin de terminer gracieusement
+void App_TrapProcess(
+    //! [in] Signal Signal to be trapped
+    const int Signal
+) {
+    App_Log(APP_INFO, "Trapped signal %i\n", Signal);
+    App->Signal = Signal;
 
-   switch(Signal) {
-      case SIGUSR2:
-      case SIGTERM: App->State = APP_DONE;
-   }
+    switch(Signal) {
+        case SIGUSR2:
+        case SIGTERM: App->State = APP_DONE;
+    }
 }
 
-void App_Trap(int Signal) {
-   struct sigaction new;
-   new.sa_sigaction = NULL;
-   new.sa_handler = App_TrapProcess;
-   new.sa_flags = 0x0;
-   sigemptyset(&new.sa_mask);
+void App_Trap(const int Signal) {
+    struct sigaction new;
+    new.sa_sigaction = NULL;
+    new.sa_handler = App_TrapProcess;
+    new.sa_flags = 0x0;
+    sigemptyset(&new.sa_mask);
 
-   // POSIX way
-   struct sigaction old;
-   sigaction(Signal, &new, &old);
+    // POSIX way
+    struct sigaction old;
+    sigaction(Signal, &new, &old);
 
-   // C Standard way
-   // signal(Signal, App_TrapProcess);
+    // C Standard way
+    // signal(Signal, App_TrapProcess);
 }
 
-void App_LogStream(char *Stream) {
+void App_LogStream(const char * const Stream) {
       App->LogFile = strdup(Stream);
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Ouvrir le fichier log
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2014
-*/
+//! Ouvrir le fichier log
 void App_LogOpen(void) {
-   if (!App->LogStream) {
-      if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
-         App->LogStream = stdout;
-      } else if (strcmp(App->LogFile, "stderr") == 0) {
-         App->LogStream = stderr;
-      } else {
-         if (!App->RankMPI) {
-            App->LogStream = fopen(App->LogFile, "w");
-         } else {
-            App->LogStream = fopen(App->LogFile, "a+");
-         }
-      }
-      if (!App->LogStream) {
-         App->LogStream = stdout;
-         fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
-      }
+    if (!App->LogStream) {
+        if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
+            App->LogStream = stdout;
+        } else if (strcmp(App->LogFile, "stderr") == 0) {
+            App->LogStream = stderr;
+        } else {
+            if (!App->RankMPI) {
+                App->LogStream = fopen(App->LogFile, "w");
+            } else {
+                App->LogStream = fopen(App->LogFile, "a+");
+            }
+        }
+        if (!App->LogStream) {
+            App->LogStream = stdout;
+            fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
+        }
 
-      // Split log file per MPI rank
-      const int maxFilePathLen = 4096;
-      char file[maxFilePathLen];
-      if (App->LogSplit && App_IsMPI()) {
-         snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
-         App->LogStream = freopen(file, "a", App->LogStream);
-      }
-   }
+        // Split log file per MPI rank
+        const int maxFilePathLen = 4096;
+        char file[maxFilePathLen];
+        if (App->LogSplit && App_IsMPI()) {
+            snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
+            App->LogStream = freopen(file, "a", App->LogStream);
+        }
+    }
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Fermer le fichier log
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2014
-*/
+//! Fermer le fichier log
 void App_LogClose(void) {
-   fflush(App->LogStream);
+    fflush(App->LogStream);
 
-   if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
-      fclose(App->LogStream);
-   }
+    if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
+        fclose(App->LogStream);
+    }
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Imprimer un message de maniere standard
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2008
- *
- * @param[in]  Level   Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
- * @param[in]  Message Message à jouter au journal
- *
- * @note
- *   - le niveau ERROR s'affichera sur de stderr alors que tout les autres seront
- *     sur stdout ou le fichier log
-*/
-void App_Log4Fortran(TApp_LogLevel Level, const char *Message) {
-   Lib_Log(APP_MAIN, Level, "%s\n", Message);
+//! Imprimer un message de manière standard
+void App_Log4Fortran(
+    //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
+    TApp_LogLevel Level,
+    //! [in] Message à jouter au journal
+    const char *Message
+) {
+    Lib_Log(APP_MAIN, Level, "%s\n", Message);
 }
 
-void Lib_Log4Fortran(TApp_Lib Lib, TApp_LogLevel Level, char *Message, int len) {
-   (void)len;
-   Lib_Log(Lib, Level, "%s\n", Message);
+void Lib_Log4Fortran(
+    //! [in] Identificateur de la librairie
+    TApp_Lib Lib,
+    //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
+    TApp_LogLevel Level,
+    //! [in] Message à jouter au journal
+    char *Message,
+    //! [in] Longueur du message
+    int len
+) {
+    (void)len;
+    Lib_Log(Lib, Level, "%s\n", Message);
 }
 
-void Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...) {
-#ifdef HAVE_MPI
-   if (App->LogRank != -1 && App->LogRank != App->RankMPI) {
-      return;
-   }
-#endif
-
-   // If not initialized yet
-   if (!App->Tolerance) App_InitEnv();
-
-   if (!App->LogStream) App_LogOpen();
-
-   // Check for once log flag
-   if (Level > APP_QUIET) {
-      // If we logged it at least once
-      if (Level >> 3 < APP_MAXONCE && App_OnceTable[Level >> 3]++) return;
-
-      // Real log level
-      Level &= 0x7;
-   }
-
-   App_TimerStart(App->TimerLog);
-
-   if (Level == APP_WARNING) App->LogWarning++;
-   if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) App->LogError++;
-
-   // Check if requested level is quiet
-   if (App->LogLevel[Lib] == APP_QUIET && Level > APP_VERBATIM) return;
-
-   // If this is within the request level
-   if (Level <= App->LogLevel[Lib]) {
-
-      if (Level >= APP_ALWAYS) {
-         char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
-
-         char time[32];
-         if (App->LogTime) {
-            struct timeval now;
-            gettimeofday(&now, NULL);
-
-            struct tm *lctm;
-            struct timeval diff;
-            switch(App->LogTime) {
-               case APP_DATETIME:
-                  lctm = App->UTC ? gmtime(&now.tv_sec) : localtime(&now.tv_sec);
-                  strftime(time, 32, "%c ", lctm);
-                  break;
-               case APP_TIME:
-                  timersub(&now, &App->Time, &diff);
-                  lctm = App->UTC ? gmtime(&diff.tv_sec) : localtime(&diff.tv_sec);
-                  strftime(time, 32, "%T ", lctm);
-                  break;
-               case APP_SECOND:
-                  timersub(&now, &App->Time, &diff);
-                  snprintf(time, 32, "%-8.3f ", diff.tv_sec + diff.tv_usec / 1000000.0);
-                  break;
-               case APP_MSECOND:
-                  timersub(&now, &App->Time, &diff);
-                  snprintf(time, 32, "%-8li ", diff.tv_sec * 1000 + diff.tv_usec / 1000);
-                  break;
-               case APP_NODATE:
-                  break;
-            }
-         } else {
-            time[0] = '\0';
-         }
+//! Imprimer un message de maniere standard
+void Lib_Log(
+    const TApp_Lib Lib,
+    //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
+    TApp_LogLevel Level,
+    //! [in] Message avec formattage à la printf
+    const char * const Format,
+    //! [in] Liste des variables du message
+    ...
+) {
+    //! \note Le niveau ERROR s'affichera sur de stderr alors que tout les autres seront sur stdout ou le fichier log
 
 #ifdef HAVE_MPI
-         if (App_IsMPI() && App->LogRank == -1)
-            if (App->Step) {
-               fprintf(App->LogStream, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+    if (App->LogRank != -1 && App->LogRank != App->RankMPI) {
+        return;
+    }
+#endif
+    // If not initialized yet
+    if (!App->Tolerance) App_InitEnv();
+
+    if (!App->LogStream) App_LogOpen();
+
+    // Check for once log flag
+    if (Level > APP_QUIET) {
+        // If we logged it at least once
+        if (Level >> 3 < APP_MAXONCE && App_OnceTable[Level >> 3]++) return;
+
+        // Real log level
+        Level &= 0x7;
+    }
+
+    App_TimerStart(App->TimerLog);
+
+    if (Level == APP_WARNING) App->LogWarning++;
+    if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) App->LogError++;
+
+    // Check if requested level is quiet
+    if (App->LogLevel[Lib] == APP_QUIET && Level > APP_VERBATIM) return;
+
+    // If this is within the request level
+    if (Level <= App->LogLevel[Lib]) {
+
+        if (Level >= APP_ALWAYS) {
+            char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
+
+            char time[32];
+            if (App->LogTime) {
+                struct timeval now;
+                gettimeofday(&now, NULL);
+
+                struct tm *lctm;
+                struct timeval diff;
+                switch(App->LogTime) {
+                case APP_DATETIME:
+                    lctm = App->UTC ? gmtime(&now.tv_sec) : localtime(&now.tv_sec);
+                    strftime(time, 32, "%c ", lctm);
+                    break;
+                case APP_TIME:
+                    timersub(&now, &App->Time, &diff);
+                    lctm = App->UTC ? gmtime(&diff.tv_sec) : localtime(&diff.tv_sec);
+                    strftime(time, 32, "%T ", lctm);
+                    break;
+                case APP_SECOND:
+                    timersub(&now, &App->Time, &diff);
+                    snprintf(time, 32, "%-8.3f ", diff.tv_sec + diff.tv_usec / 1000000.0);
+                    break;
+                case APP_MSECOND:
+                    timersub(&now, &App->Time, &diff);
+                    snprintf(time, 32, "%-8li ", diff.tv_sec * 1000 + diff.tv_usec / 1000);
+                    break;
+                case APP_NODATE:
+                    break;
+                }
             } else {
-               fprintf(App->LogStream, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+                time[0] = '\0';
             }
-         else
+
+#ifdef HAVE_MPI
+            if (App_IsMPI() && App->LogRank == -1)
+                if (App->Step) {
+                    fprintf(App->LogStream, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                } else {
+                    fprintf(App->LogStream, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+                }
+            else
 #endif
             if (App->Step) {
-               fprintf(App->LogStream, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                fprintf(App->LogStream, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
             } else {
-               fprintf(App->LogStream, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
+                fprintf(App->LogStream, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
             }
-      }
+        }
 
-      va_list args;
-      va_start(args, Format);
-      vfprintf(App->LogStream, Format, args);
-      va_end(args);
+        va_list args;
+        va_start(args, Format);
+        vfprintf(App->LogStream, Format, args);
+        va_end(args);
 
-      if (App->LogColor) {
-         fprintf(App->LogStream, APP_COLOR_RESET);
-      }
+        if (App->LogColor) {
+            fprintf(App->LogStream, APP_COLOR_RESET);
+        }
 
-      if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
-         // On errors, save for extenal to use (ex: Tcl)
-         va_start(args, Format);
-         vsnprintf(APP_LASTERROR, APP_ERRORSIZE, Format, args);
-         va_end(args);
+        if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+            // On errors, save for extenal to use (ex: Tcl)
+            va_start(args, Format);
+            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, Format, args);
+            va_end(args);
 
-         // On system error
-         if (Level == APP_SYSTEM) {
-            perror(APP_LASTERROR);
-         }
-      }
+            // On system error
+            if (Level == APP_SYSTEM) {
+                perror(APP_LASTERROR);
+            }
+        }
 
-      // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
-      if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
-         fflush(App->LogStream);
-      }
-   }
-   App_TimerStop(App->TimerLog);
+        // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
+        if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+            fflush(App->LogStream);
+        }
+    }
+    App_TimerStop(App->TimerLog);
 
-   // Exit application if error above tolerance level
-   if (App->Tolerance <= Level && (Level == APP_FATAL || Level == APP_SYSTEM)) {
-      exit(App_End(-1));
-   }
+    // Exit application if error above tolerance level
+    if (App->Tolerance <= Level && (Level == APP_FATAL || Level == APP_SYSTEM)) {
+        exit(App_End(-1));
+    }
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Imprimer un message d'indication d'avancement
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2014
- *
- * @param[in]  Percent   Pourcentage d'avancement
- * @param[in]  Format    Format d'affichage du message
- * @param[in]  ...       Liste des variables du message
- *
- * @note
- *   - Cette fonctions s'utilise comme printf sauf qu'il y a un argument de plus,
- *     le pourcentage d'avancement
-*/
-void App_Progress(float Percent, const char *Format, ...) {
-   App->Percent = Percent;
+//! Imprimer un message d'indication d'avancement
+void App_Progress(
+    //! [in] Pourcentage d'avancement
+    const float Percent,
+    //! [in] Message avec format à la printf
+    const char * const Format,
+    //! [in] Liste des variables du message
+    ...
+) {
+    //! \note Cette fonction s'utilise comme printf sauf qu'il y a un argument de plus: le pourcentage d'avancement
+    App->Percent = Percent;
 
-   if (!App->LogStream) App_LogOpen();
+    if (!App->LogStream) App_LogOpen();
 
-   fprintf(App->LogStream, "%s(PROGRESS) [%6.2f %%] ", (App->LogColor?APP_COLOR_MAGENTA:""), App->Percent);
-   va_list args;
-   va_start(args, Format);
-   vfprintf(App->LogStream, Format, args);
-   va_end(args);
+    fprintf(App->LogStream, "%s(PROGRESS) [%6.2f %%] ", (App->LogColor?APP_COLOR_MAGENTA:""), App->Percent);
+    va_list args;
+    va_start(args, Format);
+    vfprintf(App->LogStream, Format, args);
+    va_end(args);
 
-   if (App->LogColor) fprintf(App->LogStream, APP_COLOR_RESET);
+    if (App->LogColor) fprintf(App->LogStream, APP_COLOR_RESET);
 
-   fflush(App->LogStream);
+    fflush(App->LogStream);
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de log courant pour l'application et les librairies
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2008
- *
- * @param[in]  Val     Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
- *
- * @return             Previous log level, or current if no level specified
-*/
-int App_LogLevel(char *Val) {
-   return Lib_LogLevel(APP_MAIN, Val);
+//! Definir le niveau de log courant pour l'application et les librairies
+int App_LogLevel(
+    //! [in] Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
+    const char * const Level
+) {
+    //! \return Previous log level, or current if no level specified
+    return Lib_LogLevel(APP_MAIN, Level);
 }
 
 
@@ -889,7 +874,7 @@ int Lib_LogLevel(
     //! Librarie
     const TApp_Lib Lib,
     //! Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
-    const char * const Val
+    const char * const Level
 ) {
     // If not initialized yet
     if (!App->Tolerance){
@@ -899,24 +884,24 @@ int Lib_LogLevel(
     // Keep previous level
     int pl = App->LogLevel[Lib];
 
-    if (Val && Val[0] != ' ' && strlen(Val)) {
-        if (strncasecmp(Val, "ERROR", 5) == 0) {
+    if (Level && Level[0] != ' ' && strlen(Level)) {
+        if (strncasecmp(Level, "ERROR", 5) == 0) {
             App->LogLevel[Lib] = APP_ERROR;
-        } else if (strncasecmp(Val, "WARN", 4) == 0) {
+        } else if (strncasecmp(Level, "WARN", 4) == 0) {
             App->LogLevel[Lib] = APP_WARNING;
-        } else if (strncasecmp(Val, "INFO", 4) == 0) {
+        } else if (strncasecmp(Level, "INFO", 4) == 0) {
             App->LogLevel[Lib] = APP_INFO;
-        } else if (strncasecmp(Val, "TRIVIAL", 7) == 0) {
+        } else if (strncasecmp(Level, "TRIVIAL", 7) == 0) {
             App->LogLevel[Lib] = APP_TRIVIAL;
-        } else if (strncasecmp(Val, "DEBUG", 5) == 0) {
+        } else if (strncasecmp(Level, "DEBUG", 5) == 0) {
             App->LogLevel[Lib] = APP_DEBUG;
-        } else if (strncasecmp(Val, "EXTRA", 5) == 0) {
+        } else if (strncasecmp(Level, "EXTRA", 5) == 0) {
             App->LogLevel[Lib] = APP_EXTRA;
-        } else if (strncasecmp(Val, "QUIET", 5) == 0) {
+        } else if (strncasecmp(Level, "QUIET", 5) == 0) {
             App->LogLevel[Lib] = APP_QUIET;
         } else {
             char *endptr = NULL;
-            App->LogLevel[Lib] = strtoul(Val, &endptr, 10);
+            App->LogLevel[Lib] = strtoul(Level, &endptr, 10);
         }
         if (Lib == APP_MAIN) {
             for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
@@ -926,369 +911,345 @@ int Lib_LogLevel(
     return pl;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de log courant pour l'application
- * @author Jean-Philippe Gauthier
- * @date   Octobre 2022
- *
- * @param[in]  Val     Niveau de log a traiter (int)
- *
- * @return             Previous log level, or current if no level specified
- */
-int App_LogLevelNo(TApp_LogLevel Val) {
-    return Lib_LogLevelNo(APP_MAIN, Val);
+//! Definir le niveau de log courant pour l'application
+int App_LogLevelNo(
+    //! [in] Niveau de log
+    const TApp_LogLevel Level
+) {
+    //! \return Previous log level, or current if no level specified
+    return Lib_LogLevelNo(APP_MAIN, Level);
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Set the rank of the MPI process that will display messages
- *
- * @param[in]  NewRank  Rank of the MPI process that should display messages.
- *                      -1 for all processes.
- *
- * @return              The old log rank value.
- */
-int App_LogRank(int NewRank) {
-   const int old_rank = App->LogRank;
-   if (NewRank >= -1 && NewRank < App->NbMPI) {
-      App->LogRank = NewRank;
-   }
-   return old_rank;
+//! Set the rank of the MPI process that will display messages
+int App_LogRank(
+    //! [in] Rank of the MPI process that should display messages. -1 for all processes.
+    const int NewRank
+) {
+    const int old_rank = App->LogRank;
+    if (NewRank >= -1 && NewRank < App->NbMPI) {
+        App->LogRank = NewRank;
+    }
+    //! \return Rank of the old MPI process that displayed the messages
+    return old_rank;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de log courant pour une librairie
- * @author Jean-Philippe Gauthier
- * @date   Octobre 2022
- *
- * @param[in]  Lib     Librairie
- * @param[in]  Val     Niveau de log a traiter (int)
- *
- * @return             Previous log level, or current if no level specified
- */
-int Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val) {
-   // Keep previous level
-   int pl = App->LogLevel[Lib];
+//! Definir le niveau de log courant pour une librairie
+int Lib_LogLevelNo(
+    //! [in] Identificateur de la librairie
+    const TApp_Lib Lib,
+    //! [in] Niveau de log a traiter
+    const TApp_LogLevel Level
+) {
+    // Save previous level
+    int pl = App->LogLevel[Lib];
 
-   // If not initialized yet
-   if (!App->Tolerance) App_InitEnv();
+    // If not initialized yet
+    if (!App->Tolerance) App_InitEnv();
 
-   if (Val >= APP_FATAL && Val <= APP_QUIET)
-      App->LogLevel[Lib] = Val;
+    if (Level >= APP_FATAL && Level <= APP_QUIET)
+        App->LogLevel[Lib] = Level;
 
-   if (Lib == APP_MAIN) {
-      for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
-   }
+    if (Lib == APP_MAIN) {
+        for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
+    }
 
-   return pl;
+    //! \return Previous log level, or current if no level specified
+    return pl;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de tolerance aux erreur pour l'application
- * @author Jean-Philippe Gauthier
- * @date   Octobre 2022
- *
- * @param[in]  Val     Niveau de tolerance ("ERROR", "SYSTEM", "FATAL", "QUIET")
- *
- * @return             Previous tolerance level, or current if no level specified
- */
-int App_ToleranceLevel(char *Val) {
-   int pl = App->Tolerance;
+//! Definir le niveau de tolerance aux erreur pour l'application
+int App_ToleranceLevel(
+    //! [in] Niveau de tolerance ("ERROR", "SYSTEM", "FATAL", "QUIET")
+    const char * const Level
+) {
+    int pl = App->Tolerance;
 
-   if (Val && Val[0] != ' ' && strlen(Val)) {
-      if (strncasecmp(Val, "ERROR", 5) == 0) {
-         App->Tolerance = APP_ERROR;
-      } else if (strncasecmp(Val, "SYSTEM", 6) == 0) {
-         App->Tolerance = APP_SYSTEM;
-      } else if (strncasecmp(Val, "FATAL", 5) == 0) {
-         App->Tolerance = APP_FATAL;
-      } else if (strncasecmp(Val, "QUIET", 5) == 0) {
-         App->Tolerance = APP_QUIET;
-      } else {
-         char *endptr = NULL;
-         App->Tolerance = strtoul(Val, &endptr, 10);
-      }
-   }
-   return pl;
+    if (Level && Level[0] != ' ' && strlen(Level)) {
+        if (strncasecmp(Level, "ERROR", 5) == 0) {
+            App->Tolerance = APP_ERROR;
+        } else if (strncasecmp(Level, "SYSTEM", 6) == 0) {
+            App->Tolerance = APP_SYSTEM;
+        } else if (strncasecmp(Level, "FATAL", 5) == 0) {
+            App->Tolerance = APP_FATAL;
+        } else if (strncasecmp(Level, "QUIET", 5) == 0) {
+            App->Tolerance = APP_QUIET;
+        } else {
+            char *endptr = NULL;
+            App->Tolerance = strtoul(Level, &endptr, 10);
+        }
+    }
+
+    //! \return Previous log level, or current if no level specified
+    return pl;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le niveau de tolerance aux erreur pour l'application
- * @author Jean-Philippe Gauthier
- * @date   Octobre 2022
- *
- * @param[in]  Val     Niveau de tolerance (int)
- *
- * @return             Previous tolerance level, or current if no level specified
-*/
-int App_ToleranceNo(TApp_LogLevel Val) {
-   int pl = App->Tolerance;
-   if (Val >= APP_FATAL && Val <= APP_QUIET) App->Tolerance = Val;
+//! Definir le niveau de tolerance aux erreur pour l'application
+int App_ToleranceNo(
+    //! [in] Niveau de tolerance (int)
+    const TApp_LogLevel Level
+) {
+    int pl = App->Tolerance;
+    if (Level >= APP_FATAL && Level <= APP_QUIET) App->Tolerance = Level;
 
-   return pl;
+    //! \return Previous log level, or current if no level specified
+    return pl;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Definir le format du temps dans les log
- * @author Jean-Philippe Gauthier
- * @date   Septembre 2008
- *
- * @param[in]  Val     Type de temps a afficher
- *
- * @return             Previous time format, or current if no level specified
- */
-int App_LogTime(char *Val) {
+//! Definir le format du temps dans les log
+int App_LogTime(
+    //! [in] Niveau de détail temporel à afficher
+    const char * const LogTime
+) {
    int pf = App->LogTime;
 
-   if (Val) {
-      if (strcasecmp(Val, "NONE") == 0) {
+   if (LogTime) {
+      if (strcasecmp(LogTime, "NONE") == 0) {
          App->LogTime = APP_NODATE;
-      } else if (strcasecmp(Val, "DATETIME") == 0) {
+      } else if (strcasecmp(LogTime, "DATETIME") == 0) {
          App->LogTime = APP_DATETIME;
-      } else if (strcasecmp(Val, "TIME") == 0) {
+      } else if (strcasecmp(LogTime, "TIME") == 0) {
          App->LogTime = APP_TIME;
-      } else if (strcasecmp(Val, "SECOND") == 0) {
+      } else if (strcasecmp(LogTime, "SECOND") == 0) {
          App->LogTime = APP_SECOND;
-      } else if (strcasecmp(Val, "MSECOND") == 0) {
+      } else if (strcasecmp(LogTime, "MSECOND") == 0) {
          App->LogTime = APP_MSECOND;
       } else {
-         App->LogTime = (TApp_LogTime)atoi(Val);
+         App->LogTime = (TApp_LogTime)atoi(LogTime);
       }
    }
+
+   //! \return Previous time format, or current if no level specified
    return pf;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Print arguments information
- * @author Jean-Philippe Gauthier
- * @date   Mars 2014
- *
- * @param[in]  AArgs    Arguments definition
- * @param[in]  Token    Invalid token if any, NULL otherwise
- * @param[in]  Flags    Configuration flags
- */
-void App_PrintArgs(TApp_Arg *AArgs, char *Token, int Flags) {
-   printf("%s (%s):\n\t%s\n\n", App->Name, App->Version, App->Desc);
+//! Print arguments information
+void App_PrintArgs(
+    //! [in] Arguments definition
+    const TApp_Arg * const AArgs,
+    //! [in] Invalid token if any, NULL otherwise
+    const char * const Token,
+    //! [in] Configuration flags
+    int Flags
+) {
+    printf("%s (%s):\n\t%s\n\n", App->Name, App->Version, App->Desc);
 
-   if (Token) printf("Bad option: %s\n\n", Token);
+    if (Token) printf("Bad option: %s\n\n", Token);
 
-   printf("Usage:");
+    printf("Usage:");
 
-   // Process app specific argument
-   TApp_Arg *aarg = AArgs;
-   while(aarg && aarg->Short) {
-      if (aarg->Short[0] == '\0') {
-         printf("\n\t    --%-15s %s", aarg->Long, aarg->Info);
-      } else {
-         printf("\n\t-%s, --%-15s %s", aarg->Short, aarg->Long, aarg->Info);
-      }
-      aarg++;
-   }
+    // Process app specific argument
+    const TApp_Arg *aarg = AArgs;
+    while(aarg && aarg->Short) {
+        if (aarg->Short[0] == '\0') {
+            printf("\n\t    --%-15s %s", aarg->Long, aarg->Info);
+        } else {
+            printf("\n\t-%s, --%-15s %s", aarg->Short, aarg->Long, aarg->Info);
+        }
+        aarg++;
+    }
 
-   // Process default argument
-   if (Flags&APP_ARGSSEED)   printf("\n\t-%s, --%-15s %s", "s", "seed",     "Seed (FIXED, "APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
-   if (Flags&APP_ARGSTHREAD) printf("\n\t-%s, --%-15s %s", "t", "threads",     "Number of threads ("APP_COLOR_GREEN"0"APP_COLOR_RESET")");
-   if (Flags&APP_ARGSTHREAD) printf("\n\t    --%-15s %s", "affinity",     "Thread affinity ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET", COMPACT, SCATTER, SOCKET)");
+    // Process default argument
+    if (Flags & APP_ARGSSEED)   printf("\n\t-%s, --%-15s %s", "s", "seed",     "Seed (FIXED, "APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
+    if (Flags & APP_ARGSTHREAD) printf("\n\t-%s, --%-15s %s", "t", "threads",     "Number of threads ("APP_COLOR_GREEN"0"APP_COLOR_RESET")");
+    if (Flags & APP_ARGSTHREAD) printf("\n\t    --%-15s %s", "affinity",     "Thread affinity ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET", COMPACT, SCATTER, SOCKET)");
 
-   printf("\n");
-   if (Flags&APP_ARGSLOG)    printf("\n\t-%s, --%-15s %s", "l", "log",     "Log file (stdout, "APP_COLOR_GREEN"stderr"APP_COLOR_RESET", file)");
-   if (Flags&APP_ARGSLOG)    printf("\n\t    --%-15s %s",      "logsplit", "Split log file per MPI rank");
-   if (Flags&APP_ARGSLANG)   printf("\n\t-%s, --%-15s %s", "a", "language", "Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET", english, francais)");
+    printf("\n");
+    if (Flags & APP_ARGSLOG)    printf("\n\t-%s, --%-15s %s", "l", "log",     "Log file (stdout, "APP_COLOR_GREEN"stderr"APP_COLOR_RESET", file)");
+    if (Flags & APP_ARGSLOG)    printf("\n\t    --%-15s %s",      "logsplit", "Split log file per MPI rank");
+    if (Flags & APP_ARGSLANG)   printf("\n\t-%s, --%-15s %s", "a", "language", "Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET", english, francais)");
 
-   printf("\n\t-%s, --%-15s %s", "v", "verbose",      "Verbose level (ERROR, WARNING, "APP_COLOR_GREEN"INFO"APP_COLOR_RESET", DEBUG, EXTRA, QUIET)");
-   printf("\n\t    --%-15s %s",      "verbosetime",  "Display time in logs ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET", DATETIME, TIME, SECOND, MSECOND)");
-   printf("\n\t    --%-15s %s",      "verboseutc", "Use UTC for time");
-   printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
-   printf("\n\t-%s, --%-15s %s", "h", "help",         "Help info");
-   printf("\n");
+    printf("\n\t-%s, --%-15s %s", "v", "verbose",      "Verbose level (ERROR, WARNING, "APP_COLOR_GREEN"INFO"APP_COLOR_RESET", DEBUG, EXTRA, QUIET)");
+    printf("\n\t    --%-15s %s",      "verbosetime",  "Display time in logs ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET", DATETIME, TIME, SECOND, MSECOND)");
+    printf("\n\t    --%-15s %s",      "verboseutc", "Use UTC for time");
+    printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
+    printf("\n\t-%s, --%-15s %s", "h", "help",         "Help info");
+    printf("\n");
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Extract argument value
- * @author Jean-Philippe Gauthier
- * @date   Mars 2014
- *
- * @param[in]  AArg      Argument definition
- * @param[in]  Value     Value to extract
- *
- * @return 1 or 0 if failed
-*/
-#define LST_ASSIGN(type, lst, val) *(type)lst = val; lst = (type)lst+1
-static inline int App_GetArgs(TApp_Arg *AArg, char *Value) {
-   char *endptr = NULL;
+#define LST_ASSIGN(type, lst, val) *(type)lst = val; lst = (type)lst + 1
+//! Extract argument value
+static inline int App_GetArgs(
+    //! [in, out] Argument definition
+    TApp_Arg * const AArg,
+    //! [in] Value to extract
+    char * const Value
+) {
+    char *endptr = NULL;
 
-   if (Value) {
-      if ((--AArg->Multi)<0) {
-         printf("Too many values for parametre -%s, --%s\n", AArg->Short, AArg->Long);
-         exit(EXIT_FAILURE);
-      }
+    if (Value) {
+        if ((--AArg->Multi) < 0) {
+            printf("Too many values for parametre -%s, --%s\n", AArg->Short, AArg->Long);
+            exit(EXIT_FAILURE);
+        }
 
-      switch(AArg->Type&(~APP_FLAG)) {
-         case APP_CHAR :  LST_ASSIGN(char**,        AArg->Var, Value);                   break;
-         case APP_UINT32: LST_ASSIGN(unsigned int*, AArg->Var, strtol(Value, &endptr, 10));break;
-         case APP_INT32:  LST_ASSIGN(int*,          AArg->Var, strtol(Value, &endptr, 10));break;
-         case APP_UINT64: LST_ASSIGN(unsigned long*, AArg->Var, strtol(Value, &endptr, 10));break;
-         case APP_INT64:  LST_ASSIGN(long*,         AArg->Var, strtol(Value, &endptr, 10));break;
-         case APP_FLOAT32:LST_ASSIGN(float*,        AArg->Var, strtof(Value, &endptr));   break;
-         case APP_FLOAT64:LST_ASSIGN(double*,       AArg->Var, strtod(Value, &endptr));   break;
-      }
-   } else {
-      if (AArg->Type&APP_FLAG) *(int*)AArg->Var = 0x01;
-   }
-   if (!(AArg->Type&APP_FLAG) && (!Value || (endptr && endptr == Value))) {
-      printf("Invalid value for parametre -%s, --%s: %s\n", AArg->Short, AArg->Long, Value);
-      exit(EXIT_FAILURE);
-   }
-   return 1;
+        switch(AArg->Type & (~APP_FLAG)) {
+            case APP_CHAR :  LST_ASSIGN(char**,         AArg->Var, Value);                      break;
+            case APP_UINT32: LST_ASSIGN(unsigned int*,  AArg->Var, strtol(Value, &endptr, 10)); break;
+            case APP_INT32:  LST_ASSIGN(int*,           AArg->Var, strtol(Value, &endptr, 10)); break;
+            case APP_UINT64: LST_ASSIGN(unsigned long*, AArg->Var, strtol(Value, &endptr, 10)); break;
+            case APP_INT64:  LST_ASSIGN(long*,          AArg->Var, strtol(Value, &endptr, 10)); break;
+            case APP_FLOAT32:LST_ASSIGN(float*,         AArg->Var, strtof(Value, &endptr));     break;
+            case APP_FLOAT64:LST_ASSIGN(double*,        AArg->Var, strtod(Value, &endptr));     break;
+        }
+    } else {
+        if (AArg->Type & APP_FLAG) *(int*)AArg->Var = 0x01;
+    }
+    if (!(AArg->Type & APP_FLAG)  && (!Value || (endptr && endptr == Value))) {
+        printf("Invalid value for parametre -%s, --%s: %s\n", AArg->Short, AArg->Long, Value);
+        exit(EXIT_FAILURE);
+    }
+    //! \return 1 on succes, but quits the process on error
+    return 1;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse default arguments
- * @author Jean-Philippe Gauthier
- * @date   Mars 2014
- *
- * @param[in]  AArg      Argument definition
- * @param[in]  argc      Number of argument
- * @param[in]  argv      Arguments
- * @param[in]  Flags     Configuration flags
- *
- * @return 1 or 0 if failed
- */
-int App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags) {
-   int ok = TRUE;
-   int ner = TRUE;
-   char *env = NULL;
-   char *str;
+//! Parse default arguments
+int App_ParseArgs(
+    //! [in] Argument definition
+    TApp_Arg *AArgs,
+    //! [in] Number of argument
+    int argc,
+    //! [in] Arguments
+    char *argv[],
+    //! [in] Configuration flags
+    int Flags
+) {
+    //! \return 1 or 0 if failed
 
-   str = env = getenv("APP_PARAMS");
+    int ok = TRUE;
+    int ner = TRUE;
+    char *env = NULL;
+    char *str;
 
-   if (argc == 1 && !env && Flags & APP_NOARGSFAIL) {
-      App_PrintArgs(AArgs, NULL, Flags) ;
-      ok = FALSE;
-   } else {
-      // Parse parameters either on command line or through environment variable
-      TApp_Arg *aarg = NULL;
-      char *tok, *ptok = NULL, *endptr = NULL, *tmp;
-      int i = 1;
-      while((i < argc && (tok = argv[i])) || (env && (tok = strtok(str, " ")))) {
-         str = NULL;
+    str = env = getenv("APP_PARAMS");
 
-         // Check if token is a flag or a value (for multi-value parameters)
-         if (tok[0] != '-' && ptok) {
-            tok = ptok;
-            --i;
-         }
+    if (argc == 1 && !env && Flags & APP_NOARGSFAIL) {
+        App_PrintArgs(AArgs, NULL, Flags) ;
+        ok = FALSE;
+    } else {
+        // Parse parameters either on command line or through environment variable
+        TApp_Arg *aarg = NULL;
+        char *tok, *ptok = NULL, *endptr = NULL, *tmp;
+        int i = 1;
+        while((i < argc && (tok = argv[i])) || (env && (tok = strtok(str, " ")))) {
+            str = NULL;
 
-         // Process default argument
-         if ((Flags & APP_ARGSLANG) && (!strcasecmp(tok, "-a") || !strcasecmp(tok, "--language"))) {  // language (en, fr)
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               tmp = env ? strtok(str, " ") : argv[i];
-               if (tmp[0] == 'f' || tmp[0] == 'F') {
-                  App->Language = APP_FR;
-               } else if  (tmp[0] == 'e' || tmp[0] == 'E') {
-                  App->Language = APP_EN;
-               } else {
-                  printf("Invalid value for language, must be francais or english\n");
-                  exit(EXIT_FAILURE);
-               }
+            // Check if token is a flag or a value (for multi-value parameters)
+            if (tok[0] != '-' && ptok) {
+                tok = ptok;
+                --i;
             }
-         } else if ((Flags & APP_ARGSLOG) && (!strcasecmp(tok, "-l") || !strcasecmp(tok, "--log"))) { // Log file
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               free(App->LogFile);
-               App->LogFile = strdup(env ? strtok(str, " ") : argv[i]);
-            }
-         } else if ((Flags & APP_ARGSLOG) && !strcasecmp(tok, "--logsplit")) { // Log file split
-            App->LogSplit = TRUE;
-         } else if ((Flags & APP_ARGSTHREAD) && (!strcasecmp(tok, "-t") || !strcasecmp(tok, "--threads"))) { // Threads
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               tmp = env ? strtok(str, " ") : argv[i];
-               App->NbThread = strtol(tmp, &endptr, 10);
-            }
-         } else if ((Flags & APP_ARGSTHREAD) && !strcasecmp(tok, "--affinity")) { // Threads
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               tmp = env ? strtok(str, " ") : argv[i];
-               if (!strcasecmp(tmp, "NONE")) {
-                  App->Affinity = APP_AFFINITY_NONE;
-               } else if (!strcasecmp(tmp, "COMPACT")) {
-                  App->Affinity = APP_AFFINITY_COMPACT;
-               } else if (!strcasecmp(tmp, "SCATTER")) {
-                  App->Affinity = APP_AFFINITY_SCATTER;
-               } else if (!strcasecmp(tmp, "SOCKET")) {
-                  App->Affinity = APP_AFFINITY_SOCKET;
-               } else {
-                  printf("Invalid value for thread affinity, NONE, COMPACT, SCATTER or SOCKET\n");
-                  exit(EXIT_FAILURE);
-               }
-            }
-//         } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok, "--tmpdir"))) { // Use tmpdir if available
-//            i++;
-//            if ((ner = ok = (i<argc && argv[i][0] != '-'))) {
-//               App->r = env?strtok(str, " "):argv[i];
-//            }
-         } else if ((Flags & APP_ARGSSEED) && (!strcasecmp(tok, "-s") || !strcasecmp(tok, "--seed"))) { // Seed
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               tmp = env ? strtok(str, " ") : argv[i];
-               if (strcasecmp(tmp, "VARIABLE") == 0 || strcmp(tmp, "1") == 0) {
-                  // Seed is variable, according to number of elapsed seconds since January 1 1970, 00:00:00 UTC.
-               } else if (strcasecmp(tmp, "FIXED") == 0 || strcmp(tmp, "0") == 0) {
-                  // Seed is fixed
-                  App->Seed = APP_SEED;
-               } else {
-                  // Seed is user defined
-                  App->Seed = strtol(tmp, &endptr, 10);
-               }
-            }
-         } else if (!strcasecmp(tok, "-v") || !strcasecmp(tok, "--verbose")) {                      // Verbose degree
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               App_LogLevel(env ? strtok(str, " ") : argv[i]);
-            }
-         } else if (!strcasecmp(tok, "--verbosetime")) {                                           // Verbose time type
-            i++;
-            if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-               App_LogTime(env ? strtok(str, " ") : argv[i]);
-            }
-         } else if (!strcasecmp(tok, "--verboseutc")) {                                            // Use UTC time in log messages
-            App->UTC = TRUE;
-         } else if (!strcasecmp(tok, "--verbosecolor")) {                                          // Use color in log messages
-            App->LogColor = TRUE;
-         } else if (!strcasecmp(tok, "-h") || !strcasecmp(tok, "--help")) {                         // Help
-            App_PrintArgs(AArgs, NULL, Flags) ;
-            exit(EXIT_SUCCESS);
-         } else {
-            // Process specific argument
-            aarg = AArgs;
-            while(aarg->Short) {
-               if ((aarg->Short && tok[1] == aarg->Short[0] && tok[2] == '\0') || (aarg->Long && strcasecmp(&tok[2], aarg->Long) == 0)) {
-                  ok = (aarg->Type == APP_FLAG ? (*(int*)aarg->Var) = TRUE : App_GetArgs(aarg, env ? strtok(str, " ") : ((i + 1 < argc && argv[i+1][0] != '-') ? argv[++i] : NULL)));
-                  ptok = aarg->Type == APP_FLAG ? NULL : tok;
-                  break;
-               }
-               aarg++;
-            }
-         }
 
-         if (!ner) {
-             printf("Missing argument for %s\n", argv[--i]);
-             exit(EXIT_FAILURE);
-         }
+            // Process default argument
+            if ((Flags & APP_ARGSLANG) && (!strcasecmp(tok, "-a") || !strcasecmp(tok, "--language"))) {  // language (en, fr)
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                tmp = env ? strtok(str, " ") : argv[i];
+                if (tmp[0] == 'f' || tmp[0] == 'F') {
+                    App->Language = APP_FR;
+                } else if  (tmp[0] == 'e' || tmp[0] == 'E') {
+                    App->Language = APP_EN;
+                } else {
+                    printf("Invalid value for language, must be francais or english\n");
+                    exit(EXIT_FAILURE);
+                }
+                }
+            } else if ((Flags & APP_ARGSLOG) && (!strcasecmp(tok, "-l") || !strcasecmp(tok, "--log"))) { // Log file
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                free(App->LogFile);
+                App->LogFile = strdup(env ? strtok(str, " ") : argv[i]);
+                }
+            } else if ((Flags & APP_ARGSLOG) && !strcasecmp(tok, "--logsplit")) { // Log file split
+                App->LogSplit = TRUE;
+            } else if ((Flags & APP_ARGSTHREAD) && (!strcasecmp(tok, "-t") || !strcasecmp(tok, "--threads"))) { // Threads
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                tmp = env ? strtok(str, " ") : argv[i];
+                App->NbThread = strtol(tmp, &endptr, 10);
+                }
+            } else if ((Flags & APP_ARGSTHREAD) && !strcasecmp(tok, "--affinity")) { // Threads
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                tmp = env ? strtok(str, " ") : argv[i];
+                if (!strcasecmp(tmp, "NONE")) {
+                    App->Affinity = APP_AFFINITY_NONE;
+                } else if (!strcasecmp(tmp, "COMPACT")) {
+                    App->Affinity = APP_AFFINITY_COMPACT;
+                } else if (!strcasecmp(tmp, "SCATTER")) {
+                    App->Affinity = APP_AFFINITY_SCATTER;
+                } else if (!strcasecmp(tmp, "SOCKET")) {
+                    App->Affinity = APP_AFFINITY_SOCKET;
+                } else {
+                    printf("Invalid value for thread affinity, NONE, COMPACT, SCATTER or SOCKET\n");
+                    exit(EXIT_FAILURE);
+                }
+                }
+            // } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok, "--tmpdir"))) { // Use tmpdir if available
+            //    i++;
+            //    if ((ner = ok = (i<argc && argv[i][0] != '-'))) {
+            //       App->r = env?strtok(str, " "):argv[i];
+            //    }
+            } else if ((Flags & APP_ARGSSEED) && (!strcasecmp(tok, "-s") || !strcasecmp(tok, "--seed"))) { // Seed
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                tmp = env ? strtok(str, " ") : argv[i];
+                if (strcasecmp(tmp, "VARIABLE") == 0 || strcmp(tmp, "1") == 0) {
+                    // Seed is variable, according to number of elapsed seconds since January 1 1970, 00:00:00 UTC.
+                } else if (strcasecmp(tmp, "FIXED") == 0 || strcmp(tmp, "0") == 0) {
+                    // Seed is fixed
+                    App->Seed = APP_SEED;
+                } else {
+                    // Seed is user defined
+                    App->Seed = strtol(tmp, &endptr, 10);
+                }
+                }
+            } else if (!strcasecmp(tok, "-v") || !strcasecmp(tok, "--verbose")) {                      // Verbose degree
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                App_LogLevel(env ? strtok(str, " ") : argv[i]);
+                }
+            } else if (!strcasecmp(tok, "--verbosetime")) {                                           // Verbose time type
+                i++;
+                if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
+                App_LogTime(env ? strtok(str, " ") : argv[i]);
+                }
+            } else if (!strcasecmp(tok, "--verboseutc")) {                                            // Use UTC time in log messages
+                App->UTC = TRUE;
+            } else if (!strcasecmp(tok, "--verbosecolor")) {                                          // Use color in log messages
+                App->LogColor = TRUE;
+            } else if (!strcasecmp(tok, "-h") || !strcasecmp(tok, "--help")) {                         // Help
+                App_PrintArgs(AArgs, NULL, Flags) ;
+                exit(EXIT_SUCCESS);
+            } else {
+                // Process specific argument
+                aarg = AArgs;
+                while(aarg->Short) {
+                if ((aarg->Short && tok[1] == aarg->Short[0] && tok[2] == '\0') || (aarg->Long && strcasecmp(&tok[2], aarg->Long) == 0)) {
+                    ok = (aarg->Type == APP_FLAG ? (*(int*)aarg->Var) = TRUE : App_GetArgs(aarg, env ? strtok(str, " ") : ((i + 1 < argc && argv[i+1][0] != '-') ? argv[++i] : NULL)));
+                    ptok = aarg->Type == APP_FLAG ? NULL : tok;
+                    break;
+                }
+                aarg++;
+                }
+            }
 
-         // Argument not found
-         if (aarg && (!ok || !aarg->Short)) {
-            App_PrintArgs(AArgs, tok, Flags) ;
-            ok = FALSE;
-            break;
-         }
+            if (!ner) {
+                printf("Missing argument for %s\n", argv[--i]);
+                exit(EXIT_FAILURE);
+            }
 
-         ++i;
-      }
-   }
+            // Argument not found
+            if (aarg && (!ok || !aarg->Short)) {
+                App_PrintArgs(AArgs, tok, Flags) ;
+                ok = FALSE;
+                break;
+            }
 
-   return ok;
+            ++i;
+        }
+    }
+
+    return ok;
 }
 
 /**----------------------------------------------------------------------------
