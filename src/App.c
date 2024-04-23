@@ -68,121 +68,127 @@ void App_LibRegister(
 
 //! Initialiser l'environnement dans la structure App
 void App_InitEnv(){
-    gettimeofday(&App->Time, NULL);
+    #pragma omp critical (app_initenv)
+    {
+        // Only do it if not already initialized
+        if (!App->Tolerance) {
+            gettimeofday(&App->Time, NULL);
 
-    App->TimerLog = App_TimerCreate();
-    App->Tolerance = APP_QUIET;
-    App->Language = APP_EN;
-    App->LogWarning = 0;
-    App->LogError = 0;
-    App->LogColor = FALSE;
-    App->LogNoBox = FALSE;
-    App->LogTime = FALSE;
-    App->LogSplit = FALSE;
-    App->LogFlush = FALSE;
-    App->LogRank = 0;
-    App->UTC = FALSE;
+            App->TimerLog = App_TimerCreate();
+            App->Tolerance = APP_QUIET;
+            App->Language = APP_EN;
+            App->LogWarning = 0;
+            App->LogError = 0;
+            App->LogColor = FALSE;
+            App->LogNoBox = FALSE;
+            App->LogTime = FALSE;
+            App->LogSplit = FALSE;
+            App->LogFlush = FALSE;
+            App->LogRank = 0;
+            App->UTC = FALSE;
 
-    // Default log level is WARNING
-    for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
+            // Default log level is WARNING
+            for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
 
-    char *c;
+            char *c;
 
-    // Check the log parameters in the environment
-    if ((c = getenv("APP_VERBOSE"))) {
-        App_LogLevel(c);
-    }
-    if ((c = getenv("APP_VERBOSE_NOBOX"))) {
-        App->LogNoBox = TRUE;
-    }
-    if ((c = getenv("APP_VERBOSE_COLOR"))) {
-        App->LogColor = TRUE;
-    }
-    if ((c = getenv("APP_VERBOSE_TIME"))) {
-        App_LogTime(c);
-    }
-    if ((c = getenv("APP_VERBOSE_UTC"))) {
-        App->UTC = TRUE;
-    }
-    if ((c = getenv("APP_VERBOSE_RANK"))) {
-        App->LogRank = atoi(c);
-    }
-    if ((c = getenv("APP_LOG_SPLIT"))) {
-        App->LogSplit = TRUE;
-    }
-    if ((c = getenv("APP_LOG_STREAM"))) {
-        App->LogFile = strdup(c);
-    }
-    if ((c = getenv("APP_LOG_FLUSH"))) {
-        App->LogFlush = TRUE;
-    }
-    if ((c = getenv("APP_TOLERANCE"))) {
-        App_ToleranceLevel(c);
-    }
+            // Check the log parameters in the environment
+            if ((c = getenv("APP_VERBOSE"))) {
+                App_LogLevel(c);
+            }
+            if ((c = getenv("APP_VERBOSE_NOBOX"))) {
+                App->LogNoBox = TRUE;
+            }
+            if ((c = getenv("APP_VERBOSE_COLOR"))) {
+                App->LogColor = TRUE;
+            }
+            if ((c = getenv("APP_VERBOSE_TIME"))) {
+                App_LogTime(c);
+            }
+            if ((c = getenv("APP_VERBOSE_UTC"))) {
+                App->UTC = TRUE;
+            }
+            if ((c = getenv("APP_VERBOSE_RANK"))) {
+                App->LogRank = atoi(c);
+            }
+            if ((c = getenv("APP_LOG_SPLIT"))) {
+                App->LogSplit = TRUE;
+            }
+            if ((c = getenv("APP_LOG_STREAM"))) {
+                App->LogFile = strdup(c);
+            }
+            if ((c = getenv("APP_LOG_FLUSH"))) {
+                App->LogFlush = TRUE;
+            }
+            if ((c = getenv("APP_TOLERANCE"))) {
+                App_ToleranceLevel(c);
+            }
 
-    // Check verbose level of libraries
-    if ((c = getenv("APP_VERBOSE_RMN"))) {
-        Lib_LogLevel(APP_LIBRMN, c);
-    }
-    if ((c = getenv("APP_VERBOSE_FST"))) {
-        Lib_LogLevel(APP_LIBFST, c);
-    }
-    if ((c = getenv("APP_VERBOSE_WB"))) {
-        Lib_LogLevel(APP_LIBWB, c);
-    }
-    if ((c = getenv("APP_VERBOSE_GMM"))) {
-        Lib_LogLevel(APP_LIBGMM, c);
-    }
-    if ((c = getenv("APP_VERBOSE_VGRID"))) {
-        Lib_LogLevel(APP_LIBVGRID, c);
-    }
-    if ((c = getenv("APP_VERBOSE_INTERPV"))) {
-        Lib_LogLevel(APP_LIBINTERPV, c);
-    }
-    if ((c = getenv("APP_VERBOSE_GEOREF"))) {
-        Lib_LogLevel(APP_LIBGEOREF, c);
-    }
-    if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
-        Lib_LogLevel(APP_LIBRPNMPI, c);
-    }
-    if ((c = getenv("APP_VERBOSE_IRIS"))) {
-        Lib_LogLevel(APP_LIBIRIS, c);
-    }
-    if ((c = getenv("APP_VERBOSE_IO"))) {
-        Lib_LogLevel(APP_LIBIO, c);
-    }
-    if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
-        Lib_LogLevel(APP_LIBMDLUTIL, c);
-    }
-    if ((c = getenv("APP_VERBOSE_DYN"))) {
-        Lib_LogLevel(APP_LIBDYN, c);
-    }
-    if ((c = getenv("APP_VERBOSE_PHY"))) {
-        Lib_LogLevel(APP_LIBPHY, c);
-    }
-    if ((c = getenv("APP_VERBOSE_MIDAS"))) {
-        Lib_LogLevel(APP_LIBMIDAS, c);
-    }
-    if ((c = getenv("APP_VERBOSE_EER"))) {
-        Lib_LogLevel(APP_LIBEER, c);
-    }
-    if ((c = getenv("APP_VERBOSE_TDPACK"))) {
-        Lib_LogLevel(APP_LIBTDPACK, c);
-    }
-    if ((c = getenv("APP_VERBOSE_MACH"))) {
-        Lib_LogLevel(APP_LIBMACH, c);
-    }
-    if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
-        Lib_LogLevel(APP_LIBSPSDYN, c);
-    }
-    if ((c = getenv("APP_VERBOSE_META"))) {
-        Lib_LogLevel(APP_LIBMETA, c);
-    }
+            // Check verbose level of libraries
+            if ((c = getenv("APP_VERBOSE_RMN"))) {
+                Lib_LogLevel(APP_LIBRMN, c);
+            }
+            if ((c = getenv("APP_VERBOSE_FST"))) {
+                Lib_LogLevel(APP_LIBFST, c);
+            }
+            if ((c = getenv("APP_VERBOSE_WB"))) {
+                Lib_LogLevel(APP_LIBWB, c);
+            }
+            if ((c = getenv("APP_VERBOSE_GMM"))) {
+                Lib_LogLevel(APP_LIBGMM, c);
+            }
+            if ((c = getenv("APP_VERBOSE_VGRID"))) {
+                Lib_LogLevel(APP_LIBVGRID, c);
+            }
+            if ((c = getenv("APP_VERBOSE_INTERPV"))) {
+                Lib_LogLevel(APP_LIBINTERPV, c);
+            }
+            if ((c = getenv("APP_VERBOSE_GEOREF"))) {
+                Lib_LogLevel(APP_LIBGEOREF, c);
+            }
+            if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
+                Lib_LogLevel(APP_LIBRPNMPI, c);
+            }
+            if ((c = getenv("APP_VERBOSE_IRIS"))) {
+                Lib_LogLevel(APP_LIBIRIS, c);
+            }
+            if ((c = getenv("APP_VERBOSE_IO"))) {
+                Lib_LogLevel(APP_LIBIO, c);
+            }
+            if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
+                Lib_LogLevel(APP_LIBMDLUTIL, c);
+            }
+            if ((c = getenv("APP_VERBOSE_DYN"))) {
+                Lib_LogLevel(APP_LIBDYN, c);
+            }
+            if ((c = getenv("APP_VERBOSE_PHY"))) {
+                Lib_LogLevel(APP_LIBPHY, c);
+            }
+            if ((c = getenv("APP_VERBOSE_MIDAS"))) {
+                Lib_LogLevel(APP_LIBMIDAS, c);
+            }
+            if ((c = getenv("APP_VERBOSE_EER"))) {
+                Lib_LogLevel(APP_LIBEER, c);
+            }
+            if ((c = getenv("APP_VERBOSE_TDPACK"))) {
+                Lib_LogLevel(APP_LIBTDPACK, c);
+            }
+            if ((c = getenv("APP_VERBOSE_MACH"))) {
+                Lib_LogLevel(APP_LIBMACH, c);
+            }
+            if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
+                Lib_LogLevel(APP_LIBSPSDYN, c);
+            }
+            if ((c = getenv("APP_VERBOSE_META"))) {
+                Lib_LogLevel(APP_LIBMETA, c);
+            }
 
-    // Check the language in the environment
-    if ((c = getenv("CMCLNG"))) {
-        App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
-    }
+            // Check the language in the environment
+            if ((c = getenv("CMCLNG"))) {
+                App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
+            }
+        }
+    } // end OMP critical
 }
 
 //! Initialiser la structure App
@@ -254,27 +260,34 @@ TApp *App_Init(
 
 //! Liberer les ressources de l'App
 void App_Free(void) {
-    free(App->Name);
-    free(App->Version);
-    free(App->Desc);
-    free(App->LogFile);
-    free(App->TimeStamp);
+    #pragma omp critical (app_free)
+    {
+        // only do it if not done already
+        if (App->Name) {
+            free(App->Name);
+            App->Name = NULL;
+            free(App->Version);
+            free(App->Desc);
+            free(App->LogFile);
+            free(App->TimeStamp);
 
-    if (App->Tag) free(App->Tag);
+            if (App->Tag) free(App->Tag);
 
-    if (App->CountsMPI) free(App->CountsMPI);
-    if (App->DisplsMPI) free(App->DisplsMPI);
-    if (App->OMPSeed)   free(App->OMPSeed);
+            if (App->CountsMPI) free(App->CountsMPI);
+            if (App->DisplsMPI) free(App->DisplsMPI);
+            if (App->OMPSeed)   free(App->OMPSeed);
 
-    if (App->Type == APP_THREAD) App = NULL;
+            if (App->Type == APP_THREAD) App = NULL;
+        }
 
-    //TODO MPI stuff (MPMD)
+        //! \todo MPI stuff (MPMD)
+    } // end OMP critical
 }
 
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
     //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
-       if ( App_IsMPI() ) {
+    if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
         // Get the physical node unique name of mpi procs
         char *names;
@@ -331,12 +344,12 @@ int App_NodeGroup() {
 #endif //HAVE_MPI
     }
 
-   return APP_OK;
+    return APP_OK;
 }
 
 int App_NodePrint() {
-    if (App_IsMPI()) {
 #ifdef HAVE_MPI
+    if (App_IsMPI()) {
         if (!App->RankMPI) {
             char *nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
             if ( nodes ) {
@@ -375,8 +388,8 @@ int App_NodePrint() {
 
         // Allow the master node time to print the list uninterrupted
         APP_MPI_CHK( MPI_Barrier(App->Comm) );
-#endif
     }
+#endif
     return APP_OK;
 }
 
@@ -440,7 +453,6 @@ void App_Start(void) {
 
     gettimeofday(&App->Time, NULL);
 
-
 #ifdef HAVE_MPI
     // Initialize MPI.
     int mpi;
@@ -482,69 +494,68 @@ void App_Start(void) {
     App->NbThread = 1;
 #endif
 
-   // Modify seed value for current processor/thread for parallelization.
-   App->OMPSeed = (int*)calloc(App->NbThread, sizeof(int));
+    // Modify seed value for current processor/thread for parallelization.
+    App->OMPSeed = (int*)calloc(App->NbThread, sizeof(int));
 #ifdef HAVE_RMN
-   App_LibRegister(APP_LIBRMN, HAVE_RMN);
+    App_LibRegister(APP_LIBRMN, HAVE_RMN);
 #endif
 
-   if (!App->RankMPI) {
-      if (!App->LogNoBox) {
+    if (!App->RankMPI) {
+        if (!App->LogNoBox) {
+            App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
+            App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n", App->Name, App->Version, App->TimeStamp);
 
-         App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
-         App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n", App->Name, App->Version, App->TimeStamp);
-
-         int l = FALSE;
-         for(int t = 1; t < APP_LIBSMAX; t++) {
-            if (App->LibsVersion[t]) {
-               if (!l) {
-                  App_Log(APP_VERBATIM, "Libraries      :\n");
-                  l = TRUE;
-               }
-               App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[t], App->LibsVersion[t]);
+            int l = FALSE;
+            for(int t = 1; t < APP_LIBSMAX; t++) {
+                if (App->LibsVersion[t]) {
+                if (!l) {
+                    App_Log(APP_VERBATIM, "Libraries      :\n");
+                    l = TRUE;
+                }
+                App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[t], App->LibsVersion[t]);
+                }
             }
-         }
 
-         if (App->UTC) {
-            App_Log(APP_VERBATIM, "\nStart time     : (UTC) %s", asctime(gmtime(&App->Time.tv_sec)));
-         } else {
-            App_Log(APP_VERBATIM, "\nStart time     : %s", ctime(&App->Time.tv_sec));
-         }
+            if (App->UTC) {
+                App_Log(APP_VERBATIM, "\nStart time     : (UTC) %s", asctime(gmtime(&App->Time.tv_sec)));
+            } else {
+                App_Log(APP_VERBATIM, "\nStart time     : %s", ctime(&App->Time.tv_sec));
+            }
 
 #ifdef HAVE_OPENMP
-         if (App->NbThread > 1) {
-            // OpenMP specification version
-            if       (_OPENMP >= 201811)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s5.0)\n", App->NbThread, _OPENMP, _OPENMP > 201811?" > ":"");
-            else if  (_OPENMP >= 201511)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n", App->NbThread, _OPENMP, _OPENMP > 201511?" > ":"");
-            else if  (_OPENMP >= 201307)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.0)\n", App->NbThread, _OPENMP, _OPENMP > 201307?" > ":"");
-            else if  (_OPENMP >= 201107)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s3.1)\n", App->NbThread, _OPENMP, _OPENMP > 201107?" > ":"");
-            else if  (_OPENMP >= 200805)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s3.0)\n", App->NbThread, _OPENMP, _OPENMP > 200805?" > ":"");
-            else if  (_OPENMP >= 200505)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s2.5)\n", App->NbThread, _OPENMP, _OPENMP > 200505?" > ":"");
-            else if  (_OPENMP >= 200203)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s2.0)\n", App->NbThread, _OPENMP, _OPENMP > 200203?" > ":"");
-            else if  (_OPENMP >= 199810)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s1.0)\n", App->NbThread, _OPENMP, _OPENMP > 199810?" > ":"");
-            else                          App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d)\n", App->NbThread, _OPENMP);
-         }
+            if (App->NbThread > 1) {
+                // OpenMP specification version
+                if       (_OPENMP >= 201811)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s5.0)\n", App->NbThread, _OPENMP, _OPENMP > 201811?" > ":"");
+                else if  (_OPENMP >= 201511)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n", App->NbThread, _OPENMP, _OPENMP > 201511?" > ":"");
+                else if  (_OPENMP >= 201307)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.0)\n", App->NbThread, _OPENMP, _OPENMP > 201307?" > ":"");
+                else if  (_OPENMP >= 201107)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s3.1)\n", App->NbThread, _OPENMP, _OPENMP > 201107?" > ":"");
+                else if  (_OPENMP >= 200805)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s3.0)\n", App->NbThread, _OPENMP, _OPENMP > 200805?" > ":"");
+                else if  (_OPENMP >= 200505)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s2.5)\n", App->NbThread, _OPENMP, _OPENMP > 200505?" > ":"");
+                else if  (_OPENMP >= 200203)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s2.0)\n", App->NbThread, _OPENMP, _OPENMP > 200203?" > ":"");
+                else if  (_OPENMP >= 199810)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s1.0)\n", App->NbThread, _OPENMP, _OPENMP > 199810?" > ":"");
+                else                          App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d)\n", App->NbThread, _OPENMP);
+            }
 #endif //HAVE_OPENMP
 
-         if (App->NbMPI > 1) {
+            if (App->NbMPI > 1) {
 #ifdef HAVE_MPI
 #if defined MPI_VERSION && defined MPI_SUBVERSION
-            // MPI specification version
-            App_Log(APP_VERBATIM, "MPI processes  : %i (Standard: %d.%d)\n", App->NbMPI, MPI_VERSION, MPI_SUBVERSION);
+                // MPI specification version
+                App_Log(APP_VERBATIM, "MPI processes  : %i (Standard: %d.%d)\n", App->NbMPI, MPI_VERSION, MPI_SUBVERSION);
 #else
-            App_Log(APP_VERBATIM, "MPI processes  : %i\n", App->NbMPI);
+                App_Log(APP_VERBATIM, "MPI processes  : %i\n", App->NbMPI);
 #endif
 #endif //HAVE_MPI
-         }
-         App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n\n");
-      }
-   }
+            }
+            App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n\n");
+        }
+    }
 
-   // Make sure the header is printed before any other messages from other MPI tasks
+    // Make sure the header is printed before any other messages from other MPI tasks
 #ifdef TODO_HAVE_MPI
-   if (App->NbMPI > 1) {
-       MPI_Barrier(App->Comm);
-   }
+    if (App->NbMPI > 1) {
+        MPI_Barrier(App->Comm);
+    }
 #endif //HAVE_MPI
 }
 
@@ -647,6 +658,8 @@ void App_LogStream(const char * const Stream) {
 
 //! Ouvrir le fichier log
 void App_LogOpen(void) {
+   #pragma omp critical (app_logopen)
+   {
     if (!App->LogStream) {
         if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
             App->LogStream = stdout;
@@ -672,15 +685,19 @@ void App_LogOpen(void) {
             App->LogStream = freopen(file, "a", App->LogStream);
         }
     }
+   } // end OMP critical
 }
 
 //! Fermer le fichier log
 void App_LogClose(void) {
-    fflush(App->LogStream);
+    #pragma omp critical (app_logclose)
+    {
+        fflush(App->LogStream);
 
-    if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
-        fclose(App->LogStream);
-    }
+        if (App->LogStream && App->LogStream != stdout && App->LogStream != stderr) {
+            fclose(App->LogStream);
+        }
+    } // end OMP critical
 }
 
 //! Imprimer un message de manière standard
@@ -749,6 +766,7 @@ void Lib_Log(
     // If this is within the request level
     if (Level <= App->LogLevel[Lib]) {
 
+        char prefix[256];
         if (Level >= APP_ALWAYS) {
             char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
 
@@ -785,30 +803,35 @@ void Lib_Log(
             }
 
 #ifdef HAVE_MPI
-            if (App_IsMPI() && App->LogRank == -1)
+           if (App_IsMPI() && App->LogRank == -1) {
                 if (App->Step) {
-                    fprintf(App->LogStream, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                    sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
                 } else {
-                    fprintf(App->LogStream, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+                    sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+            }
                 }
             else
 #endif
             if (App->Step) {
-                fprintf(App->LogStream, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
             } else {
-                fprintf(App->LogStream, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
+                sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
             }
         }
 
         va_list args;
+
+        #pragma omp critical (lib_log)
+
         va_start(args, Format);
         vfprintf(App->LogStream, Format, args);
         va_end(args);
 
         if (App->LogColor) {
             fprintf(App->LogStream, APP_COLOR_RESET);
-        }
+         }
 
+        // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
         if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
             va_start(args, Format);
@@ -819,11 +842,6 @@ void Lib_Log(
             if (Level == APP_SYSTEM) {
                 perror(APP_LASTERROR);
             }
-        }
-
-        // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
-        if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
-            fflush(App->LogStream);
         }
     }
     App_TimerStop(App->TimerLog);
@@ -1000,26 +1018,26 @@ int App_LogTime(
     //! [in] Niveau de détail temporel à afficher
     const char * const LogTime
 ) {
-   int pf = App->LogTime;
+    int pf = App->LogTime;
 
-   if (LogTime) {
-      if (strcasecmp(LogTime, "NONE") == 0) {
-         App->LogTime = APP_NODATE;
-      } else if (strcasecmp(LogTime, "DATETIME") == 0) {
-         App->LogTime = APP_DATETIME;
-      } else if (strcasecmp(LogTime, "TIME") == 0) {
-         App->LogTime = APP_TIME;
-      } else if (strcasecmp(LogTime, "SECOND") == 0) {
-         App->LogTime = APP_SECOND;
-      } else if (strcasecmp(LogTime, "MSECOND") == 0) {
-         App->LogTime = APP_MSECOND;
-      } else {
-         App->LogTime = (TApp_LogTime)atoi(LogTime);
-      }
-   }
+    if (LogTime) {
+        if (strcasecmp(LogTime, "NONE") == 0) {
+            App->LogTime = APP_NODATE;
+        } else if (strcasecmp(LogTime, "DATETIME") == 0) {
+            App->LogTime = APP_DATETIME;
+        } else if (strcasecmp(LogTime, "TIME") == 0) {
+            App->LogTime = APP_TIME;
+        } else if (strcasecmp(LogTime, "SECOND") == 0) {
+            App->LogTime = APP_SECOND;
+        } else if (strcasecmp(LogTime, "MSECOND") == 0) {
+            App->LogTime = APP_MSECOND;
+        } else {
+            App->LogTime = (TApp_LogTime)atoi(LogTime);
+        }
+    }
 
-   //! \return Previous time format, or current if no level specified
-   return pf;
+    //! \return Previous time format, or current if no level specified
+    return pf;
 }
 
 //! Print arguments information
@@ -1252,179 +1270,178 @@ int App_ParseArgs(
     return ok;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse an input file
- * @author Jean-Philippe Gauthier
- * @date   Avril 2010
- *
- * @param[in]  Def       Model definitions
- * @param[in]  File      Input file to parse
- * @param[in]  ParseProc Model specific token parsing proc
- *
- * @return Number of token parsed or 0 if failed
- *
- * @note
- *   - This proc will parse an input file with the format TOKEN = VALUE
- *   - It will skip any comment and blank lines
- *   - It also allows for multiline definitions
-*/
-int App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc) {
-   FILE *fp = fopen(File, "r");
-   if (!fp) {
-      App_Log(APP_ERROR, "Unable to open input file: %s\n", File);
-      return 0;
-   }
+//! Parse key value file
+int App_ParseInput(
+    //! [in] Model definitions
+    void *Def,
+    //! [in] Input file to parse
+    char *File,
+    //! [in] Model specific token parsing function
+    TApp_InputParseProc *ParseProc
+) {
+    //! \return Number of token parsed or 0 if failed
 
-   char *buf = (char*)alloca(APP_BUFMAX);
-   if (!buf) {
-      App_Log(APP_ERROR, "Unable to allocate input parsing buffer\n");
-      return 0;
-   }
+    //! @note
+    //! - This proc will parse an input file with the format TOKEN = VALUE
+    //! - It will skip any comment and blank lines
+    //! - It also allows for multiline definitions
 
-   int n = 0;
-   int seq = 0;
-   char token[256], *parse, *values, *value, *valuesave, *idx, *tokensave;
-   while(fgets(buf, APP_BUFMAX, fp)) {
-      //Check for comments
-      strtrim(buf, '\n');
-      strrep(buf, '\t', ' ');
-      if ((idx = index(buf, '#'))) *idx = '\0';
+    FILE *fp = fopen(File, "r");
+    if (!fp) {
+        App_Log(APP_ERROR, "Unable to open input file: %s\n", File);
+        return 0;
+    }
 
-      //Parse the token
-      parse = NULL;
-      if ((idx = index(buf, '='))) {
-         tokensave = NULL;
-         parse = strtok_r(buf, "=", &tokensave);
-      }
+    char *buf = (char*)alloca(APP_BUFMAX);
+    if (!buf) {
+        App_Log(APP_ERROR, "Unable to allocate input parsing buffer\n");
+        return 0;
+    }
 
-      if (parse) {
-         // If we find a token, remove spaces and get the associated value
-         strtrim(parse, ' ');
-         strncpy(token, parse, 255);
-         values = strtok_r(NULL, "=", &tokensave);
-         seq = 0;
-         n++;
-      } else {
-        // Otherwise, keep the last token and get a new value for it
-         values = buf;
-         strtrim(values, ' ');
-      }
+    int n = 0;
+    int seq = 0;
+    char token[256], *parse, *values, *value, *valuesave, *idx, *tokensave;
+    while(fgets(buf, APP_BUFMAX, fp)) {
+        //Check for comments
+        strtrim(buf, '\n');
+        strrep(buf, '\t', ' ');
+        if ((idx = index(buf, '#'))) *idx = '\0';
 
-      // Loop on possible space separated values
-      if (values && strlen(values) > 1) {
-         valuesave = NULL;
-         while((value = strtok_r(values, " ", &valuesave))) {
-            if (seq) {
-               App_Log(APP_DEBUG, "Input parameters: %s(%i) = %s\n", token, seq, value);
-            } else {
-               App_Log(APP_DEBUG, "Input parameters: %s = %s\n", token, value);
+        //Parse the token
+        parse = NULL;
+        if ((idx = index(buf, '='))) {
+            tokensave = NULL;
+            parse = strtok_r(buf, "=", &tokensave);
+        }
+
+        if (parse) {
+            // If we find a token, remove spaces and get the associated value
+            strtrim(parse, ' ');
+            strncpy(token, parse, 255);
+            values = strtok_r(NULL, "=", &tokensave);
+            seq = 0;
+            n++;
+        } else {
+            // Otherwise, keep the last token and get a new value for it
+            values = buf;
+            strtrim(values, ' ');
+        }
+
+        // Loop on possible space separated values
+        if (values && strlen(values) > 1) {
+            valuesave = NULL;
+            while((value = strtok_r(values, " ", &valuesave))) {
+                if (seq) {
+                    App_Log(APP_DEBUG, "Input parameters: %s(%i) = %s\n", token, seq, value);
+                } else {
+                    App_Log(APP_DEBUG, "Input parameters: %s = %s\n", token, value);
+                }
+
+                // Call mode specific imput parser
+                if (!ParseProc(Def, token, value, seq)) {
+                    fclose(fp);
+                    return 0;
+                }
+                seq++;
+                values = NULL;
             }
+        }
+    }
 
-            // Call mode specific imput parser
-            if (!ParseProc(Def, token, value, seq)) {
-               fclose(fp);
-               return 0;
-            }
-            seq++;
-            values = NULL;
-         }
-      }
-   }
-
-   fclose(fp);
-   return n;
+    fclose(fp);
+    return n;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse a boolean value
- * @author Jean-Philippe Gauthier
- * @date   Fevrier 2013
- *
- * @param[in]  Param   Nom du parametre
- * @param[in]  Value   Value to parse
- * @param[out] Var     Variable to put result into
- *
- * @return  1 = ok or 0 = failed
- */
-int App_ParseBool(char *Param, char *Value, char *Var) {
-  if (strcasecmp(Value, "true") == 0 || strcmp(Value, "1") == 0) {
-      *Var = 1;
-   } else if (strcasecmp(Value, "false") == 0 || strcmp(Value, "0") == 0) {
-      *Var = 0;
-   } else {
-      App_Log(APP_ERROR, "Invalid value for %s, must be TRUE(1) or FALSE(0): %s\n", Param, Value);
-      return 0;
-   }
-   return 1;
+
+//! Parse a boolean value
+int App_ParseBool(
+    //! [in] Parameter name
+    char *Param,
+    //! [in] Value to parse
+    char *Value,
+    //! [out] Variable into which to put the result
+    char *Var
+) {
+    //! \return 1 on success, 0 otherwise
+
+    if (strcasecmp(Value, "true") == 0 || strcmp(Value, "1") == 0) {
+        *Var = 1;
+    } else if (strcasecmp(Value, "false") == 0 || strcmp(Value, "0") == 0) {
+        *Var = 0;
+    } else {
+        App_Log(APP_ERROR, "Invalid value for %s, must be TRUE(1) or FALSE(0): %s\n", Param, Value);
+        return 0;
+    }
+    return 1;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Convert date/time to seconds
- * @author Jean-Philippe Gauthier
- * @date   Mai 2006
- *
- * @param[in]  YYYYMMDD Date
- * @param[in]  HHMMSS   Time
- * @param[out] GMT      GMT (GMT or local)
- *
-* @return  Sec
-*/
-time_t App_DateTime2Seconds(int YYYYMMDD, int HHMMSS, int GMT) {
-   struct tm date;
 
-   date.tm_sec = fmod(HHMMSS, 100);       // seconds apres la minute [0, 61]
-   HHMMSS /= 100;
-   date.tm_min = fmod(HHMMSS, 100);       // minutes apres l'heure [0, 59]
-   HHMMSS /= 100;
-   date.tm_hour = HHMMSS;                 // heures depuis minuit [0, 23]
+//! Convert date time to seconds
+time_t App_DateTime2Seconds(
+    //! [in] Date in YYYMMDD format
+    int YYYYMMDD,
+    //! [in] Time in HHMMSS format
+    int HHMMSS,
+    //! [in] If true the provided date and time will be interpreted as GMT instead of local
+    int GMT
+) {
+    //! \return Date time in seconds
 
-   date.tm_mday = fmod(YYYYMMDD, 100);    // jour du mois [1, 31]
-   YYYYMMDD /= 100;
-   date.tm_mon = fmod(YYYYMMDD, 100) - 1; // mois apres Janvier [0, 11]
-   YYYYMMDD /= 100;
-   date.tm_year = YYYYMMDD - 1900;         // annee depuis 1900
-   date.tm_isdst = 0;                      // Flag de l'heure avancee
+    struct tm date;
 
-   // Force GMT and set back to original TZ after
-   extern time_t timezone;
-   if (GMT) {
-      return mktime(&date) - timezone;
-   } else {
-      return mktime(&date);
-   }
+    date.tm_sec = fmod(HHMMSS, 100);       // seconds apres la minute [0, 61]
+    HHMMSS /= 100;
+    date.tm_min = fmod(HHMMSS, 100);       // minutes apres l'heure [0, 59]
+    HHMMSS /= 100;
+    date.tm_hour = HHMMSS;                 // heures depuis minuit [0, 23]
+
+    date.tm_mday = fmod(YYYYMMDD, 100);    // jour du mois [1, 31]
+    YYYYMMDD /= 100;
+    date.tm_mon = fmod(YYYYMMDD, 100) - 1; // mois apres Janvier [0, 11]
+    YYYYMMDD /= 100;
+    date.tm_year = YYYYMMDD - 1900;         // annee depuis 1900
+    date.tm_isdst = 0;                      // Flag de l'heure avancee
+
+    // Force GMT and set back to original TZ after
+    extern time_t timezone;
+    if (GMT) {
+        return mktime(&date) - timezone;
+    } else {
+        return mktime(&date);
+    }
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse a date value (YYYMMDDhhmm)
- * @author Jean-Philippe Gauthier
- * @date   Fevrier 2013
- *
- * @param[in]  Param    Nom du parametre
- * @param[in]  Value    Value to parse
- * @param[out] Var      Variable to put result into
- *
-* @return  1 = ok or 0 = failed
-*/
-int App_ParseDate(char *Param, char *Value, time_t *Var) {
-   char *ptr;
-   long long t = strtoll(Value, &ptr, 10);
-   if( t <= 0 ) {
-      App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n", Param, Value);
-      return 0;
-   }
-   switch( strlen(Value) ) {
-      case 12:
-         *Var = App_DateTime2Seconds(t / 10000, (t - (t / 10000 * 10000)) * 100, 1);
-         break;
-      case 14:
-         *Var = App_DateTime2Seconds(t / 1000000, (t - (t / 1000000 * 1000000)), 1);
-         break;
-      default:
-         App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n", Param, Value);
-         return 0;
-   }
 
-   return 1;
+//! Parse a date in the YYYMMDDhhmm format
+int App_ParseDate(
+    //! [in] Parameter name
+    char *Param,
+    //! [in] Value to parse
+    char *Value,
+    //! [out] Variable into which to put the result
+    time_t *Var
+) {
+    //! \return 1 on success, 0 otherwise
+
+    char *ptr;
+    long long t = strtoll(Value, &ptr, 10);
+    if( t <= 0 ) {
+        App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n", Param, Value);
+        return 0;
+    }
+    switch( strlen(Value) ) {
+        case 12:
+            *Var = App_DateTime2Seconds(t / 10000, (t - (t / 10000 * 10000)) * 100, 1);
+            break;
+        case 14:
+            *Var = App_DateTime2Seconds(t / 1000000, (t - (t / 1000000 * 1000000)), 1);
+            break;
+        default:
+            App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n", Param, Value);
+            return 0;
+    }
+
+    return 1;
 }
 
 /**----------------------------------------------------------------------------
