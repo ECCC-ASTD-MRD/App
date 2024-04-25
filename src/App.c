@@ -822,16 +822,23 @@ void Lib_Log(
         va_list args;
 
         #pragma omp critical (lib_log)
+        {
+            fprintf(App->LogStream, "%s", prefix);
 
-        va_start(args, Format);
-        vfprintf(App->LogStream, Format, args);
-        va_end(args);
+            va_start(args, Format);
+            vfprintf(App->LogStream, Format, args);
+            va_end(args);
 
-        if (App->LogColor) {
-            fprintf(App->LogStream, APP_COLOR_RESET);
-         }
+            if (App->LogColor) {
+                fprintf(App->LogStream, APP_COLOR_RESET);
+            }
 
-        // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
+            // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
+            if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+                fflush(App->LogStream);
+            }
+        }
+        
         if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
             va_start(args, Format);
