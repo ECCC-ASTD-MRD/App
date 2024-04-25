@@ -767,6 +767,7 @@ void Lib_Log(
     if (Level <= App->LogLevel[Lib]) {
 
         char prefix[256];
+        prefix[0] = '\0';
         if (Level >= APP_ALWAYS) {
             char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
 
