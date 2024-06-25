@@ -18,6 +18,8 @@
    #include <sys/syscall.h>
 #endif
 
+#include <pthread.h>
+
 #include "App.h"
 #include "App_build_info.h"
 #include "str.h"
@@ -25,6 +27,8 @@
 static TApp AppInstance;                             ///< Static App instance
 __thread TApp *App = &AppInstance;                     ///< Per thread App pointer
 static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessible through this
+
+static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char* AppLibNames[]    = { "main", "rmn", "fst", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
 static char* AppLibLog[]      = { "", "RMN|", "FST|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
@@ -68,7 +72,7 @@ void App_LibRegister(
 
 //! Initialiser l'environnement dans la structure App
 void App_InitEnv(){
-    #pragma omp critical (app_initenv)
+    pthread_mutex_lock(&App_mutex);
     {
         // Only do it if not already initialized
         if (!App->Tolerance) {
@@ -189,6 +193,7 @@ void App_InitEnv(){
             }
         }
     } // end OMP critical
+    pthread_mutex_unlock(&App_mutex);
 }
 
 //! Initialiser la structure App
@@ -260,7 +265,7 @@ TApp *App_Init(
 
 //! Liberer les ressources de l'App
 void App_Free(void) {
-    #pragma omp critical (app_free)
+    pthread_mutex_lock(&App_mutex);
     {
         // only do it if not done already
         if (App->Name) {
@@ -282,6 +287,7 @@ void App_Free(void) {
 
         //! \todo MPI stuff (MPMD)
     } // end OMP critical
+    pthread_mutex_unlock(&App_mutex);
 }
 
 //! Initialiser les communicateurs intra-node et inter-nodes
@@ -658,7 +664,7 @@ void App_LogStream(const char * const Stream) {
 
 //! Ouvrir le fichier log
 void App_LogOpen(void) {
-   #pragma omp critical (app_logopen)
+   pthread_mutex_lock(&App_mutex);
    {
     if (!App->LogStream) {
         if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
@@ -686,11 +692,12 @@ void App_LogOpen(void) {
         }
     }
    } // end OMP critical
+   pthread_mutex_unlock(&App_mutex);
 }
 
 //! Fermer le fichier log
 void App_LogClose(void) {
-    #pragma omp critical (app_logclose)
+    pthread_mutex_lock(&App_mutex);
     {
         fflush(App->LogStream);
 
@@ -698,6 +705,7 @@ void App_LogClose(void) {
             fclose(App->LogStream);
         }
     } // end OMP critical
+    pthread_mutex_unlock(&App_mutex);
 }
 
 //! Imprimer un message de manière standard
@@ -822,7 +830,7 @@ void Lib_Log(
 
         va_list args;
 
-        #pragma omp critical (lib_log)
+        pthread_mutex_lock(&App_mutex);
         {
             fprintf(App->LogStream, "%s", prefix);
 
@@ -839,6 +847,7 @@ void Lib_Log(
                 fflush(App->LogStream);
             }
         }
+        pthread_mutex_unlock(&App_mutex);
         
         if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
