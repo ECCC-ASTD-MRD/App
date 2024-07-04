@@ -1,3 +1,6 @@
+#ifndef _str_h
+#define _str_h
+
 #include <string.h>
 
 #define MIN(x,y) ((x < y) ? x : y)
@@ -39,3 +42,5 @@ static inline void strblank_full(char *Str, int Length) {
    }
    Str[Length - 1] = '\0';
 }
+
+#endif
