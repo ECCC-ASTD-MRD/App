@@ -254,7 +254,7 @@ typedef struct {
    int            NbMPI;                 ///< Number of MPI process
    int            RankMPI;               ///< Rank of MPI process
    int            NbThread;              ///< Number of OpenMP threads
-   int            Signal;                ///< Trapped signal
+   int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
    int            NbNodeMPI, NodeRankMPI; ///< Number of MPI process on the current node
 #ifdef HAVE_MPI

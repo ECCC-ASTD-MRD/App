@@ -127,6 +127,9 @@ void App_InitEnv(){
             if ((c = getenv("APP_TOLERANCE"))) {
                 App_ToleranceLevel(c);
             }
+            if ((c = getenv("APP_NOTRAP"))) {
+                App->Signal=-1;
+            }
 
             // Check verbose level of libraries
             if ((c = getenv("APP_VERBOSE_RMN"))) {
@@ -253,11 +256,13 @@ TApp *App_Init(
     App->sets = NULL;
 #endif
 
-    // Trap signals (preemption)
-    App_Trap(SIGUSR2);
-    App_Trap(SIGTERM);
-
     App_InitEnv();
+
+    // Trap signals if enabled (preemption)
+    if (App->Signal==0) {
+       App_Trap(SIGUSR2);
+       App_Trap(SIGTERM);
+    }
 
     //! \return L'application initialisée
     return App;
@@ -598,7 +603,7 @@ int App_End(
 
             App_Log(APP_VERBATIM, "\n-------------------------------------------------------------------------------------\n");
             App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n\n", App->Name, App->Version, App->TimeStamp);
-            if (App->Signal) {
+            if (App>=0) {
                 App_Log(APP_VERBATIM, "Trapped signal : %i\n", App->Signal);
             }
             if (App->UTC) {

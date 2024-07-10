@@ -42,6 +42,7 @@ This packages manages various standard tasks needed by applications like:
 - APP_VERBOSE_UTC   : Display time in UTC
 - APP_VERBOSE_RANK  : Enable log on a specific rank default:-1 (all rank)
 - APP_TOLERANCE     : Tolerance level trigerring an exit (ERROR,SYSTEM,FATAL,QUIET) default:QUIET
+- APP_NOTRAP        : Disable signal trapping (SIGTERM,SIGUSR2)
 - APP_LOG_SPLIT     : Split log stream/file per MPI PE
 - APP_LOG_STREAM    : Define log stream/file (stdout,stderr,filename) default:stderr
 - APP_LOG_FLUSH     : Force flush of buffers at every message (default flush only on error)
