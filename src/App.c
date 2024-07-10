@@ -603,7 +603,7 @@ int App_End(
 
             App_Log(APP_VERBATIM, "\n-------------------------------------------------------------------------------------\n");
             App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n\n", App->Name, App->Version, App->TimeStamp);
-            if (App>=0) {
+            if (App->Signal>0) {
                 App_Log(APP_VERBATIM, "Trapped signal : %i\n", App->Signal);
             }
             if (App->UTC) {
@@ -631,7 +631,7 @@ int App_End(
         App->State = APP_DONE;
     }
 
-    return App->Signal ? 128 + App->Signal : Status;
+    return (App->Signal>0) ? 128 + App->Signal : Status;
 }
 
 //! Trapper les signaux afin de terminer gracieusement
