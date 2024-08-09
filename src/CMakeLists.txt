@@ -36,11 +36,7 @@ set_target_properties(App-static App-shared PROPERTIES
 #----- Needed when used as sbumodule/subtree
 add_library(App::App-shared ALIAS App-shared)
 add_library(App::App-static ALIAS App-static)
-if(BUILD_SHARED_LIBS)
-    add_library(App::App ALIAS App-shared)
-else()
-    add_library(App::App ALIAS App-static)
-endif()
+add_library(App::App ALIAS App-static) # Default to static
 
 if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND) 
    message(STATUS "Generating App ompi library")
@@ -78,11 +74,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
    #----- Needed when used as sbumodule/subtree
    add_library(App::App-ompi-shared ALIAS App-ompi-shared)
    add_library(App::App-ompi-static ALIAS App-ompi-static)
-      if(BUILD_SHARED_LIBS)
-      add_library(App::App-ompi ALIAS App-ompi-shared)
-   else()
-      add_library(App::App-ompi ALIAS App-ompi-static)
-   endif()
+   add_library(App::App-ompi ALIAS App-ompi-static) # Default to static
 endif()
 
 foreach(APP_TARGET ${shared_targets} ${static_targets})
