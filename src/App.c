@@ -611,7 +611,7 @@ int App_End(
             } else {
                 App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
             }
-            App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTime_ms(App->TimerLog));
+            App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTotalTime_ms(App->TimerLog));
 
 
             if (Status != EXIT_SUCCESS) {

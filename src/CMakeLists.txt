@@ -6,9 +6,11 @@ set(PROJECT_INCLUDE_FILES
    str.h)
 set(PROJECT_C_FILES
    App.c
+   App_Timer.c
    str.c)
 set(PROJECT_F_FILES
    App.f90
+   App_Timer.F90
    )
 
 #----- Non ompi version
@@ -114,7 +116,10 @@ install(TARGETS ${static_targets}
    INCLUDES DESTINATION include
    PUBLIC_HEADER DESTINATION include)  
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/app.mod TYPE INCLUDE)
+install(FILES 
+        ${CMAKE_CURRENT_BINARY_DIR}/include/app.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/app_timer_module.mod
+        TYPE INCLUDE)
 if (TARGET App::App-ompi)
    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_mpmd.mod TYPE INCLUDE)
 endif()

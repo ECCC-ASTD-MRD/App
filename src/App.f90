@@ -1,5 +1,6 @@
 module app
     use, intrinsic :: iso_c_binding
+    use App_Timer_Module
     implicit none
 
     enum, bind(C)
