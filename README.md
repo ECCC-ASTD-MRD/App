@@ -6,18 +6,18 @@
 3. [Example output log](#example_output_log)
 4. [Code Example](#code_example)
 5. [Building package](#building_package)
-   
+
 ## Usage
 This packages manages various standard tasks needed by applications like:
 
 - Program arguments
     - Parsing arguments
     - Pre-defined standard arguments:
-```    
-        -l, --log             Log file (stdout,stderr,file)
+```
+        -l, --log             Log file (stdout, stderr, file)
             --logsplit        Split log file per MPI rank
-        -v, --verbose         Verbose level (ERROR,WARNING,INFO,DEBUG,EXTRA or 0-4)
-            --verbosetime     Display time in logs (NONE,DATETIME,TIME,SECOND,MSECOND)
+        -v, --verbose         Verbose level (ERROR, WARNING, INFO, DEBUG, EXTRA or 0-4)
+            --verbosetime     Display time in logs (NONE, DATETIME, TIME, SECOND, MSECOND)
             --verboseutc      Use UTC time
             --verbosecolor    Use color for log messages
         -h, --help            Help info
@@ -33,21 +33,21 @@ This packages manages various standard tasks needed by applications like:
 - Some parallel process management
 
 ## Environment variables
-- APP_PARAMS        : List of parameters for the application (instead of giving on command line) 
-- APP_VERBOSE       : Define global verbose level (ERROR,WARNING,INFO,TRIVIAL,DEBUG,EXTRA,QUIET) default:INFO
-- APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN,FST,META,WB,GMM,VGRID,INTERPV,GEOREF,RPNMPI,IRIS,IO,MDLUTIL,DYN,PHY,MIDAS,EER,TDPACK,MACH])
+- APP_PARAMS        : List of parameters for the application (instead of giving on command line)
+- APP_VERBOSE       : Define global verbose level (ERROR, WARNING, INFO, TRIVIAL, DEBUG, EXTRA, QUIET) default:INFO
+- APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN, FST, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH])
 - APP_VERBOSE_NOBOX : Do not display header and footer
 - APP_VERBOSE_COLOR : Use color in log messages
-- APP_VERBOSE_TIME  : Display time for each message (NONE,DATETIME,TIME,SECOND,MSECOND) default:NONE
+- APP_VERBOSE_TIME  : Display time for each message (NONE, DATETIME, TIME, SECOND, MSECOND) default:NONE
 - APP_VERBOSE_UTC   : Display time in UTC
 - APP_VERBOSE_RANK  : Enable log on a specific rank default:-1 (all rank)
-- APP_TOLERANCE     : Tolerance level trigerring an exit (ERROR,SYSTEM,FATAL,QUIET) default:QUIET
-- APP_NOTRAP        : Disable signal trapping (SIGTERM,SIGUSR2)
+- APP_TOLERANCE     : Tolerance level trigerring an exit (ERROR, SYSTEM, FATAL, QUIET) default:QUIET
+- APP_NOTRAP        : Disable signal trapping (SIGTERM, SIGUSR2)
 - APP_LOG_SPLIT     : Split log stream/file per MPI PE
-- APP_LOG_STREAM    : Define log stream/file (stdout,stderr,filename) default:stderr
+- APP_LOG_STREAM    : Define log stream/file (stdout, stderr, filename) default:stderr
 - APP_LOG_FLUSH     : Force flush of buffers at every message (default flush only on error)
 
-- CMCLNG           : Language to use (francais,english)
+- CMCLNG           : Language to use (francais, english)
 - OMP_NUM_THREADS  : Number of openMP threads (for internal purposes)
 
 ## Example output log
@@ -90,58 +90,53 @@ Status         : Ok (0 Warnings)
 
 ## Code example
 ```C
-int main(int argc,char **argv) {
+int main(int argc, char **argv) {
+    char *gridfile = NULL;
+    TApp_Arg appargs[]=
+        { { APP_CHAR,  &gridfile, 1, "g", "grid", "Input data fields" },
+            { APP_NIL } };
 
-   TIris    Iris;
-   MPI_Comm comm;
+    MPI_Init(&argc, &argv);
 
-   int   ok=0,code=0,timestep=0,s;
-   char *gridfile=NULL;
+    int code = 0;
+    App_Init(APP_MASTER, MODEL_NAME, VERSION, PROJECT_DESCRIPTION_STRING, GIT_COMMIT_TIMESTAMP);
+    if (!App_ParseArgs(appargs, argc, argv, APP_NOARGSFAIL | APP_ARGSLOG)) {
+        code = EXIT_FAILURE;
+    }
 
-   TApp_Arg appargs[]=
-      { { APP_CHAR,  &gridfile, 1,             "g", "grid", "Input data fields" },
-        { APP_NIL } };
+    if (!gridfile) {
+        App_Log(APP_ERROR, "No input standard file specified\n");
+        exit(EXIT_FAILURE);
+    }
 
-   MPI_Init(&argc,&argv);
+    TIris Iris;
+    if (!code) {
+        App_Start();
 
-   App_Init(APP_MASTER,MODEL_NAME,VERSION,PROJECT_DESCRIPTION_STRING,BUILD_TIMESTAMP);
-   if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
-      code=EXIT_FAILURE;      
-   }
+        MPI_Comm comm = Iris_Init(&Iris, 0, NULL);
 
-   if (!gridfile) {
-      App_Log(APP_ERROR,"No input standard file specified\n");
-      exit(EXIT_FAILURE);
-   }
+        Model_Init(&Iris, gridfile);
+        for(App->Step = 1; App->Step < 20; App->Step++) {
 
-   if (!code) {
-      App_Start();
- 
-      comm=Iris_Init(&Iris,0,NULL);
-      
-      Model_Init(&Iris,gridfile);
-      for(App->Step=1;App->Step<20;App->Step++) {
+            if (App_IsDone()) {
+                // Trapped premption signal
+                break;
+            }
+            Model_Run(&Iris, App->Step, comm);
+        }
 
-         if (App_IsDone()) {
-            // Trapped premption signal
-            break; 
-         }
-         Model_Run(&Iris, ++timestep, comm);
-      }
+        if (App_IsDone() && Iris.Rank == 0) {
+            App_Log(APP_WARNING, "MDL%d: Would be writing a restart here\n", Iris.ModelNo);
+        }
 
-      if (App_IsDone() && Iris.Rank==0) {
-         App_Log(APP_WARNING,"MDL%d: Would be writing a restart here\n",Iris.ModelNo);
-      }
+        Iris_Model_Finalize(&Iris);
+        App_End(code);
+    }
+    if (Iris.Rank == 0) cs_fstfrm(OutFID);
 
-      Iris_Model_Finalize(&Iris);
-      code=App_End(ok?-1:EXIT_FAILURE);
-   }
-   if (Iris.Rank==0)
-     cs_fstfrm(OutFID);
+    App_Free();
 
-   App_Free();
-
-   MPI_Finalize();
+    MPI_Finalize();
 }
 ```
 
