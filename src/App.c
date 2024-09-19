@@ -40,7 +40,7 @@ char* App_ErrorGet(void) {
     return APP_LASTERROR;
 }
 
-TApp* get_app_instance(void) { return &AppInstance; }
+TApp* App_GetInstance(void) { return &AppInstance; }
 
 unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 
@@ -245,15 +245,15 @@ TApp *App_Init(
     App->NodeComm = MPI_COMM_NULL;
     App->NodeHeadComm = MPI_COMM_NULL;
 
-    App->main_comm = MPI_COMM_NULL;
-    App->world_rank = -1;
-    App->component_rank = -1;
-    App->self_component = NULL;
-    App->num_components = 0;
-    App->all_components = NULL;
-    App->num_sets = 0;
-    App->sets_size = 0;
-    App->sets = NULL;
+    App->MainComm = MPI_COMM_NULL;
+    App->WorldRank = -1;
+    App->ComponentRank = -1;
+    App->SelfComponent = NULL;
+    App->NumComponents = 0;
+    App->AllComponents = NULL;
+    App->NbSets = 0;
+    App->SizeSets = 0;
+    App->Sets = NULL;
 #endif
 
     App_InitEnv();

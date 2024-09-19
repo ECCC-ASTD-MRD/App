@@ -1,5 +1,5 @@
 
-#include "MPMD.h"
+#include "App_MPMD.h"
 
 void validate_comm_size(MPI_Comm comm, const int expected_num_procs) {
     if (expected_num_procs == 0) {
@@ -20,18 +20,18 @@ void validate_comm_size(MPI_Comm comm, const int expected_num_procs) {
 
 int main(int argc, char* argv[])
 {
-    Mpmd_Init(MPMD_TEST5_ID);
+    App_MPMD_Init(APP_MPMD_TEST5_ID);
 
-    validate_comm_size(Mpmd_Get_own_comm(), 5);
+    validate_comm_size(App_MPMD_GetOwnComm(), 5);
 
-    if (!Mpmd_Has_component(MPMD_TEST1_ID)) {
+    if (!App_MPMD_HasComponent(APP_MPMD_TEST1_ID)) {
         App_Log(APP_ERROR, "%s: Can only be launched if MPMD_1 is also present\n", __func__);
         exit(1);
     }
 
-    const MPI_Comm comm_15 = Mpmd_Get_shared_comm((int[]){MPMD_TEST5_ID, MPMD_TEST1_ID}, 2);
+    const MPI_Comm comm_15 = App_MPMD_GetSharedComm((int[]){APP_MPMD_TEST5_ID, APP_MPMD_TEST1_ID}, 2);
     validate_comm_size(comm_15, 1 + 5);
 
-    Mpmd_Finalize();
+    App_MPMD_Finalize();
     return 0;
 }

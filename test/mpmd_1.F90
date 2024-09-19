@@ -9,44 +9,44 @@ program mpmd_1
     integer :: comm_15
     integer :: return_status
 
-    call Mpmd_Init(MPMD_TEST1_ID)
+    call App_MPMD_Init(APP_MPMD_TEST1_ID)
     ! call mpmd_end_test()
     ! stop
 
-    call validate_comm_size(Mpmd_get_own_comm(), NUM_PROCS_TEST1, '(1)')
+    call validate_comm_size(App_MPMD_GetOwnComm(), NUM_PROCS_TEST1, '(1)')
 
-    if (Mpmd_has_component(MPMD_TEST2_ID)) then
-        comm_12 = Mpmd_get_shared_comm([MPMD_TEST1_ID, MPMD_TEST2_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST2_ID)) then
+        comm_12 = App_MPMD_GetSharedComm([APP_MPMD_TEST1_ID, APP_MPMD_TEST2_ID])
         call validate_comm_size(comm_12, NUM_PROCS_TEST1 + NUM_PROCS_TEST2, '(1, 2)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST2_ID) .and. Mpmd_has_component(MPMD_TEST3_ID)) then
-        comm_123 = Mpmd_get_shared_comm([MPMD_TEST3_ID, MPMD_TEST1_ID, MPMD_TEST2_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST2_ID) .and. App_MPMD_HasComponent(APP_MPMD_TEST3_ID)) then
+        comm_123 = App_MPMD_GetSharedComm([APP_MPMD_TEST3_ID, APP_MPMD_TEST1_ID, APP_MPMD_TEST2_ID])
         call validate_comm_size(comm_123, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST3, '(1, 2, 3)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST3_ID)) then
-        comm_13 = Mpmd_get_shared_comm([MPMD_TEST1_ID, MPMD_TEST3_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST3_ID)) then
+        comm_13 = App_MPMD_GetSharedComm([APP_MPMD_TEST1_ID, APP_MPMD_TEST3_ID])
         call validate_comm_size(comm_13, NUM_PROCS_TEST1 + NUM_PROCS_TEST3, '(1, 3)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST4_ID)) then
-        comm_14 = Mpmd_get_shared_comm([MPMD_TEST1_ID, MPMD_TEST4_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST4_ID)) then
+        comm_14 = App_MPMD_GetSharedComm([APP_MPMD_TEST1_ID, APP_MPMD_TEST4_ID])
         call validate_comm_size(comm_14, NUM_PROCS_TEST1 + NUM_PROCS_TEST4, '(1, 4)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST2_ID) .and. Mpmd_has_component(MPMD_TEST4_ID)) then
-        comm_124 = Mpmd_get_shared_comm([MPMD_TEST4_ID, MPMD_TEST1_ID, MPMD_TEST2_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST2_ID) .and. App_MPMD_HasComponent(APP_MPMD_TEST4_ID)) then
+        comm_124 = App_MPMD_GetSharedComm([APP_MPMD_TEST4_ID, APP_MPMD_TEST1_ID, APP_MPMD_TEST2_ID])
         call validate_comm_size(comm_124, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST4, '(1, 2, 4)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST3_ID) .and. Mpmd_has_component(MPMD_TEST4_ID)) then
-        comm_134 = Mpmd_get_shared_comm([MPMD_TEST4_ID, MPMD_TEST1_ID, MPMD_TEST3_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST3_ID) .and. App_MPMD_HasComponent(APP_MPMD_TEST4_ID)) then
+        comm_134 = App_MPMD_GetSharedComm([APP_MPMD_TEST4_ID, APP_MPMD_TEST1_ID, APP_MPMD_TEST3_ID])
         call validate_comm_size(comm_134, NUM_PROCS_TEST1 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, '(1, 3, 4)')
     end if
 
-    if (Mpmd_has_component(MPMD_TEST5_ID)) then
-        comm_15 = Mpmd_get_shared_comm([MPMD_TEST5_ID, MPMD_TEST1_ID])
+    if (App_MPMD_HasComponent(APP_MPMD_TEST5_ID)) then
+        comm_15 = App_MPMD_GetSharedComm([APP_MPMD_TEST5_ID, APP_MPMD_TEST1_ID])
         call validate_comm_size(comm_15, NUM_PROCS_TEST1 + NUM_PROCS_TEST5, '(1, 5)')
     end if
 

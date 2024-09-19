@@ -261,15 +261,15 @@ typedef struct {
    MPI_Comm       Comm;
    MPI_Comm       NodeComm, NodeHeadComm; ///< Communicator for the current node and the head nodes
 
-   MPI_Comm       main_comm;             ///< Communicator that groups all executables from this context
-   int            world_rank;            ///< Global rank of this PE
-   int            component_rank;        ///< Local rank of this PE (within its component)
-   TComponent*    self_component;        ///< This PE's component
-   int            num_components;        ///< How many components are part of the MPMD context
-   TComponent*    all_components;        ///< List of components in this context
-   int            num_sets;              ///< How many sets of components are stored in this context
-   int            sets_size;             ///< Size of the array that stores sets of components
-   TComponentSet* sets;                  ///< List of sets that are already stored in this context
+   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context
+   int            WorldRank;             ///< Global rank of this PE
+   int            ComponentRank;         ///< Local rank of this PE (within its component)
+   TComponent*    SelfComponent;         ///< This PE's component
+   int            NumComponents;         ///< How many components are part of the MPMD context
+   TComponent*    AllComponents;         ///< List of components in this context
+   int            NbSets;                ///< How many sets of components are stored in this context
+   int            SizeSets;              ///< Size of the array that stores sets of components
+   TComponentSet* Sets;                  ///< List of sets that are already stored in this context
 #endif //HAVE_MPI
 
    TApp_Timer     *TimerLog;             ///< Time spent on log printing
@@ -284,6 +284,7 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
 #define App_Log(LEVEL, ...) Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__)
 
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
+TApp* App_GetInstance(void);
 void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
@@ -323,7 +324,7 @@ int   App_NodePrint();
 void  App_SetMPIComm(MPI_Comm Comm);
 int   App_MPIProcCmp(const void *a, const void *b);
 
-#include "MPMD.h"
+#include "App_MPMD.h"
 #endif
 
 #endif
