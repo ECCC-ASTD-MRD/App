@@ -25,7 +25,7 @@
 #include "str.h"
 
 static TApp AppInstance;                             ///< Static App instance
-__thread TApp *App = &AppInstance;                     ///< Per thread App pointer
+__thread TApp *App = &AppInstance;                   ///< Per thread App pointer
 static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessible through this
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -213,7 +213,7 @@ TApp *App_Init(
     const char * const Stamp
 ) {
     // In coprocess threaded mode, we need a different App object than the master thread
-    App = (Type == APP_THREAD)?(TApp*)malloc(sizeof(TApp)):&AppInstance;
+    App = (Type == APP_THREAD)?(TApp*)calloc(1,sizeof(TApp)):&AppInstance;
 
     App->Type = Type;
     App->Name = Name ? strdup(Name) : strdup("");
