@@ -286,8 +286,12 @@ void App_Free(void) {
             if (App->CountsMPI) free(App->CountsMPI);
             if (App->DisplsMPI) free(App->DisplsMPI);
             if (App->OMPSeed)   free(App->OMPSeed);
+        }
 
-            if (App->Type == APP_THREAD) App = NULL;
+        // In coprocess threaded mode, we have a different App object than the master thread
+        if (App->Type == APP_THREAD) {
+            free(App);
+            App=NULL;
         }
 
         //! \todo MPI stuff (MPMD)
