@@ -67,7 +67,9 @@ void App_LibRegister(
     //! [in] Version
     const char * const Version
 ) {
-    App->LibsVersion[Lib] = strdup(Version);
+    APP_FREE( App->LibsVersion[Lib] );
+    if( Version )
+        App->LibsVersion[Lib] = strdup(Version);
 }
 
 //! Initialiser l'environnement dans la structure App
@@ -213,7 +215,7 @@ TApp *App_Init(
     const char * const Stamp
 ) {
     // In coprocess threaded mode, we need a different App object than the master thread
-    App = (Type == APP_THREAD)?(TApp*)malloc(sizeof(TApp)):&AppInstance;
+    App = (Type == APP_THREAD)?(TApp*)calloc(1,sizeof(TApp)):&AppInstance;
 
     App->Type = Type;
     App->Name = Name ? strdup(Name) : strdup("");
@@ -239,6 +241,10 @@ TApp *App_Init(
     App->Signal = 0;
     App->LogWarning = 0;
     App->LogError = 0;
+
+    for(int t = 1; t < APP_LIBSMAX; t++) {
+       App->LibsVersion[t] = NULL;
+    }
 
 #ifdef HAVE_MPI
     App->Comm = MPI_COMM_WORLD;
@@ -282,6 +288,10 @@ void App_Free(void) {
             free(App->TimeStamp);
 
             if (App->Tag) free(App->Tag);
+
+            for(int t = 1; t < APP_LIBSMAX; t++) {
+                APP_FREE(App->LibsVersion[t]);
+            }
 
             if (App->CountsMPI) free(App->CountsMPI);
             if (App->DisplsMPI) free(App->DisplsMPI);
