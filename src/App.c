@@ -67,8 +67,8 @@ void App_LibRegister(
     //! [in] Version
     const char * const Version
 ) {
-    APP_FREE( App->LibsVersion[Lib] );
-    if( Version )
+    APP_FREE(App->LibsVersion[Lib]);
+    if (Version)
         App->LibsVersion[Lib] = strdup(Version);
 }
 
@@ -242,10 +242,6 @@ TApp *App_Init(
     App->LogWarning = 0;
     App->LogError = 0;
 
-    for(int t = 1; t < APP_LIBSMAX; t++) {
-       App->LibsVersion[t] = NULL;
-    }
-
 #ifdef HAVE_MPI
     App->Comm = MPI_COMM_WORLD;
     App->NodeComm = MPI_COMM_NULL;
@@ -287,15 +283,15 @@ void App_Free(void) {
             free(App->LogFile);
             free(App->TimeStamp);
 
-            if (App->Tag) free(App->Tag);
+            APP_FREE(App->Tag);
 
             for(int t = 1; t < APP_LIBSMAX; t++) {
                 APP_FREE(App->LibsVersion[t]);
             }
 
-            if (App->CountsMPI) free(App->CountsMPI);
-            if (App->DisplsMPI) free(App->DisplsMPI);
-            if (App->OMPSeed)   free(App->OMPSeed);
+            APP_FREE(App->CountsMPI);
+            APP_FREE(App->DisplsMPI);
+            APP_FREE(App->OMPSeed);
         }
 
         // In coprocess threaded mode, we have a different App object than the master thread
