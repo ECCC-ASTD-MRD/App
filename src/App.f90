@@ -161,8 +161,8 @@ module app
         implicit none
         character(kind = C_CHAR), dimension(*), intent(in) :: param
         character(kind = C_CHAR), dimension(*), intent(in) :: value
-        integer(C_INT), intent(out) :: lat
-        integer(C_INT), intent(out) :: lon
+        real(C_DOUBLE), intent(out) :: lat
+        real(C_DOUBLE), intent(out) :: lon
         integer(C_INT), value :: index
     end FUNCTION
 

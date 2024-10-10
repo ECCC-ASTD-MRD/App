@@ -30,7 +30,9 @@ This packages manages various standard tasks needed by applications like:
    - Shows count of error and warnings at end/close of log
 - Process signal trapping
    - Signal trapping for stopping model on SIGUSR2/SIGTERM
-- Some parallel process management
+- Timing functions
+- Parallel process management OpenMP/MPI
+- MPMD
 
 ## Environment variables
 - APP_PARAMS        : List of parameters for the application (instead of giving on command line)
