@@ -11,7 +11,7 @@ typedef struct TComponent_ {
     int already_shared; //!< Whether this component has been shared to other PEs of this PE's component
     int* ranks;         //!< Global ranks (in the main_comm of the context) of the members of this component
  } TComponent;
-    
+
 //! A series of components that share a communicator
 typedef struct TComponentSet_ {
     int num_components;     //!< How many components are in the set
@@ -37,7 +37,7 @@ static const TComponentSet default_set = (TComponentSet) {
     .group          = MPI_GROUP_NULL
 };
 
-////////////////
+
 // Prototypes
 void print_component(const TComponent* comp, const int verbose);
 void print_set(const TComponentSet* set);
@@ -48,78 +48,77 @@ const TComponentSet* create_set(TApp* App, const int* Components, const int NumC
 //! This is a collective call. Everyone who participate in it will know who else
 //! is on board and will be able to ask for a communicator in common with any other
 //! participant (or even multiple other participants at once).
-TApp* App_MPMD_Init(const TApp_MPMDId ComponentId) {
+TApp* App_MPMD_Init(const char * const ComponentName, const char * const version) {
     #pragma omp single // For this entire function
     {
-    //////////////////////////////
     // Start by initializing MPI
     const int required = MPI_THREAD_MULTIPLE;
-    const MPI_Comm main_comm = MPI_COMM_WORLD;
-    
-    int provided, world_size;
+
+    int provided;
     MPI_Init_thread(NULL, NULL, required, &provided);
 
-    TApp* app = App_Init(0, App_MPMD_ComponentIdToName(ComponentId), "1.0-alpha", "mpmd context attempt", "now");
+    //! \fixme Shouldn't it be the version of the calling app?
+    TApp * const app = App_Init(0, ComponentName, version, "mpmd context attempt", "now");
     App_Start();
 
-    App_Log(APP_DEBUG, "%s: Initializing component %s (ID %d)\n", __func__, App_MPMD_ComponentIdToName(ComponentId),
-            ComponentId);
-    
-    MPI_Comm_size(main_comm, &world_size);
-    MPI_Comm_rank(main_comm, &app->WorldRank);
+    App_Log(APP_DEBUG, "%s: Initializing component %s\n", __func__, ComponentName);
+
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &app->world_rank);
 
     if (provided != required) {
-        if (app->WorldRank == 0) {
-            App_Log(APP_ERROR,
-                    "%s: In MPMD context initialization: your system does NOT support MPI_THREAD_MULTIPLE\n", __func__);
+        if (app->world_rank == 0) {
+            App_Log(APP_ERROR, "%s: In MPMD context initialization: your system does NOT support MPI_THREAD_MULTIPLE\n", __func__);
         }
         MPI_Finalize();
         exit(-1);
     }
 
-    app->MainComm = main_comm;
+    app->MainComm = MPI_COMM_WORLD;
 
-    ////////////////////////////////////////
+    // We need to assign a unique id for the component, but multiple mpi processors may share the same component name
+    // This needs to be a collective call : MPI_Gather()
+    // In order to allocate our input buffer, we must set a maximum component name length
+    {
+        char component_names[world_size][MAX_COMPONENT_NAME_LEN];
+        MPI_Gather(component_name, strlen(component_name), MPI_BYTE, component_names, );
+    }
+
     // Determine which programs are present
     MPI_Comm component_comm;
-    MPI_Comm_split(main_comm, ComponentId, app->WorldRank, &component_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, ComponentId, app->WorldRank, &component_comm);
     MPI_Comm_rank(component_comm, &app->ComponentRank);
 
     // Declare that rank 0 of this component is "active" as a logger
     if (app->ComponentRank == 0) App_LogRank(app->WorldRank);
 
-    App_Log(APP_INFO, "%s: Initializing component %s (ID %d)\n",
-            __func__, App_MPMD_ComponentIdToName(ComponentId), ComponentId);
+    App_Log(APP_INFO, "%s: Initializing component %s (ID %d)\n", __func__, component_id_to_name(ComponentId), ComponentId);
 
     if (app->WorldRank == 0 && app->ComponentRank != 0) {
         App_Log(APP_FATAL, "%s: Global root should also be the root of its own component\n", __func__);
     }
 
-    ////////////////////////////////////
     // Initialize individual components
     MPI_Comm roots_comm = MPI_COMM_NULL;
     int component_pos = -1;
     if (app->ComponentRank == 0) {
         // Use component ID as key so that the components are sorted in ascending order
-        MPI_Comm_split(main_comm, 0, ComponentId, &roots_comm);
+        MPI_Comm_split(MPI_COMM_WORLD, 0, ComponentId, &roots_comm);
         MPI_Comm_size(roots_comm, &app->NumComponents);
         MPI_Comm_rank(roots_comm, &component_pos);
 
-        App_Log(APP_DEBUG, "%s: (%s) There are %d components present\n",
-                __func__, App_MPMD_ComponentIdToName(ComponentId), app->NumComponents);
-    }
-    else {
+        App_Log(APP_DEBUG, "%s: (%s) There are %d components present\n", __func__, component_name, app->NumComponents);
+    } else {
         MPI_Comm dummy_comm;
-        MPI_Comm_split(main_comm, 1, ComponentId, &dummy_comm);
+        MPI_Comm_split(MPI_COMM_WORLD, 1, ComponentId, &dummy_comm);
     }
 
-    ////////////////////////////////////////////////////
     // Transmit basic component information to every PE
-    MPI_Bcast(&app->NumComponents, 1, MPI_INT, 0, main_comm);
+    MPI_Bcast(&app->NumComponents, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     app->AllComponents = (TComponent*)malloc(app->NumComponents * sizeof(TComponent));
     for (int i = 0; i < app->NumComponents; i++) app->AllComponents[i] = default_component;
-    // for (int i = 0; i < app->NumComponents; i++) init_comp(&app->AllComponents[i]);
 
     // Each component root should have a list of the world rank of every other root
     // (we don't know which one is the WORLD root)
@@ -129,7 +128,7 @@ TApp* App_MPMD_Init(const TApp_MPMDId ComponentId) {
     }
 
     // Send the component roots to everyone
-    MPI_Bcast(root_world_ranks, app->NumComponents, MPI_INT, 0, main_comm);
+    MPI_Bcast(root_world_ranks, app->NumComponents, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&component_pos, 1, MPI_INT, 0, component_comm);
 
     // Select which component belongs to this PE and initialize its struct within this PE
@@ -139,14 +138,14 @@ TApp* App_MPMD_Init(const TApp_MPMDId ComponentId) {
 
     // Send basic component information to everyone
     for (int i = 0; i < app->NumComponents; i++) {
-        MPI_Bcast(&app->AllComponents[i], sizeof(TComponent), MPI_BYTE, root_world_ranks[i], main_comm);
+        MPI_Bcast(&app->AllComponents[i], sizeof(TComponent), MPI_BYTE, root_world_ranks[i], MPI_COMM_WORLD);
     }
 
     // Self-component info that is only valid on a PE from this component
     app->SelfComponent->comm  = component_comm;
     app->SelfComponent->ranks = (int*)malloc(app->SelfComponent->num_pes * sizeof(int));
 
-    /////////////////////////////////////////////////////
+
     // Determine global ranks of the PEs in this component and share with other components
 
     // Each component gathers the world ranks of its members
@@ -269,7 +268,7 @@ int* get_clean_component_list(
                 tmp_list[j + 1] = tmp_list[j];
                 App_Log(APP_EXTRA, "Changed list to... \n");
                 print_list(tmp_list, num_components + 1);
-                  
+
                 if (j == 0) {
                     // Last one, so we know the 1st slot is the right one
                     tmp_list[j] = item;
@@ -386,7 +385,7 @@ end:
     if (shared_comm == MPI_COMM_NULL) {
         App_Log(APP_ERROR, "%s: Communicator is NULL for components %s\n", __func__, comps);
     }
-   
+
     free(sorted_components);
     return shared_comm;
 }
@@ -402,18 +401,16 @@ MPI_Fint App_MPMD_GetSharedComm_F(
 }
 
 //! \return 1 if given component is present in this MPMD context, 0 if not.
-int32_t App_MPMD_HasComponent(const TApp_MPMDId ComponentId) {
-    const TApp* app = App_GetInstance();
+int32_t App_MPMD_HasComponent(const char * const ComponentName) {
+    // const TApp* app = App_GetInstance();
 
-    App_Log(APP_DEBUG, "%s: Checking for presence of component %d (%s)\n",
-            __func__, ComponentId, App_MPMD_ComponentIdToName(ComponentId));
+    // App_Log(APP_DEBUG, "%s: Checking for presence of component %d (%s)\n", __func__, ComponentId, ComponentName);
 
-    for(int i = 0; i < app->NumComponents; i++) {
-        if (app->AllComponents[i].id == (int)ComponentId) return 1;
-    }
+    // for(int i = 0; i < app->NumComponents; i++) {
+        // if (app->AllComponents[i].id == (int)ComponentId) return 1;
+    // }
 
-    App_Log(APP_DEBUG, "%s: Component %d (%s) not found\n",
-            __func__, ComponentId, App_MPMD_ComponentIdToName(ComponentId));
+    // App_Log(APP_DEBUG, "%s: Component %d (%s) not found\n", __func__, ComponentId, ComponentName);
 
     // not found
     return 0;
@@ -521,27 +518,25 @@ const TComponentSet* create_set(
         free(all_ranks);
     }
 
-
     return new_set;
 }
 
 //!> Get the string (name) that corresponds to the given component ID
 const char* App_MPMD_ComponentIdToName(const TApp_MPMDId ComponentId) {
-    switch (ComponentId)
-    {
-    case APP_MPMD_NONE:        return "[none]";
-    case APP_MPMD_GEM_ID:      return "GEM";
-    case APP_MPMD_IOSERVER_ID: return "IOSERVER";
-    case APP_MPMD_IRIS_ID:     return "IRIS";
-    case APP_MPMD_NEMO_ID:     return "NEMO";
+    switch (ComponentId) {
+        case APP_MPMD_NONE:        return "[none]";
+        case APP_MPMD_GEM_ID:      return "GEM";
+        case APP_MPMD_IOSERVER_ID: return "IOSERVER";
+        case APP_MPMD_IRIS_ID:     return "IRIS";
+        case APP_MPMD_NEMO_ID:     return "NEMO";
 
-    case APP_MPMD_TEST1_ID: return "TEST1";
-    case APP_MPMD_TEST2_ID: return "TEST2";
-    case APP_MPMD_TEST3_ID: return "TEST3";
-    case APP_MPMD_TEST4_ID: return "TEST4";
-    case APP_MPMD_TEST5_ID: return "TEST5";
+        case APP_MPMD_TEST1_ID: return "TEST1";
+        case APP_MPMD_TEST2_ID: return "TEST2";
+        case APP_MPMD_TEST3_ID: return "TEST3";
+        case APP_MPMD_TEST4_ID: return "TEST4";
+        case APP_MPMD_TEST5_ID: return "TEST5";
 
-    default: return "[unknown component]";
+        default: return "[unknown component]";
     }
 }
 
@@ -576,8 +571,7 @@ void get_comm_string(
 ) {
     if (comm == MPI_COMM_NULL) {
         strcpy(buffer, "MPI_COMM_NULL");
-    }
-    else {
+    } else {
         sprintf(buffer, "%s", "[something]");
         buffer[16] = '\0';
     }

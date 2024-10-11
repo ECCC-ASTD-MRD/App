@@ -226,7 +226,6 @@ typedef struct {
    char*          LogFile;               ///< Log file
    int            LogSplit;              ///< Split the log file per MPI rank path
    int            LogFlush;              ///< Forche buffer flush at every message
-//   char*          TmpDir;               ///< Tmp directory
    char*          Tag;                   ///< Identificateur
    FILE*          LogStream;             ///< Log file associated stream
    int            LogNoBox;              ///< Display header and footer boxes
@@ -247,7 +246,8 @@ typedef struct {
 
    char*          LibsVersion[APP_LIBSMAX];
 
-   int            Seed, *OMPSeed;        ///< Random number generator seed
+   int            Seed;
+   int           *OMPSeed;               ///< Random number generator seed
    int           *TotalsMPI;             ///< MPI total number of items arrays
    int           *CountsMPI;             ///< MPI count gathering arrays
    int           *DisplsMPI;             ///< MPI displacement gathering arrays
@@ -256,10 +256,12 @@ typedef struct {
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
-   int            NbNodeMPI, NodeRankMPI; ///< Number of MPI process on the current node
+   int            NbNodeMPI;
+   int            NodeRankMPI;           ///< Number of MPI process on the current node
 #ifdef HAVE_MPI
    MPI_Comm       Comm;
-   MPI_Comm       NodeComm, NodeHeadComm; ///< Communicator for the current node and the head nodes
+   MPI_Comm       NodeComm;              ///< Communicator for the current node
+   MPI_Comm       NodeHeadComm;          ///< Communicator for the head nodes
 
    MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context
    int            WorldRank;             ///< Global rank of this PE
