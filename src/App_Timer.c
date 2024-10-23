@@ -8,3 +8,5 @@ void App_TimerStop_f(TApp_Timer* Timer) { App_TimerStop(Timer); }
 double App_TimerTotalTime_ms_f(const TApp_Timer* Timer) { return App_TimerTotalTime_ms(Timer); }
 double App_TimerLatestTime_ms_f(const TApp_Timer* Timer) { return App_TimerLatestTime_ms(Timer); }
 double App_TimerTimeSinceStart_ms_f(const TApp_Timer* Timer) { return App_TimerTimeSinceStart_ms(Timer); }
+
+

@@ -27,6 +27,7 @@
 static TApp AppInstance;                             ///< Static App instance
 __thread TApp *App = &AppInstance;                   ///< Per thread App pointer
 static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessible through this
+__thread char App_Buf[32];                    ///< Per thread char buffer
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 

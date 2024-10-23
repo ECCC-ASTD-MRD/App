@@ -277,6 +277,13 @@ typedef struct {
 
 #ifndef APP_BUILD
 extern __thread TApp *App;               ///< Per thread App pointer
+extern __thread char App_Buf[32];
+
+static inline char* App_TimeString(double Time) {
+
+   sprintf(App_Buf,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),Time,(App->LogColor?APP_COLOR_RESET:""));
+   return(App_Buf);
+}
 #endif
 
 typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Index);
