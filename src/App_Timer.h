@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define APP_LATEST 0
+#define APP_TOTAL 1
+
 //! Timer that can accumulate microsecond intervals
 typedef struct {
   uint64_t Start;      //! Timestamp when the timer was started
