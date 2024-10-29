@@ -26,8 +26,8 @@
 
 static TApp AppInstance;                             ///< Static App instance
 __thread TApp *App = &AppInstance;                   ///< Per thread App pointer
+__thread char App_Buf[32];                           ///< Per thread char buffer
 static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessible through this
-__thread char App_Buf[32];                    ///< Per thread char buffer
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -626,7 +626,7 @@ int App_End(
 
 
             if (Status != EXIT_SUCCESS) {
-                App_Log(APP_VERBATIM, "Status         : Error(%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
+                App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {
                 App_Log(APP_VERBATIM, "Status         : Ok (%i Errors) (%i Warnings)\n", App->LogError, App->LogWarning);
             } else if (App->LogWarning) {

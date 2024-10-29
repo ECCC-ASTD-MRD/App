@@ -10,6 +10,7 @@ typedef struct {
   uint64_t Start;      //! Timestamp when the timer was started
   uint64_t LatestTime; //! Number of ticks between latest start/stop cycle
   uint64_t TotalTime;  //! How many clock ticks have been recorded (updates every time the timer stops)
+  char     String[32]; //! Output representation
 } TApp_Timer;
 
 static const clockid_t APP_CLOCK_ID = CLOCK_MONOTONIC;

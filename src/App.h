@@ -277,12 +277,10 @@ typedef struct {
 
 #ifndef APP_BUILD
 extern __thread TApp *App;               ///< Per thread App pointer
-extern __thread char App_Buf[32];
 
-static inline char* App_TimeString(double Time) {
-
-   sprintf(App_Buf,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),Time,(App->LogColor?APP_COLOR_RESET:""));
-   return(App_Buf);
+static inline char* App_TimeString(TApp_Timer *Timer,int Total) {
+   snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
+   return(Timer->String);
 }
 #endif
 

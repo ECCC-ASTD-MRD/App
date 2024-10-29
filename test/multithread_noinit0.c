@@ -15,7 +15,7 @@ int main(void) {
     }
 
     App_TimerStop(timer);
-    App_Log(APP_ALWAYS, "This is execution time %s\n",  App_TimeString(App_TimerLatestTime_ms(timer)));
+    App_Log(APP_ALWAYS, "This is execution time %s\n",  App_TimeString(timer,TRUE));
 
     return 0;
 }
