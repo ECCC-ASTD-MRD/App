@@ -19,11 +19,11 @@ typedef struct {
 static const clockid_t APP_CLOCK_ID = CLOCK_MONOTONIC;
 
 //! Values that correspond to a reset timer
-static const TApp_Timer NULL_TIMER = (const TApp_Timer) {
-  .Start = 0,
-  .LatestTime = 0,
-  .TotalTime = 0
-};
+#define NULL_TIMER ((const TApp_Timer) {     \
+  .Start = 0,                                \
+  .LatestTime = 0,                           \
+  .TotalTime = 0                             \
+})
 
 //! Get current system time in microseconds, wraps around approximately every year
 static inline uint64_t get_current_time_us() {
