@@ -1,7 +1,13 @@
 module app
     use, intrinsic :: iso_c_binding
+    use App_Atomic_Module
+    use App_Mutex_Module
     use App_Timer_Module
+#ifdef HAVE_MPI
+    use App_Shared_Memory_Module
+#endif
     implicit none
+
 
     enum, bind(C)
        enumerator :: APP_VERBATIM = -1, APP_ALWAYS = 0, APP_FATAL = 1, APP_SYSTEM = 2, APP_ERROR = 3, APP_WARNING = 4, APP_INFO = 5,          &

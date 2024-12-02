@@ -1,8 +1,8 @@
 if (EC_INIT_DONE LESS 2)
-   include(CTest)
-   add_custom_target(check COMMAND CTEST_OUTPUT_ON_FAILURE=true ${CMAKE_CTEST_COMMAND})
+    include(CTest)
+    add_custom_target(check COMMAND CTEST_OUTPUT_ON_FAILURE=true ${CMAKE_CTEST_COMMAND})
 
-   if(BUILD_TESTING)
+    if(BUILD_TESTING)
         # Check MPI implementation to be able to give the proper flags when running tests
         find_program(RPN_MPIRUN mpirun)
         if (${RPN_MPIRUN} STREQUAL "RPN_MPIRUN-NOTFOUND")
@@ -30,6 +30,17 @@ if (EC_INIT_DONE LESS 2)
         add_dependencies(check test_app_loglevel_noinit)
 
         if (TARGET App::App-ompi)
+
+            add_executable(atomic atomic.F90)
+            target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general
+            add_test(NAME atomic COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 12 $<TARGET_FILE:atomic>)
+            add_dependencies(check atomic)
+
+            add_executable(mutex mutex.F90)
+            target_link_libraries(mutex App::App-ompi) # The test uses MPI, even if it is not necessary for app_mutex in general
+            add_test(NAME mutex COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 6 $<TARGET_FILE:mutex>)
+            add_dependencies(check mutex)
+
             add_executable(multithread_noinit0 multithread_noinit0.c)
             target_link_libraries(multithread_noinit0 App::App-ompi)
             add_test(NAME multithread_noinit0 COMMAND $<TARGET_FILE:multithread_noinit0>)

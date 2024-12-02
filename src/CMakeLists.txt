@@ -2,14 +2,20 @@ message(STATUS "Generating App library")
 
 set(PROJECT_INCLUDE_FILES
    App.h
+   atomic/App_Atomic.h
+   atomic/App_Atomic.inc
    App_Timer.h
-   str.h)
+   str.h
+   )
 set(PROJECT_C_FILES
    App.c
+   atomic/App_Atomic.c
    App_Timer.c
    str.c)
 set(PROJECT_F_FILES
-   App.f90
+   App.F90
+   atomic/App_Atomic.F90
+   App_Mutex.F90
    App_Timer.F90
    )
 
@@ -43,9 +49,19 @@ add_library(App::App ALIAS App-static) # Default to static
 if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND) 
    message(STATUS "Generating App ompi library")
 
-   list(APPEND PROJECT_F_FILES       App_MPMD_Module.F90)
-   list(APPEND PROJECT_C_FILES       App_MPMD.c)
-   list(APPEND PROJECT_INCLUDE_FILES App_MPMD.h)
+   list(APPEND PROJECT_F_FILES
+        App_MPMD_Module.F90
+        shared_memory/App_Shared_Memory.F90
+   )
+   list(APPEND PROJECT_C_FILES
+        App_MPMD.c
+        shared_memory/App_Shared_Memory.c
+        )
+   list(APPEND PROJECT_INCLUDE_FILES
+        App_MPMD.h
+        shared_memory/App_Shared_Memory.h
+        shared_memory/App_Shared_Memory.inc
+        )
 
    #----- ompi version
    list(APPEND targets App-ompi-static App-ompi-shared)
@@ -118,9 +134,15 @@ install(TARGETS ${static_targets}
 
 install(FILES 
         ${CMAKE_CURRENT_BINARY_DIR}/include/app.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/app_atomic_module.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/app_mutex_module.mod
         ${CMAKE_CURRENT_BINARY_DIR}/include/app_timer_module.mod
         TYPE INCLUDE)
+
 if (TARGET App::App-ompi)
-   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_mpmd.mod TYPE INCLUDE)
+   install(FILES
+           ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_mpmd.mod
+           ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_shared_memory_module.mod
+           TYPE INCLUDE)
 endif()
 

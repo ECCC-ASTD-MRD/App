@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+
+#include "atomic/App_Atomic.h"
 #include "App_Timer.h"
 
 #ifdef HAVE_OPENMP
@@ -11,6 +13,7 @@
 
 #ifdef HAVE_MPI
 #   include <mpi.h>
+#include "shared_memory/App_Shared_Memory.h"
 #endif
 
 #ifndef TRUE
