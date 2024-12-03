@@ -25,11 +25,19 @@ set(shared_targets App-shared)
 set(static_targets App-static)
 
 add_library(App-static STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES} ${PROJECT_F_FILES})
-target_include_directories(App-static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_include_directories(App-static PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
+                        )
 target_include_directories(App-static INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 
 add_library(App-shared SHARED $<TARGET_OBJECTS:App-static>)
-target_include_directories(App-shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_include_directories(App-shared PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
+                        )
 target_include_directories(App-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
  
 add_dependencies(App-static ${PROJECT_NAME}_build_info)
@@ -70,13 +78,21 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
 
    add_library(App-ompi-static STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES} ${PROJECT_F_FILES})
    add_dependencies(App-ompi-static ${PROJECT_NAME}_build_info)
-   target_include_directories(App-ompi-static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+   target_include_directories(App-ompi-static PUBLIC
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
+                           )
    target_include_directories(App-ompi-static INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>)
    target_compile_definitions(App-ompi-static PUBLIC HAVE_MPI HAVE_OPENMP)
    target_link_libraries(App-ompi-static PUBLIC MPI::MPI_C MPI::MPI_Fortran OpenMP::OpenMP_C OpenMP::OpenMP_Fortran)
 
    add_library(App-ompi-shared SHARED $<TARGET_OBJECTS:App-ompi-static>)
-   target_include_directories(App-ompi-shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+   target_include_directories(App-ompi-shared PUBLIC
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/atomic
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/shared_memory
+                           )
    target_include_directories(App-ompi-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>)
    target_compile_definitions(App-ompi-shared PUBLIC HAVE_MPI HAVE_OPENMP)
    target_link_libraries(App-ompi-shared PUBLIC MPI::MPI_C MPI::MPI_Fortran OpenMP::OpenMP_C OpenMP::OpenMP_Fortran)
