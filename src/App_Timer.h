@@ -5,21 +5,25 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define APP_LATEST 0
+#define APP_TOTAL 1
+
 //! Timer that can accumulate microsecond intervals
 typedef struct {
   uint64_t Start;      //! Timestamp when the timer was started
   uint64_t LatestTime; //! Number of ticks between latest start/stop cycle
   uint64_t TotalTime;  //! How many clock ticks have been recorded (updates every time the timer stops)
+  char     String[32]; //! Output representation
 } TApp_Timer;
 
 static const clockid_t APP_CLOCK_ID = CLOCK_MONOTONIC;
 
 //! Values that correspond to a reset timer
-static const TApp_Timer NULL_TIMER = {
-  .Start = 0,
-  .LatestTime = 0,
-  .TotalTime = 0
-};
+#define NULL_TIMER ((const TApp_Timer) {     \
+  .Start = 0,                                \
+  .LatestTime = 0,                           \
+  .TotalTime = 0                             \
+})
 
 //! Get current system time in microseconds, wraps around approximately every year
 static inline uint64_t get_current_time_us() {
@@ -75,6 +79,15 @@ static inline double App_TimerLatestTime_ms(const TApp_Timer* Timer) {
 static inline double App_TimerTimeSinceStart_ms(const TApp_Timer* Timer) {
    // If we only count microseconds in a year, this conversion to double does not lose any precision (about 2^31 us/year)
    return((get_current_time_us() - Timer->Start) / 1000.0);
+}
+
+static inline void sleep_us(
+    const int num_us //!< [in] How many microseconds we want to wait
+) {
+  struct timespec ts;
+  ts.tv_sec  = num_us / 1000000;
+  ts.tv_nsec = num_us % 1000000 * 1000;
+  nanosleep(&ts, NULL);
 }
 
 #endif

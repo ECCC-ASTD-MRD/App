@@ -4,6 +4,8 @@ module App_Timer_Module
     implicit none
     private
 
+    public :: sleep_us
+
     type, public :: App_Timer
       type(C_PTR) :: c_timer = C_NULL_PTR !< Pointer to the C struct containing the timer
     contains
@@ -61,6 +63,12 @@ module App_Timer_Module
             type(C_PTR), intent(IN), value :: timer
             real(C_DOUBLE) :: time
         end function
+
+        subroutine sleep_us(num_us) BIND(C, name = 'sleep_us_f')
+            import :: C_INT
+            implicit none
+            integer(C_INT), intent(in), value :: num_us    !< How many microseconds to sleep
+        end subroutine sleep_us
     end interface
 contains
 

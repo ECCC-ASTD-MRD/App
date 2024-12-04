@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+
+#include "App_Atomic.h"
 #include "App_Timer.h"
 
 #ifdef HAVE_OPENMP
@@ -14,6 +16,7 @@
 
 #ifdef HAVE_MPI
 #   include <mpi.h>
+#include "App_Shared_Memory.h"
 #endif
 
 #ifndef TRUE
@@ -330,6 +333,11 @@ typedef struct {
 
 #ifndef APP_BUILD
 extern __thread TApp *App;               ///< Per thread App pointer
+
+static inline char* App_TimeString(TApp_Timer *Timer,int Total) {
+   snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
+   return(Timer->String);
+}
 #endif
 
 typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Index);
