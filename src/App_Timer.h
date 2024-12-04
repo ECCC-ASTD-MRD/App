@@ -15,7 +15,7 @@ typedef struct {
 static const clockid_t APP_CLOCK_ID = CLOCK_MONOTONIC;
 
 //! Values that correspond to a reset timer
-static const TApp_Timer NULL_TIMER = (const TApp_Timer) {
+static const TApp_Timer NULL_TIMER = {
   .Start = 0,
   .LatestTime = 0,
   .TotalTime = 0

@@ -1,3 +1,6 @@
+//! \file
+//! Implementation of the App library
+
 #define APP_BUILD
 
 #include <stdlib.h>
@@ -30,30 +33,33 @@ static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessib
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char* AppLibNames[]    = { "main", "rmn", "fst", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
-static char* AppLibLog[]      = { "", "RMN|", "FST|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
-static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA" };
-static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
+static char * AppLibNames[]    = { "main", "rmn", "fst", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
+static char * AppLibLog[]      = { "", "RMN|", "FST|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
+static char * AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA" };
+static char * AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
+
+unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
+
 
 //! Return last error
 char* App_ErrorGet(void) {
     return APP_LASTERROR;
 }
 
+
 TApp* App_GetInstance(void) { return &AppInstance; }
-
-unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
-
 int App_IsDone(void)       { return App->State == APP_DONE; }
 int App_IsMPI(void)        { return App->NbMPI > 1; }
 int App_IsOMP(void)        { return App->NbThread > 1; }
 int App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
 int App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
+
 #ifdef HAVE_MPI
 int App_MPIProcCmp(const void *a, const void *b) {
     return strncmp((const char*)a, (const char*)b, MPI_MAX_PROCESSOR_NAME);
 }
+
 
 void App_SetMPIComm(MPI_Comm Comm) {
     App->Comm = Comm;
@@ -68,9 +74,9 @@ void App_LibRegister(
     const char * const Version
 ) {
     APP_FREE(App->LibsVersion[Lib]);
-    if (Version)
-        App->LibsVersion[Lib] = strdup(Version);
+    if (Version) App->LibsVersion[Lib] = strdup(Version);
 }
+
 
 //! Initialiser l'environnement dans la structure App
 void App_InitEnv(){
@@ -96,105 +102,105 @@ void App_InitEnv(){
             // Default log level is WARNING
             for(int l = 0; l < APP_LIBSMAX; l++) App->LogLevel[l] = APP_WARNING;
 
-            char *c;
+            char * envVarVal;
 
             // Check the log parameters in the environment
-            if ((c = getenv("APP_VERBOSE"))) {
-                App_LogLevel(c);
+            if ((envVarVal = getenv("APP_VERBOSE"))) {
+                App_LogLevel(envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_NOBOX"))) {
+            if ((envVarVal = getenv("APP_VERBOSE_NOBOX"))) {
                 App->LogNoBox = TRUE;
             }
-            if ((c = getenv("APP_VERBOSE_COLOR"))) {
+            if ((envVarVal = getenv("APP_VERBOSE_COLOR"))) {
                 App->LogColor = TRUE;
             }
-            if ((c = getenv("APP_VERBOSE_TIME"))) {
-                App_LogTime(c);
+            if ((envVarVal = getenv("APP_VERBOSE_TIME"))) {
+                App_LogTime(envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_UTC"))) {
+            if ((envVarVal = getenv("APP_VERBOSE_UTC"))) {
                 App->UTC = TRUE;
             }
-            if ((c = getenv("APP_VERBOSE_RANK"))) {
-                App->LogRank = atoi(c);
+            if ((envVarVal = getenv("APP_VERBOSE_RANK"))) {
+                App->LogRank = atoi(envVarVal);
             }
-            if ((c = getenv("APP_LOG_SPLIT"))) {
+            if ((envVarVal = getenv("APP_LOG_SPLIT"))) {
                 App->LogSplit = TRUE;
             }
-            if ((c = getenv("APP_LOG_STREAM"))) {
-                App->LogFile = strdup(c);
+            if ((envVarVal = getenv("APP_LOG_STREAM"))) {
+                App->LogFile = strdup(envVarVal);
             }
-            if ((c = getenv("APP_LOG_FLUSH"))) {
+            if ((envVarVal = getenv("APP_LOG_FLUSH"))) {
                 App->LogFlush = TRUE;
             }
-            if ((c = getenv("APP_TOLERANCE"))) {
-                App_ToleranceLevel(c);
+            if ((envVarVal = getenv("APP_TOLERANCE"))) {
+                App_ToleranceLevel(envVarVal);
             }
-            if ((c = getenv("APP_NOTRAP"))) {
+            if ((envVarVal = getenv("APP_NOTRAP"))) {
                 App->Signal=-1;
             }
 
             // Check verbose level of libraries
-            if ((c = getenv("APP_VERBOSE_RMN"))) {
-                Lib_LogLevel(APP_LIBRMN, c);
+            if ((envVarVal = getenv("APP_VERBOSE_RMN"))) {
+                Lib_LogLevel(APP_LIBRMN, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_FST"))) {
-                Lib_LogLevel(APP_LIBFST, c);
+            if ((envVarVal = getenv("APP_VERBOSE_FST"))) {
+                Lib_LogLevel(APP_LIBFST, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_WB"))) {
-                Lib_LogLevel(APP_LIBWB, c);
+            if ((envVarVal = getenv("APP_VERBOSE_WB"))) {
+                Lib_LogLevel(APP_LIBWB, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_GMM"))) {
-                Lib_LogLevel(APP_LIBGMM, c);
+            if ((envVarVal = getenv("APP_VERBOSE_GMM"))) {
+                Lib_LogLevel(APP_LIBGMM, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_VGRID"))) {
-                Lib_LogLevel(APP_LIBVGRID, c);
+            if ((envVarVal = getenv("APP_VERBOSE_VGRID"))) {
+                Lib_LogLevel(APP_LIBVGRID, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_INTERPV"))) {
-                Lib_LogLevel(APP_LIBINTERPV, c);
+            if ((envVarVal = getenv("APP_VERBOSE_INTERPV"))) {
+                Lib_LogLevel(APP_LIBINTERPV, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_GEOREF"))) {
-                Lib_LogLevel(APP_LIBGEOREF, c);
+            if ((envVarVal = getenv("APP_VERBOSE_GEOREF"))) {
+                Lib_LogLevel(APP_LIBGEOREF, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_RPNMPI"))) {
-                Lib_LogLevel(APP_LIBRPNMPI, c);
+            if ((envVarVal = getenv("APP_VERBOSE_RPNMPI"))) {
+                Lib_LogLevel(APP_LIBRPNMPI, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_IRIS"))) {
-                Lib_LogLevel(APP_LIBIRIS, c);
+            if ((envVarVal = getenv("APP_VERBOSE_IRIS"))) {
+                Lib_LogLevel(APP_LIBIRIS, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_IO"))) {
-                Lib_LogLevel(APP_LIBIO, c);
+            if ((envVarVal = getenv("APP_VERBOSE_IO"))) {
+                Lib_LogLevel(APP_LIBIO, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_MDLUTIL"))) {
-                Lib_LogLevel(APP_LIBMDLUTIL, c);
+            if ((envVarVal = getenv("APP_VERBOSE_MDLUTIL"))) {
+                Lib_LogLevel(APP_LIBMDLUTIL, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_DYN"))) {
-                Lib_LogLevel(APP_LIBDYN, c);
+            if ((envVarVal = getenv("APP_VERBOSE_DYN"))) {
+                Lib_LogLevel(APP_LIBDYN, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_PHY"))) {
-                Lib_LogLevel(APP_LIBPHY, c);
+            if ((envVarVal = getenv("APP_VERBOSE_PHY"))) {
+                Lib_LogLevel(APP_LIBPHY, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_MIDAS"))) {
-                Lib_LogLevel(APP_LIBMIDAS, c);
+            if ((envVarVal = getenv("APP_VERBOSE_MIDAS"))) {
+                Lib_LogLevel(APP_LIBMIDAS, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_EER"))) {
-                Lib_LogLevel(APP_LIBEER, c);
+            if ((envVarVal = getenv("APP_VERBOSE_EER"))) {
+                Lib_LogLevel(APP_LIBEER, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_TDPACK"))) {
-                Lib_LogLevel(APP_LIBTDPACK, c);
+            if ((envVarVal = getenv("APP_VERBOSE_TDPACK"))) {
+                Lib_LogLevel(APP_LIBTDPACK, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_MACH"))) {
-                Lib_LogLevel(APP_LIBMACH, c);
+            if ((envVarVal = getenv("APP_VERBOSE_MACH"))) {
+                Lib_LogLevel(APP_LIBMACH, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_SPSDYN"))) {
-                Lib_LogLevel(APP_LIBSPSDYN, c);
+            if ((envVarVal = getenv("APP_VERBOSE_SPSDYN"))) {
+                Lib_LogLevel(APP_LIBSPSDYN, envVarVal);
             }
-            if ((c = getenv("APP_VERBOSE_META"))) {
-                Lib_LogLevel(APP_LIBMETA, c);
+            if ((envVarVal = getenv("APP_VERBOSE_META"))) {
+                Lib_LogLevel(APP_LIBMETA, envVarVal);
             }
 
             // Check the language in the environment
-            if ((c = getenv("CMCLNG"))) {
-                App->Language = (c[0] == 'f' || c[0] == 'F')?APP_FR:APP_EN;
+            if ((envVarVal = getenv("CMCLNG"))) {
+                App->Language = (envVarVal[0] == 'f' || envVarVal[0] == 'F') ? APP_FR : APP_EN;
             }
         }
     } // end OMP critical
@@ -202,7 +208,7 @@ void App_InitEnv(){
 }
 
 //! Initialiser la structure App
-TApp *App_Init(
+TApp * App_Init(
     //! [in] App type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
     int Type,
     //! [in] Application name
@@ -215,7 +221,7 @@ TApp *App_Init(
     const char * const Stamp
 ) {
     // In coprocess threaded mode, we need a different App object than the master thread
-    App = (Type == APP_THREAD)?(TApp*)calloc(1,sizeof(TApp)):&AppInstance;
+    App = (Type == APP_THREAD) ? (TApp*)calloc(1, sizeof(TApp)) : &AppInstance;
 
     App->Type = Type;
     App->Name = Name ? strdup(Name) : strdup("");
@@ -261,7 +267,7 @@ TApp *App_Init(
     App_InitEnv();
 
     // Trap signals if enabled (preemption)
-    if (App->Signal==0) {
+    if (App->Signal == 0) {
        App_Trap(SIGUSR2);
        App_Trap(SIGTERM);
     }
@@ -269,6 +275,7 @@ TApp *App_Init(
     //! \return L'application initialisée
     return App;
 }
+
 
 //! Liberer les ressources de l'App
 void App_Free(void) {
@@ -476,16 +483,16 @@ void App_Start(void) {
 
 #ifdef HAVE_MPI
     // Initialize MPI.
-    int mpi;
-    MPI_Initialized(&mpi);
+    int mpiIsInit;
+    MPI_Initialized(&mpiIsInit);
 
-    if (mpi) {
+    if (mpiIsInit) {
         MPI_Comm_size(App->Comm, &App->NbMPI);
         MPI_Comm_rank(App->Comm, &App->RankMPI);
 
-        App->TotalsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
-        App->CountsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
-        App->DisplsMPI = (int*)malloc((App->NbMPI+1)*sizeof(int));
+        App->TotalsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
+        App->CountsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
+        App->DisplsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
     }
 #endif
 
@@ -496,8 +503,8 @@ void App_Start(void) {
         omp_set_num_threads(App->NbThread);
     } else {
         // Otherwise try to get it from the environement
-        char *env = NULL;
-        if ((env = getenv("OMP_NUM_THREADS"))) {
+        const char * const env = getenv("OMP_NUM_THREADS");
+        if (env) {
             App->NbThread = atoi(env);
         } else {
             App->NbThread = 1;
@@ -529,11 +536,11 @@ void App_Start(void) {
             int l = FALSE;
             for(int t = 1; t < APP_LIBSMAX; t++) {
                 if (App->LibsVersion[t]) {
-                if (!l) {
-                    App_Log(APP_VERBATIM, "Libraries      :\n");
-                    l = TRUE;
-                }
-                App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[t], App->LibsVersion[t]);
+                    if (!l) {
+                        App_Log(APP_VERBATIM, "Libraries      :\n");
+                        l = TRUE;
+                    }
+                    App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[t], App->LibsVersion[t]);
                 }
             }
 
@@ -572,9 +579,9 @@ void App_Start(void) {
         }
     }
 
+#ifdef HAVE_MPI
     // Make sure the header is printed before any other messages from other MPI tasks
-#ifdef TODO_HAVE_MPI
-    if (App->NbMPI > 1) {
+    if (App->NbMPI > 1 && mpiIsInit) {
         MPI_Barrier(App->Comm);
     }
 #endif //HAVE_MPI
@@ -747,17 +754,19 @@ void Lib_Log4Fortran(
     Lib_Log(Lib, Level, "%s\n", Message);
 }
 
-//! Imprimer un message de maniere standard
+
+//! Print message to log
 void Lib_Log(
-    const TApp_Lib Lib,
-    //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
-    TApp_LogLevel Level,
-    //! [in] Message avec formattage à la printf
-    const char * const Format,
-    //! [in] Liste des variables du message
+    //! [in] Library id
+    const TApp_Lib lib,
+    //! [in] Message level. See \ref TApp_LogLevel
+    const TApp_LogLevel level,
+    //! [in] printf style format string
+    const char * const format,
+    //! [in] Variables referrenced in the format string
     ...
 ) {
-    //! \note Le niveau ERROR s'affichera sur de stderr alors que tout les autres seront sur stdout ou le fichier log
+    //! \note If level is ERROR, the message will be written on stderr, for all other levels the message will be written to stdout or the log file
 
 #ifdef HAVE_MPI
     if (App->LogRank != -1 && App->LogRank != App->RankMPI) {
@@ -770,29 +779,29 @@ void Lib_Log(
     if (!App->LogStream) App_LogOpen();
 
     // Check for once log flag
-    if (Level > APP_QUIET) {
+    int effectiveLevel = level;
+    if (effectiveLevel > APP_QUIET) {
         // If we logged it at least once
-        if (Level >> 3 < APP_MAXONCE && App_OnceTable[Level >> 3]++) return;
+        if (effectiveLevel >> 3 < APP_MAXONCE && App_OnceTable[effectiveLevel >> 3]++) return;
 
         // Real log level
-        Level &= 0x7;
+        effectiveLevel &= 0x7;
     }
 
     App_TimerStart(App->TimerLog);
 
-    if (Level == APP_WARNING) App->LogWarning++;
-    if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) App->LogError++;
+    if (effectiveLevel == APP_WARNING) App->LogWarning++;
+    if (effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) App->LogError++;
 
     // Check if requested level is quiet
-    if (App->LogLevel[Lib] == APP_QUIET && Level > APP_VERBATIM) return;
+    if (App->LogLevel[lib] == APP_QUIET && effectiveLevel > APP_VERBATIM) return;
 
     // If this is within the request level
-    if (Level <= App->LogLevel[Lib]) {
-
+    if (effectiveLevel <= App->LogLevel[lib]) {
         char prefix[256];
         prefix[0] = '\0';
-        if (Level >= APP_ALWAYS) {
-            char *color = App->LogColor?AppLevelColors[Level]:AppLevelColors[APP_INFO];
+        if (effectiveLevel >= APP_ALWAYS) {
+            char *color = App->LogColor ? AppLevelColors[effectiveLevel] : AppLevelColors[APP_INFO];
 
             char time[32];
             if (App->LogTime) {
@@ -829,17 +838,17 @@ void Lib_Log(
 #ifdef HAVE_MPI
            if (App_IsMPI() && App->LogRank == -1) {
                 if (App->Step) {
-                    sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                    sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
                 } else {
-                    sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[Level], AppLibLog[Lib]);
+                    sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
             }
                 }
             else
 #endif
             if (App->Step) {
-                sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[Level], App->Step, AppLibLog[Lib]);
+                sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
             } else {
-                sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[Level], AppLibLog[Lib]);
+                sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
             }
         }
 
@@ -849,8 +858,8 @@ void Lib_Log(
         {
             fprintf(App->LogStream, "%s", prefix);
 
-            va_start(args, Format);
-            vfprintf(App->LogStream, Format, args);
+            va_start(args, format);
+            vfprintf(App->LogStream, format, args);
             va_end(args);
 
             if (App->LogColor) {
@@ -858,20 +867,20 @@ void Lib_Log(
             }
 
             // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
-            if (App->LogFlush || App->LogColor || Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+            if (App->LogFlush || App->LogColor || effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) {
                 fflush(App->LogStream);
             }
         }
         pthread_mutex_unlock(&App_mutex);
-        
-        if (Level == APP_ERROR || Level == APP_FATAL || Level == APP_SYSTEM) {
+
+        if (effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
-            va_start(args, Format);
-            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, Format, args);
+            va_start(args, format);
+            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, format, args);
             va_end(args);
 
             // On system error
-            if (Level == APP_SYSTEM) {
+            if (effectiveLevel == APP_SYSTEM) {
                 perror(APP_LASTERROR);
             }
         }
@@ -879,10 +888,11 @@ void Lib_Log(
     App_TimerStop(App->TimerLog);
 
     // Exit application if error above tolerance level
-    if (App->Tolerance <= Level && (Level == APP_FATAL || Level == APP_SYSTEM)) {
+    if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
         exit(App_End(-1));
     }
 }
+
 
 //! Imprimer un message d'indication d'avancement
 void App_Progress(
@@ -909,56 +919,60 @@ void App_Progress(
     fflush(App->LogStream);
 }
 
-//! Definir le niveau de log courant pour l'application et les librairies
+
+//! Define log level for application and libraries
 int App_LogLevel(
-    //! [in] Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
-    const char * const Level
+    //! [in] Log level string ("INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    const char * const level
 ) {
     //! \return Previous log level, or current if no level specified
-    return Lib_LogLevel(APP_MAIN, Level);
+    return Lib_LogLevel(APP_MAIN, level);
 }
 
 
 //! Definir le niveau de log courant pour une librairie
 int Lib_LogLevel(
-    //! Librarie
-    const TApp_Lib Lib,
-    //! Niveau de log a traiter ("ERROR", "SYSTEM", "FATAL", "WARNING", "INFO", "DEBUG", "EXTRA", "QUIET")
-    const char * const Level
+    //! [in] Library id
+    const TApp_Lib lib,
+    //! [in] Log level string ("INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    const char * const level
 ) {
+    //! The default log level is "WARNING". It can be changed with the APP_VERBOSE environment variable.
+    //! Values for that variable must be the same as the ones provided to the level parameter of this function.
+
     // If not initialized yet
     if (!App->Tolerance){
         App_InitEnv();
     }
 
     // Keep previous level
-    int pl = App->LogLevel[Lib];
+    int previousLevel = App->LogLevel[lib];
 
-    if (Level && Level[0] != ' ' && strlen(Level)) {
-        if (strncasecmp(Level, "ERROR", 5) == 0) {
-            App->LogLevel[Lib] = APP_ERROR;
-        } else if (strncasecmp(Level, "WARN", 4) == 0) {
-            App->LogLevel[Lib] = APP_WARNING;
-        } else if (strncasecmp(Level, "INFO", 4) == 0) {
-            App->LogLevel[Lib] = APP_INFO;
-        } else if (strncasecmp(Level, "TRIVIAL", 7) == 0) {
-            App->LogLevel[Lib] = APP_TRIVIAL;
-        } else if (strncasecmp(Level, "DEBUG", 5) == 0) {
-            App->LogLevel[Lib] = APP_DEBUG;
-        } else if (strncasecmp(Level, "EXTRA", 5) == 0) {
-            App->LogLevel[Lib] = APP_EXTRA;
-        } else if (strncasecmp(Level, "QUIET", 5) == 0) {
-            App->LogLevel[Lib] = APP_QUIET;
+    if (level && level[0] != ' ' && strlen(level)) {
+        if (strncasecmp(level, "ERROR", 5) == 0) {
+            App->LogLevel[lib] = APP_ERROR;
+        } else if (strncasecmp(level, "WARN", 4) == 0) {
+            App->LogLevel[lib] = APP_WARNING;
+        } else if (strncasecmp(level, "INFO", 4) == 0) {
+            App->LogLevel[lib] = APP_INFO;
+        } else if (strncasecmp(level, "TRIVIAL", 7) == 0) {
+            App->LogLevel[lib] = APP_TRIVIAL;
+        } else if (strncasecmp(level, "DEBUG", 5) == 0) {
+            App->LogLevel[lib] = APP_DEBUG;
+        } else if (strncasecmp(level, "EXTRA", 5) == 0) {
+            App->LogLevel[lib] = APP_EXTRA;
+        } else if (strncasecmp(level, "QUIET", 5) == 0) {
+            App->LogLevel[lib] = APP_QUIET;
         } else {
             char *endptr = NULL;
-            App->LogLevel[Lib] = strtoul(Level, &endptr, 10);
+            App->LogLevel[lib] = strtoul(level, &endptr, 10);
         }
-        if (Lib == APP_MAIN) {
+        if (lib == APP_MAIN) {
             for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
         }
     }
     //! \return Previous log level
-    return pl;
+    return previousLevel;
 }
 
 //! Definir le niveau de log courant pour l'application
@@ -983,11 +997,11 @@ int App_LogRank(
     return old_rank;
 }
 
-//! Definir le niveau de log courant pour une librairie
+//! Set the log level
 int Lib_LogLevelNo(
-    //! [in] Identificateur de la librairie
+    //! [in] Library id
     const TApp_Lib Lib,
-    //! [in] Niveau de log a traiter
+    //! [in] Log level to process
     const TApp_LogLevel Level
 ) {
     // Save previous level
@@ -996,8 +1010,9 @@ int Lib_LogLevelNo(
     // If not initialized yet
     if (!App->Tolerance) App_InitEnv();
 
-    if (Level >= APP_FATAL && Level <= APP_QUIET)
+    if (Level >= APP_FATAL && Level <= APP_QUIET) {
         App->LogLevel[Lib] = Level;
+    }
 
     if (Lib == APP_MAIN) {
         for(int l = 1; l < APP_LIBSMAX; l++) App->LogLevel[l] = App->LogLevel[APP_MAIN];
@@ -1507,56 +1522,53 @@ int App_ParseDateSplit(char *Param, char *Value, int *Year, int *Month, int *Day
    return 1;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse a coordinate  value
- * @author Jean-Philippe Gauthier
- * @date   Aout 2013
- *
- * @param[in]  Param    Nom du parametre
- * @param[in]  Value    Value to parse
- * @param[out] Var      Variable to put result into
- * @param[in]  Index    Coordinate index (0:Lat, 1:Lon, 2:Height, 3:Speed)
- *
- * @return  1 = ok or 0 = failed
- */
- int App_ParseCoords(char *Param, char *Value, double *Lat, double *Lon, int Index) {
-   (void)Param;
 
-   char *ptr;
-   double coord = strtod(Value, &ptr);
+//! Parse a coordinate value
+int App_ParseCoords(
+    //! [in] Parameter name
+    const char * const Param,
+    //! [in] Parameter value
+    const char * const Value,
+    //! [out] Latitude
+    double * const Lat,
+    //! [out] Longitude
+    double * const Lon,
+    //! [in] Coordinate type (0:Lat, 1:Lon)
+    const int Index
+) {
+    //! \return 1 on success, 0 otherwise
 
-   switch(Index) {
-      case 0:
-         if (coord < -90.0 || coord > 90.0) {
-            App_Log(APP_ERROR, "Invalid latitude coordinate: %s\n", Value);
-            return 0;
-         }
-         *Lat = coord;
-         break;
-      case 1:
-         if (coord<0.0) coord += 360.0;
-         if (coord<0.0 || coord > 360.0) {
-            App_Log(APP_ERROR, "Invalid longitude coordinate: %s\n", Value);
-            return 0;
-         }
-         *Lon = coord;
-         break;
-   }
+    char *ptr;
+    double coord = strtod(Value, &ptr);
 
-   return 1;
+    switch(Index) {
+        case 0:
+            if (coord < -90.0 || coord > 90.0) {
+                App_Log(APP_ERROR, "Invalid latitude coordinate: %s\n", Value);
+                return 0;
+            }
+            *Lat = coord;
+            break;
+        case 1:
+            if (coord<0.0) coord += 360.0;
+            if (coord<0.0 || coord > 360.0) {
+                App_Log(APP_ERROR, "Invalid longitude coordinate: %s\n", Value);
+                return 0;
+            }
+            *Lon = coord;
+            break;
+    }
+
+    return 1;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Initialise seeds for MPI/OpenMP
- * @author Jean-Philippe Gauthier
- * @date   Aout 2011
- */
+
+//! Initialize seeds for MPI/OpenMP
 void App_SeedInit() {
-   // Modify seed value for current processor/thread for parallelization.
-   for(int t = 1; t < App->NbThread; t++) {
-      App->OMPSeed[t] = App->Seed + 1000000 * (App->RankMPI * App->NbThread + t);
-   }
+    // Modify seed value for current processor/thread for parallelization.
+    for(int t = 1; t < App->NbThread; t++) {
+        App->OMPSeed[t] = App->Seed + 1000000 * (App->RankMPI * App->NbThread + t);
+    }
 
-   App->OMPSeed[0] = App->Seed += 1000000 * App->RankMPI;
+    App->OMPSeed[0] = App->Seed += 1000000 * App->RankMPI;
 }
-
