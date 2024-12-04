@@ -4,7 +4,7 @@ module App_Timer_Module
     implicit none
     private
 
-    public :: usleep
+    public :: sleep_us
 
     type, public :: App_Timer
       type(C_PTR) :: c_timer = C_NULL_PTR !< Pointer to the C struct containing the timer
@@ -64,13 +64,11 @@ module App_Timer_Module
             real(C_DOUBLE) :: time
         end function
 
-        !> Sleep some number of microseconds
-        !> Binding to unistd.h usleep C function
-        subroutine usleep(usec) BIND(C, name = 'usleep')
+        subroutine sleep_us(num_us) BIND(C, name = 'sleep_us_f')
             import :: C_INT
             implicit none
-            integer(C_INT), intent(in), value :: usec    !< How many microseconds to sleep
-        end subroutine usleep
+            integer(C_INT), intent(in), value :: num_us    !< How many microseconds to sleep
+        end subroutine sleep_us
     end interface
 contains
 
