@@ -31,8 +31,8 @@ static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessib
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char* AppLibNames[]    = { "main", "rmn", "fst", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
-static char* AppLibLog[]      = { "", "RMN|", "FST|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
+static char* AppLibNames[]    = { "main", "rmn", "fst", "brp", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
+static char* AppLibLog[]      = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
 static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA" };
 static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
 
