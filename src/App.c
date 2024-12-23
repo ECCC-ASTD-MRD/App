@@ -141,7 +141,10 @@ void App_InitEnv(){
             if ((c = getenv("APP_VERBOSE_FST"))) {
                 Lib_LogLevel(APP_LIBFST, c);
             }
-            if ((c = getenv("APP_VERBOSE_WB"))) {
+            if ((c = getenv("APP_VERBOSE_BRP"))) {
+                Lib_LogLevel(APP_LIBBRP, c);
+            }
+               if ((c = getenv("APP_VERBOSE_WB"))) {
                 Lib_LogLevel(APP_LIBWB, c);
             }
             if ((c = getenv("APP_VERBOSE_GMM"))) {
