@@ -90,8 +90,8 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
    add_library(App-ompi-shared SHARED $<TARGET_OBJECTS:App-ompi-static>)
    target_include_directories(App-ompi-shared PUBLIC
                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/atomic
-                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/shared_memory
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
                            )
    target_include_directories(App-ompi-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>)
    target_compile_definitions(App-ompi-shared PUBLIC HAVE_MPI HAVE_OPENMP)
