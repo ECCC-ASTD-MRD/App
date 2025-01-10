@@ -49,13 +49,13 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion
 )
 
-install(EXPORT ${PROJECT_NAME}-shared-targets
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${CONFIG_INSTALL_DIR})
+# install(EXPORT ${PROJECT_NAME}-shared-targets
+#     NAMESPACE ${PROJECT_NAME}::
+#     DESTINATION ${CONFIG_INSTALL_DIR})
 
-install(EXPORT ${PROJECT_NAME}-static-targets
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${CONFIG_INSTALL_DIR})
+# install(EXPORT ${PROJECT_NAME}-static-targets
+#     NAMESPACE ${PROJECT_NAME}::
+#     DESTINATION ${CONFIG_INSTALL_DIR})
 
 install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
                 "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"

@@ -167,67 +167,67 @@ typedef enum {
 #define APP_ASRT_OK(x) if( (x) != APP_OK ) return APP_ERR
 #define APP_ASRT_OK_END(x) if( (x) != APP_OK ) goto end
 #define APP_ASRT_OK_M(Fct, ...) \
-   if( (Fct) != APP_OK ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) != APP_OK ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, __VA_ARGS__); \
+        return APP_ERR; \
+    }
 
 // Check FST function and return the specified value if an error was encountered
 #define APP_FST_ASRT_H(Fct, ...) \
-   if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) < 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        return APP_ERR; \
+    }
 #define APP_FST_ASRT_H_END(Fct, ...) \
-   if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      goto end; \
-   }
+    if( (Fct) < 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        goto end; \
+    }
 #define APP_FST_ASRT(Fct, ...) \
-   if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) != 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        return APP_ERR; \
+    }
 #define APP_FST_ASRT_END(Fct, ...) \
-   if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      goto end; \
-   }
+    if( (Fct) != 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        goto end; \
+    }
 // Memory helpers
 #define APP_MEM_ASRT(Buf, Fct) \
-   if( !(Buf = (Fct)) ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
-      return APP_ERR; \
-   }
+    if( !(Buf = (Fct)) ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+        return APP_ERR; \
+    }
 #define APP_MEM_ASRT_END(Buf, Fct) \
-   if( !(Buf = (Fct)) ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
-      goto end; \
-   }
+    if( !(Buf = (Fct)) ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+        goto end; \
+    }
 
-#define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
+#define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr = NULL; }
 
 // MPI helpers
 #ifdef HAVE_MPI
 #define APP_MPI_ASRT(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-      return APP_ERR; \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+        return APP_ERR; \
+    } \
 }
 #define APP_MPI_ASRT_END(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-      goto end; \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+        goto end; \
+    } \
 }
 #define APP_MPI_CHK(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+    } \
 }
 #define APP_MPI_IN_PLACE(Fld) (App->RankMPI ? (Fld) : MPI_IN_PLACE)
 
@@ -305,8 +305,8 @@ typedef struct {
    int           *TotalsMPI;             ///< MPI total number of items arrays
    int           *CountsMPI;             ///< MPI count gathering arrays
    int           *DisplsMPI;             ///< MPI displacement gathering arrays
-   int            NbMPI;                 ///< Number of MPI process
-   int            RankMPI;               ///< Rank of MPI process
+   int            NbMPI;                 ///< Number of MPI process \todo Figure out why this isn't in #ifdef HAVE_MPI
+   int            RankMPI;               ///< Rank of MPI process \todo Figure out how this is different from WorldRank and the why it isn't in #ifdef HAVE_MPI
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
@@ -317,7 +317,7 @@ typedef struct {
    MPI_Comm       NodeComm;              ///< Communicator for the current node
    MPI_Comm       NodeHeadComm;          ///< Communicator for the head nodes
 
-   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context
+   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context \todo Figure out if there is any case where this isn't going to be MPI_COMM_WORLD
    int            WorldRank;             ///< Global rank of this PE
    int            ComponentRank;         ///< Local rank of this PE (within its component)
    TComponent *   SelfComponent;         ///< This PE's component
@@ -335,8 +335,8 @@ typedef struct {
 extern __thread TApp *App;               ///< Per thread App pointer
 
 static inline char* App_TimeString(TApp_Timer *Timer,int Total) {
-   snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
-   return(Timer->String);
+    snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
+    return(Timer->String);
 }
 #endif
 
@@ -373,7 +373,14 @@ int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
 int   App_ParseDate(char *Param, char *Value, time_t *Var);
-int   App_ParseDateSplit(char *Param, char *Value, int *Year, int *Month, int *Day, int *Hour, int *Min);
+int App_ParseDateSplit(
+    const char * const param,
+    char * const value,
+    int * const year,
+    int * const month,
+    int * const day,
+    int * const hour,
+    int * const min);
 int App_ParseCoords(
     const char * const Param,
     const char * const Value,

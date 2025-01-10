@@ -28,23 +28,25 @@ module app_mpmd
 
 contains
 
-    subroutine App_MPMD_Init(component_name, component_version)
+    subroutine App_MPMD_Init(component_name, component_version, mpi_thread_model)
         implicit none
         character(len = *), intent(in) :: component_name
         character(len = *), intent(in) :: component_version
+        integer, intent(in) :: mpi_thread_model
 
         interface
-            function App_MPMD_Init_c(name, version) result(app_ptr_c) bind(C, name='App_MPMD_Init')
-                import :: C_CHAR, C_INT, C_PTR
+            function App_MPMD_Init_c(name, version, mpiThreadModel) result(app_ptr_c) bind(C, name='App_MPMD_Init')
+                import :: C_CHAR, C_PTR, C_INT32_T
                 implicit none
                 character(kind = C_CHAR), dimension(*), intent(in) :: name
                 character(kind = C_CHAR), dimension(*), intent(in) :: version
+                integer(C_INT32_T), value, intent(in) :: mpiThreadModel
                 type(C_PTR) :: app_ptr_c
             end function App_MPMD_Init_c
         end interface
 
         type(C_PTR) :: app_ptr
-        app_ptr = App_MPMD_Init_c(trim(component_name)//achar(0), trim(component_version)//achar(0))
+        app_ptr = App_MPMD_Init_c(trim(component_name)//achar(0), trim(component_version)//achar(0), mpi_thread_model)
     end subroutine App_MPMD_Init
 
 
@@ -114,7 +116,7 @@ contains
         integer :: shared_comm
 
         interface
-            function App_MPMD_GetSharedComm_C(components, num_components) result(comm) bind(C, name='App_MPMD_GetSharedComm_F')
+            function App_MPMD_GetSharedComm_C(num_components, components) result(comm) bind(C, name='App_MPMD_GetSharedComm_F')
                 import :: C_INT32_T, C_PTR
                 implicit none
                 ! type(C_PTR),        value, intent(in) :: components
@@ -124,7 +126,7 @@ contains
             end function App_MPMD_GetSharedComm_C
         end interface
 
-        shared_comm = App_MPMD_GetSharedComm_C(component_list(1), size(component_list))
+        shared_comm = App_MPMD_GetSharedComm_C(size(component_list), component_list(1))
     end function App_MPMD_GetSharedComm
 
 

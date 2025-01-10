@@ -42,6 +42,7 @@ subroutine validate_comm_size(comm, expected_num_procs, msg)
     end if
 end subroutine validate_comm_size
 
+
 subroutine mpmd_end_test()
     implicit none
     integer :: ierr
@@ -49,5 +50,6 @@ subroutine mpmd_end_test()
     call App_MPMD_Finalize()
     ! call MPI_Finalize(ierr)
 end subroutine mpmd_end_test
+
 
 end module app_test_mpmd_helper

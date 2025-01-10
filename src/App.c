@@ -43,7 +43,7 @@ unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 
 
 //! Return last error
-char* App_ErrorGet(void) {
+char * App_ErrorGet(void) {
     return APP_LASTERROR;
 }
 
@@ -80,7 +80,7 @@ void App_LibRegister(
 
 
 //! Initialiser l'environnement dans la structure App
-void App_InitEnv(){
+void App_InitEnv() {
     pthread_mutex_lock(&App_mutex);
     {
         // Only do it if not already initialized
@@ -107,6 +107,8 @@ void App_InitEnv(){
 
             // Check the log parameters in the environment
             if ((envVarVal = getenv("APP_VERBOSE"))) {
+                // \bug This can cause a deadlock or at least lock timeout since the App_LogLevel function calls Lib_LogLevel which in turn
+                // calls App_InitEnv and there is a mutex around a entire code of this function
                 App_LogLevel(envVarVal);
             }
             if ((envVarVal = getenv("APP_VERBOSE_NOBOX"))) {
@@ -137,7 +139,7 @@ void App_InitEnv(){
                 App_ToleranceLevel(envVarVal);
             }
             if ((envVarVal = getenv("APP_NOTRAP"))) {
-                App->Signal=-1;
+                App->Signal = -1;
             }
 
             // Check verbose level of libraries
@@ -305,7 +307,7 @@ void App_Free(void) {
         // In coprocess threaded mode, we have a different App object than the master thread
         if (App->Type == APP_THREAD) {
             free(App);
-            App=NULL;
+            App = NULL;
         }
 
         //! \todo MPI stuff (MPMD)
@@ -459,7 +461,7 @@ int App_ThreadPlace(void) {
 
                 case APP_AFFINITY_SOCKET:
                     // Pack threads over scattered MPI (hope it fits with sockets)
-                    CPU_SET((App->NodeRankMPI*incmpi)+omp_get_thread_num(), &set);
+                    CPU_SET((App->NodeRankMPI*incmpi) + omp_get_thread_num(), &set);
                     break;
 
                 case APP_AFFINITY_NONE:
@@ -486,7 +488,6 @@ void App_Start(void) {
     // Initialize MPI.
     int mpiIsInit;
     MPI_Initialized(&mpiIsInit);
-
     if (mpiIsInit) {
         MPI_Comm_size(App->Comm, &App->NbMPI);
         MPI_Comm_rank(App->Comm, &App->RankMPI);
@@ -534,14 +535,14 @@ void App_Start(void) {
             App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
             App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n", App->Name, App->Version, App->TimeStamp);
 
-            int l = FALSE;
-            for(int t = 1; t < APP_LIBSMAX; t++) {
-                if (App->LibsVersion[t]) {
-                    if (!l) {
+            int libHeaderPrinted = FALSE;
+            for(int libIdx = 1; libIdx < APP_LIBSMAX; libIdx++) {
+                if (App->LibsVersion[libIdx]) {
+                    if (!libHeaderPrinted) {
                         App_Log(APP_VERBATIM, "Libraries      :\n");
-                        l = TRUE;
+                        libHeaderPrinted = TRUE;
                     }
-                    App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[t], App->LibsVersion[t]);
+                    App_Log(APP_VERBATIM, "   %-12s: %s\n", AppLibNames[libIdx], App->LibsVersion[libIdx]);
                 }
             }
 
@@ -587,6 +588,7 @@ void App_Start(void) {
     }
 #endif //HAVE_MPI
 }
+
 
 //! Finaliser l'execution du modele et afficher le footer
 //! \return Process exit status
@@ -687,35 +689,35 @@ void App_LogStream(const char * const Stream) {
 
 //! Ouvrir le fichier log
 void App_LogOpen(void) {
-   pthread_mutex_lock(&App_mutex);
-   {
-    if (!App->LogStream) {
-        if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
-            App->LogStream = stdout;
-        } else if (strcmp(App->LogFile, "stderr") == 0) {
-            App->LogStream = stderr;
-        } else {
-            if (!App->RankMPI) {
-                App->LogStream = fopen(App->LogFile, "w");
+    pthread_mutex_lock(&App_mutex);
+    {
+        if (!App->LogStream) {
+            if (!App->LogFile || strcmp(App->LogFile, "stdout") == 0) {
+                App->LogStream = stdout;
+            } else if (strcmp(App->LogFile, "stderr") == 0) {
+                App->LogStream = stderr;
             } else {
-                App->LogStream = fopen(App->LogFile, "a+");
+                if (!App->RankMPI) {
+                    App->LogStream = fopen(App->LogFile, "w");
+                } else {
+                    App->LogStream = fopen(App->LogFile, "a+");
+                }
+            }
+            if (!App->LogStream) {
+                App->LogStream = stdout;
+                fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
+            }
+
+            // Split log file per MPI rank
+            const int maxFilePathLen = 4096;
+            char file[maxFilePathLen];
+            if (App->LogSplit && App_IsMPI()) {
+                snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
+                App->LogStream = freopen(file, "a", App->LogStream);
             }
         }
-        if (!App->LogStream) {
-            App->LogStream = stdout;
-            fprintf(stderr, "(WARNING) Unable to open log stream (%s), will use stdout instead\n", App->LogFile);
-        }
-
-        // Split log file per MPI rank
-        const int maxFilePathLen = 4096;
-        char file[maxFilePathLen];
-        if (App->LogSplit && App_IsMPI()) {
-            snprintf(file, maxFilePathLen, "%s.%06d", App->LogFile, App->RankMPI);
-            App->LogStream = freopen(file, "a", App->LogStream);
-        }
-    }
-   } // end OMP critical
-   pthread_mutex_unlock(&App_mutex);
+    } // end OMP critical
+    pthread_mutex_unlock(&App_mutex);
 }
 
 //! Fermer le fichier log
@@ -1030,18 +1032,22 @@ int App_ToleranceLevel(
 ) {
     int pl = App->Tolerance;
 
-    if (Level && Level[0] != ' ' && strlen(Level)) {
-        if (strncasecmp(Level, "ERROR", 5) == 0) {
-            App->Tolerance = APP_ERROR;
-        } else if (strncasecmp(Level, "SYSTEM", 6) == 0) {
-            App->Tolerance = APP_SYSTEM;
-        } else if (strncasecmp(Level, "FATAL", 5) == 0) {
-            App->Tolerance = APP_FATAL;
-        } else if (strncasecmp(Level, "QUIET", 5) == 0) {
-            App->Tolerance = APP_QUIET;
-        } else {
-            char *endptr = NULL;
-            App->Tolerance = strtoul(Level, &endptr, 10);
+    if (Level) {
+        if (strlen(Level)) {
+            if (Level[0] != ' ') {
+                if (strncasecmp(Level, "ERROR", 5) == 0) {
+                    App->Tolerance = APP_ERROR;
+                } else if (strncasecmp(Level, "SYSTEM", 6) == 0) {
+                    App->Tolerance = APP_SYSTEM;
+                } else if (strncasecmp(Level, "FATAL", 5) == 0) {
+                    App->Tolerance = APP_FATAL;
+                } else if (strncasecmp(Level, "QUIET", 5) == 0) {
+                    App->Tolerance = APP_QUIET;
+                } else {
+                    char *endptr = NULL;
+                    App->Tolerance = strtoul(Level, &endptr, 10);
+                }
+            }
         }
     }
 
@@ -1209,29 +1215,29 @@ int App_ParseArgs(
             if ((Flags & APP_ARGSLANG) && (!strcasecmp(tok, "-a") || !strcasecmp(tok, "--language"))) {  // language (en, fr)
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                tmp = env ? strtok(str, " ") : argv[i];
-                if (tmp[0] == 'f' || tmp[0] == 'F') {
-                    App->Language = APP_FR;
-                } else if  (tmp[0] == 'e' || tmp[0] == 'E') {
-                    App->Language = APP_EN;
-                } else {
-                    printf("Invalid value for language, must be francais or english\n");
-                    exit(EXIT_FAILURE);
-                }
+                    tmp = env ? strtok(str, " ") : argv[i];
+                    if (tmp[0] == 'f' || tmp[0] == 'F') {
+                        App->Language = APP_FR;
+                    } else if  (tmp[0] == 'e' || tmp[0] == 'E') {
+                        App->Language = APP_EN;
+                    } else {
+                        printf("Invalid value for language, must be francais or english\n");
+                        exit(EXIT_FAILURE);
+                    }
                 }
             } else if ((Flags & APP_ARGSLOG) && (!strcasecmp(tok, "-l") || !strcasecmp(tok, "--log"))) { // Log file
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                free(App->LogFile);
-                App->LogFile = strdup(env ? strtok(str, " ") : argv[i]);
+                    free(App->LogFile);
+                    App->LogFile = strdup(env ? strtok(str, " ") : argv[i]);
                 }
             } else if ((Flags & APP_ARGSLOG) && !strcasecmp(tok, "--logsplit")) { // Log file split
                 App->LogSplit = TRUE;
             } else if ((Flags & APP_ARGSTHREAD) && (!strcasecmp(tok, "-t") || !strcasecmp(tok, "--threads"))) { // Threads
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                tmp = env ? strtok(str, " ") : argv[i];
-                App->NbThread = strtol(tmp, &endptr, 10);
+                    tmp = env ? strtok(str, " ") : argv[i];
+                    App->NbThread = strtol(tmp, &endptr, 10);
                 }
             } else if ((Flags & APP_ARGSTHREAD) && !strcasecmp(tok, "--affinity")) { // Threads
                 i++;
@@ -1258,26 +1264,26 @@ int App_ParseArgs(
             } else if ((Flags & APP_ARGSSEED) && (!strcasecmp(tok, "-s") || !strcasecmp(tok, "--seed"))) { // Seed
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                tmp = env ? strtok(str, " ") : argv[i];
-                if (strcasecmp(tmp, "VARIABLE") == 0 || strcmp(tmp, "1") == 0) {
-                    // Seed is variable, according to number of elapsed seconds since January 1 1970, 00:00:00 UTC.
-                } else if (strcasecmp(tmp, "FIXED") == 0 || strcmp(tmp, "0") == 0) {
-                    // Seed is fixed
-                    App->Seed = APP_SEED;
-                } else {
-                    // Seed is user defined
-                    App->Seed = strtol(tmp, &endptr, 10);
-                }
+                    tmp = env ? strtok(str, " ") : argv[i];
+                    if (strcasecmp(tmp, "VARIABLE") == 0 || strcmp(tmp, "1") == 0) {
+                        // Seed is variable, according to number of elapsed seconds since January 1 1970, 00:00:00 UTC.
+                    } else if (strcasecmp(tmp, "FIXED") == 0 || strcmp(tmp, "0") == 0) {
+                        // Seed is fixed
+                        App->Seed = APP_SEED;
+                    } else {
+                        // Seed is user defined
+                        App->Seed = strtol(tmp, &endptr, 10);
+                    }
                 }
             } else if (!strcasecmp(tok, "-v") || !strcasecmp(tok, "--verbose")) {                      // Verbose degree
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                App_LogLevel(env ? strtok(str, " ") : argv[i]);
+                    App_LogLevel(env ? strtok(str, " ") : argv[i]);
                 }
             } else if (!strcasecmp(tok, "--verbosetime")) {                                           // Verbose time type
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                App_LogTime(env ? strtok(str, " ") : argv[i]);
+                    App_LogTime(env ? strtok(str, " ") : argv[i]);
                 }
             } else if (!strcasecmp(tok, "--verboseutc")) {                                            // Use UTC time in log messages
                 App->UTC = TRUE;
@@ -1290,12 +1296,12 @@ int App_ParseArgs(
                 // Process specific argument
                 aarg = AArgs;
                 while(aarg->Short) {
-                if ((aarg->Short && tok[1] == aarg->Short[0] && tok[2] == '\0') || (aarg->Long && strcasecmp(&tok[2], aarg->Long) == 0)) {
-                    ok = (aarg->Type == APP_FLAG ? (*(int*)aarg->Var) = TRUE : App_GetArgs(aarg, env ? strtok(str, " ") : ((i + 1 < argc && argv[i+1][0] != '-') ? argv[++i] : NULL)));
-                    ptok = aarg->Type == APP_FLAG ? NULL : tok;
-                    break;
-                }
-                aarg++;
+                    if ((aarg->Short && tok[1] == aarg->Short[0] && tok[2] == '\0') || (aarg->Long && strcasecmp(&tok[2], aarg->Long) == 0)) {
+                        ok = (aarg->Type == APP_FLAG ? (*(int*)aarg->Var) = TRUE : App_GetArgs(aarg, env ? strtok(str, " ") : ((i + 1 < argc && argv[i+1][0] != '-') ? argv[++i] : NULL)));
+                        ptok = aarg->Type == APP_FLAG ? NULL : tok;
+                        break;
+                    }
+                    aarg++;
                 }
             }
 
@@ -1492,35 +1498,39 @@ int App_ParseDate(
     return 1;
 }
 
-/**----------------------------------------------------------------------------
- * @brief  Parse a date value and return the split values
- * @author Jean-Philippe Gauthier
- * @date   Fevrier 2013
- *
- * @param[in]  Param    Nom du parametre
- * @param[in]  Value    Value to parse
- * @param[out] Year     Variable to put result into
- * @param[out] Month    Variable to put result into
- * @param[out] Day      Variable to put result into
- * @param[out] Hour     Variable to put result into
- * @param[out] Min      Variable to put result into
- *
- * @return  1 = ok or 0 = failed
-*/
-int App_ParseDateSplit(char *Param, char *Value, int *Year, int *Month, int *Day, int *Hour, int *Min) {
-   char *ptr;
-   long long t = strtoll(Value, &ptr, 10);
-   if (strlen(Value) != 12 || t <= 0) {
-      App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM: %s\n", Param, Value);
-      return 0;
-   }
-   *Year  = t / 100000000;  t -= (long long)(*Year) * 100000000;
-   *Month = t / 1000000;    t -= (*Month) * 1000000;
-   *Day   = t / 10000;      t -= (*Day) * 10000;
-   *Hour  = t / 100;        t -= (*Hour) * 100;
-   *Min   = t;
 
-   return 1;
+// Parse a date value and return the split values
+int App_ParseDateSplit(
+    // [in] Parameter name
+    const char * const param,
+    // [in] Value to parse
+    char * const value,
+    // [out] Year
+    int * const year,
+    // [out] Month
+    int * const month,
+    // [out] Day
+    int * const day,
+    // [out] Hour
+    int * const hour,
+    // [out] Minutes
+    int * const min
+) {
+    // \result 1 on success, 0 otherwise
+
+    char * endptr;
+    long long t = strtoll(value, &endptr, 10);
+    if (strlen(value) != 12 || t <= 0) {
+        App_Log(APP_ERROR, "Invalid value for %s, must be YYYYMMDDHHMM: %s\n", param, value);
+        return 0;
+    }
+    *year  = t / 100000000;  t -= (long long)(*year) * 100000000;
+    *month = t / 1000000;    t -= (*month) * 1000000;
+    *day   = t / 10000;      t -= (*day) * 10000;
+    *hour  = t / 100;        t -= (*hour) * 100;
+    *min   = t;
+
+    return 1;
 }
 
 
