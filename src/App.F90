@@ -18,6 +18,8 @@ module app
        enumerator :: APP_MASTER = 0, APP_THREAD = 1
     end enum
 
+    ! Maximum component lane length (including null character). Must be kept in sync with the definition in App.h!
+    integer, parameter :: APP_MAX_COMPONENT_NAME_LEN = 32
     integer, parameter :: APP_MSGMAX = 4097  ! Maximum message length (including C '/0')
     type(C_PTR) :: app_ptr                 ! Global (opaque) app structure pointer
     integer :: app_status                  ! To recuperate application status

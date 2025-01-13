@@ -14,164 +14,188 @@
 !---------------------------------- LICENCE END ---------------------------------
 
 module app_mpmd
-   use, intrinsic :: iso_c_binding
-   use, intrinsic :: iso_fortran_env
-   use mpi
-   use app
-   implicit none
-   save
+    use, intrinsic :: iso_c_binding
+    use, intrinsic :: iso_fortran_env
+    use app
+    implicit none
+    save
 
-   enum, BIND(C)
-      enumerator :: &
-         APP_MPMD_NONE        = 0, &
-         APP_MPMD_GEM_ID      = 1, &
-         APP_MPMD_IOSERVER_ID = 2, &
-         APP_MPMD_IRIS_ID     = 3, &
-         APP_MPMD_NEMO_ID     = 4, &
-
-         APP_MPMD_TEST1_ID = 1001, &
-         APP_MPMD_TEST2_ID = 1002, &
-         APP_MPMD_TEST3_ID = 1003, &
-         APP_MPMD_TEST4_ID = 1004, &
-         APP_MPMD_TEST5_ID = 1005
-   end enum
-
-   interface
-      subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
-         implicit none
-      end subroutine App_MPMD_Finalize
-   end interface
+    interface
+        subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
+            implicit none
+        end subroutine App_MPMD_Finalize
+    end interface
 
 contains
 
-   subroutine App_MPMD_Init(component_id)
-      implicit none
-      integer, intent(in) :: component_id
+    subroutine App_MPMD_Init(component_name, component_version, mpi_thread_model)
+        implicit none
+        character(len = *), intent(in) :: component_name
+        character(len = *), intent(in) :: component_version
+        integer, intent(in) :: mpi_thread_model
 
-      interface
-         function App_MPMD_Init_c(id) result(app_ptr_c) bind(C, name='App_MPMD_Init')
-            import :: C_INT, C_PTR
-            implicit none
-            integer(C_INT), intent(in), value :: id
-            type(C_PTR) :: app_ptr_c
-         end function App_MPMD_Init_c
-      end interface
+        interface
+            function App_MPMD_Init_c(name, version, mpiThreadModel) result(app_ptr_c) bind(C, name='App_MPMD_Init')
+                import :: C_CHAR, C_PTR, C_INT32_T
+                implicit none
+                character(kind = C_CHAR), dimension(*), intent(in) :: name
+                character(kind = C_CHAR), dimension(*), intent(in) :: version
+                integer(C_INT32_T), value, intent(in) :: mpiThreadModel
+                type(C_PTR) :: app_ptr_c
+            end function App_MPMD_Init_c
+        end interface
 
-      type(C_PTR) :: app_ptr
-      app_ptr = App_MPMD_Init_c(component_id)
-   end subroutine App_MPMD_Init
-
-   !> \return The communicator for all PEs part of the same component as me.
-   pure function App_MPMD_GetOwnComm() result(own_comm)
-      implicit none
-      integer :: own_comm
-
-      interface
-         pure function App_MPMD_GetOwnComm_C() result(comm) bind(C, name = 'App_MPMD_GetOwnComm_F')
-            import :: C_INT32_T
-            implicit none
-            integer(C_INT32_T) :: comm
-         end function App_MPMD_GetOwnComm_C
-      end interface
-
-      own_comm = App_MPMD_GetOwnComm_C()
-   end function App_MPMD_GetOwnComm
-
-   !> Retrieve a communicator that encompasses all PEs part of one of the components
-   !> in the given list. If the communicator does not already exist, it will be created.
-   !> _This function call is collective if and only if the communicator must be created._
-   function App_MPMD_GetSharedComm(component_list) result(shared_comm)
-      implicit none
-      !> The list of components IDs for which we want a shared communicator.
-      !> This list *must* contain the component of the calling PE. It may contain
-      !> duplicate IDs and does not have to be in a specific order.
-      integer, dimension(:), target, intent(in) :: component_list
-      integer :: shared_comm
-      
-      interface
-         function App_MPMD_GetSharedComm_C(components, num_components) result(comm) bind(C, name='App_MPMD_GetSharedComm_F')
-            import :: C_INT32_T, C_PTR
-            implicit none
-            ! type(C_PTR),        value, intent(in) :: components
-            integer(C_INT32_T),        intent(in) :: components
-            integer(C_INT32_T), value, intent(in) :: num_components
-            integer(C_INT32_T) :: comm
-         end function App_MPMD_GetSharedComm_C
-      end interface
-
-      shared_comm = App_MPMD_GetSharedComm_C(component_list(1), size(component_list))
-   end function App_MPMD_GetSharedComm
+        type(C_PTR) :: app_ptr
+        app_ptr = App_MPMD_Init_c(trim(component_name)//achar(0), trim(component_version)//achar(0), mpi_thread_model)
+    end subroutine App_MPMD_Init
 
 
-   !> Get the name associated with the given component ID
-   function App_MPMD_ComponentIdToName(component_id) result(component_name)
-      implicit none
+    !> Get the id of the component to which this PE belongs
+    !> \return Component id of this PE
+    pure function App_MPMD_GetSelfComponentId() result(component_id)
+        implicit none
+        integer :: component_id
 
-      integer, intent(in) :: component_id
-      character(len=:), allocatable :: component_name
+        interface
+            pure function App_MPMD_GetSelfComponentId_C() result(id) bind(C, name = 'App_MPMD_GetSelfComponentId')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T) :: id
+            end function App_MPMD_GetSelfComponentId_C
+        end interface
 
-      interface
-         function id_to_name_c(id) result(name) bind(C, name='App_MPMD_ComponentIdToName')
-            import :: C_PTR, C_INT32_T
-            implicit none
-            integer(C_INT32_T), intent(in), value :: id
-            type(C_PTR) :: name
-         end function id_to_name_c
-      end interface
+        component_id = App_MPMD_GetSelfComponentId_C()
+    end function App_MPMD_GetSelfComponentId
 
-      component_name = c_to_f_string(id_to_name_c(component_id))
-   end function App_MPMD_ComponentIdToName
-      
-   !> \return Whether the given component is present in this MPMD context
-   pure function App_MPMD_HasComponent(component_id) result(has_component)
-      implicit none
-      integer, intent(in) :: component_id
-      logical :: has_component
 
-      interface
-         pure function App_MPMD_HasComponent_C(id) result(has_comp) bind(C, name = 'App_MPMD_HasComponent')
-            import :: C_INT32_T
-            implicit none
-            integer(C_INT32_T), intent(in), value :: id
-            integer(C_INT32_T) :: has_comp
-         end function App_MPMD_HasComponent_C
-      end interface
+    !> Get the component id corresponding to the provided name
+    !> \return Component id corresponding to the provided name
+    pure function App_MPMD_GetComponentId(component_name) result(component_id)
+        implicit none
+        character(len = *), intent(in) :: component_name
+        integer :: component_id
 
-      integer(C_INT32_T) :: has_component_C
+        interface
+            pure function App_MPMD_GetComponentId_C(name) result(id) bind(C, name = 'App_MPMD_GetComponentId')
+                import :: C_CHAR, C_INT32_T
+                implicit none
+                character(kind = C_CHAR), dimension(*), intent(in) :: name
+                integer(C_INT32_T) :: id
+            end function App_MPMD_GetComponentId_C
+        end interface
 
-      has_component_c = App_MPMD_HasComponent_C(component_id)
-      
-      has_component = .false.
-      if (has_component_c == 1) has_component = .true.
+        component_id = App_MPMD_GetComponentId_C(trim(component_name)//achar(0))
+    end function App_MPMD_GetComponentId
 
-   end function App_MPMD_HasComponent
-      
- 
- 
 
-   function c_to_f_string(c_str) result(f_str)
-      implicit none
-      type(C_PTR), intent(in) :: c_str
-      character(len=:), allocatable :: f_str
+    !> \return The communicator for all PEs part of the same component as me.
+    pure function App_MPMD_GetSelfComm() result(self_comm)
+        implicit none
+        integer :: self_comm
 
-      interface
-         function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
-            import :: C_PTR, C_SIZE_T
-            type(C_PTR), value :: str_ptr
-            integer(C_SIZE_T)  :: len
-        end function c_strlen
-      end interface
+        interface
+            pure function App_MPMD_GetSelfComm_C() result(comm) bind(C, name = 'App_MPMD_GetSelfComm_F')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T) :: comm
+            end function App_MPMD_GetSelfComm_C
+        end interface
 
-      character(len=1), dimension(:), pointer :: f_ptr
-      integer(INT64) :: num_chars, i
+        self_comm = App_MPMD_GetSelfComm_C()
+    end function App_MPMD_GetSelfComm
 
-      num_chars = c_strlen(c_str)
-      call c_f_pointer(c_str, f_ptr, [num_chars])
-      allocate(character(num_chars) :: f_str)
+    !> Retrieve a communicator that encompasses all PEs part of one of the components
+    !> in the given list. If the communicator does not already exist, it will be created.
+    !> _This function call is collective if and only if the communicator must be created._
+    function App_MPMD_GetSharedComm(component_list) result(shared_comm)
+        implicit none
+        !> The list of components IDs for which we want a shared communicator.
+        !> This list *must* contain the component of the calling PE. It may contain
+        !> duplicate IDs and does not have to be in a specific order.
+        integer, dimension(:), target, intent(in) :: component_list
+        integer :: shared_comm
 
-      do i = 1, num_chars
-         f_str(i:i) = f_ptr(i)
-      end do
-   end function c_to_f_string
+        interface
+            function App_MPMD_GetSharedComm_C(num_components, components) result(comm) bind(C, name='App_MPMD_GetSharedComm_F')
+                import :: C_INT32_T, C_PTR
+                implicit none
+                ! type(C_PTR),        value, intent(in) :: components
+                integer(C_INT32_T),        intent(in) :: components
+                integer(C_INT32_T), value, intent(in) :: num_components
+                integer(C_INT32_T) :: comm
+            end function App_MPMD_GetSharedComm_C
+        end interface
 
+        shared_comm = App_MPMD_GetSharedComm_C(size(component_list), component_list(1))
+    end function App_MPMD_GetSharedComm
+
+
+    !> Get the name associated with the given component ID
+    function App_MPMD_ComponentIdToName(component_id) result(component_name)
+        implicit none
+
+        integer, intent(in) :: component_id
+        character(len=:), allocatable :: component_name
+
+        interface
+            function id_to_name_c(id) result(name) bind(C, name='App_MPMD_ComponentIdToName')
+                import :: C_PTR, C_INT32_T
+                implicit none
+                integer(C_INT32_T), intent(in), value :: id
+                type(C_PTR) :: name
+            end function id_to_name_c
+        end interface
+
+        component_name = c_to_f_string(id_to_name_c(component_id))
+    end function App_MPMD_ComponentIdToName
+
+    !> \return Whether the given component is present in this MPMD context
+    pure function App_MPMD_HasComponent(component_name) result(has_component)
+        implicit none
+        character(len = *), intent(in) :: component_name
+        logical :: has_component
+
+        interface
+            pure function App_MPMD_HasComponent_C(name) result(has_comp) bind(C, name = 'App_MPMD_HasComponent')
+                import :: C_CHAR, C_INT32_T
+                implicit none
+                character(kind = C_CHAR), dimension(*), intent(in) :: name
+                integer(C_INT32_T) :: has_comp
+            end function App_MPMD_HasComponent_C
+        end interface
+
+        integer(C_INT32_T) :: has_component_C
+
+        has_component_c = App_MPMD_HasComponent_C(trim(component_name)//achar(0))
+
+        has_component = .false.
+        if (has_component_c == 1) has_component = .true.
+
+    end function App_MPMD_HasComponent
+
+
+    function c_to_f_string(c_str) result(f_str)
+        implicit none
+        type(C_PTR), intent(in) :: c_str
+        character(len=:), allocatable :: f_str
+
+        interface
+            function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
+                import :: C_PTR, C_SIZE_T
+                type(C_PTR), value :: str_ptr
+                integer(C_SIZE_T)  :: len
+            end function c_strlen
+        end interface
+
+        character(len=1), dimension(:), pointer :: f_ptr
+        integer(INT64) :: num_chars, i
+
+        num_chars = c_strlen(c_str)
+        call c_f_pointer(c_str, f_ptr, [num_chars])
+        allocate(character(num_chars) :: f_str)
+
+        do i = 1, num_chars
+            f_str(i:i) = f_ptr(i)
+        end do
+    end function c_to_f_string
 end module app_mpmd

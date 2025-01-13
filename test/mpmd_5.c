@@ -1,7 +1,7 @@
 
 #include "App_MPMD.h"
 
-void validate_comm_size(MPI_Comm comm, const int expected_num_procs) {
+void validate_comm_size(const MPI_Comm comm, const int expected_num_procs) {
     if (expected_num_procs == 0) {
         if (comm != MPI_COMM_NULL) {
             App_Log(APP_ERROR, "We were expecting a NULL communicator!\n");
@@ -18,18 +18,21 @@ void validate_comm_size(MPI_Comm comm, const int expected_num_procs) {
     }
 }
 
-int main(int argc, char* argv[])
-{
-    App_MPMD_Init(APP_MPMD_TEST5_ID);
 
-    validate_comm_size(App_MPMD_GetOwnComm(), 5);
+int main(int argc, char* argv[]) {
+    App_MPMD_Init("mpmd_5", "0.0.0", MPI_THREAD_SINGLE);
+    const int mpmd_5id = App_MPMD_GetSelfComponentId();
 
-    if (!App_MPMD_HasComponent(APP_MPMD_TEST1_ID)) {
+    validate_comm_size(App_MPMD_GetSelfComm(), 5);
+
+    const int mpmd_1id = App_MPMD_GetComponentId("mpmd_1");
+
+    if (!App_MPMD_HasComponent("mpmd_1")) {
         App_Log(APP_ERROR, "%s: Can only be launched if MPMD_1 is also present\n", __func__);
         exit(1);
     }
 
-    const MPI_Comm comm_15 = App_MPMD_GetSharedComm((int[]){APP_MPMD_TEST5_ID, APP_MPMD_TEST1_ID}, 2);
+    const MPI_Comm comm_15 = App_MPMD_GetSharedComm(2, (int[]){mpmd_1id, mpmd_5id});
     validate_comm_size(comm_15, 1 + 5);
 
     App_MPMD_Finalize();

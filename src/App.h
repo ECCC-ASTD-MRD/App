@@ -1,6 +1,9 @@
 #ifndef _App_h
 #define _App_h
 
+//! \file
+//! Interface of the App library
+
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -58,6 +61,12 @@
 #endif
 #define APP_MAXONCE 1024
 
+//! Maximum component lane length (including null character)
+#define APP_MAX_COMPONENT_NAME_LEN 32
+
+//! List of known libraries
+//! \todo Remove this static list; it makes no sense: this library must be modified to add new clients apps/libs!
+//! The library must not be aware of its users!
 typedef enum {
     APP_MAIN = 0,
     APP_LIBRMN = 1,
@@ -82,20 +91,32 @@ typedef enum {
     APP_LIBMETA = 20
 } TApp_Lib;
 
+//! Log levels
 typedef enum {
+    //! Written even if the selected level is quiet
     APP_VERBATIM = -1,
     APP_ALWAYS = 0,
+    //! Fatal error. Will cause the application to be terminated.
     APP_FATAL = 1,
+    //! System error. Will cause the application to be terminated.
     APP_SYSTEM = 2,
+    //! Error. Written to stderr
     APP_ERROR = 3,
+    //! Warning
     APP_WARNING = 4,
+    //! Informational
     APP_INFO = 5,
+    //! Trivial
     APP_TRIVIAL = 6,
+    //! Debug
     APP_DEBUG = 7,
+    //! Extra
     APP_EXTRA = 8,
+    //! Quiet \todo Say what quiet actually does
     APP_QUIET = 9
 } TApp_LogLevel;
 
+//! Log date detail level
 typedef enum {
     APP_NODATE = 0,
     APP_DATETIME = 1,
@@ -104,12 +125,14 @@ typedef enum {
     APP_MSECOND = 4
 } TApp_LogTime;
 
+//! Application state
 typedef enum {
     APP_STOP,
     APP_RUN,
     APP_DONE
 } TApp_State;
 
+//! Data type
 typedef enum {
     APP_NIL = 0x00,
     APP_FLAG = 0x01,
@@ -122,16 +145,19 @@ typedef enum {
     APP_FLOAT64 = 0x0E
 } TApp_Type;
 
+//! Language
 typedef enum {
     APP_FR = 0x00,
     APP_EN = 0x01
 } TApp_Lang;
 
+//! Function return code
 typedef enum {
     APP_OK = 1,
     APP_ERR = 0
 } TApp_RetCode;
 
+//! Processor affinity
 typedef enum {
     APP_AFFINITY_NONE = 0,
     APP_AFFINITY_COMPACT = 1,
@@ -142,72 +168,97 @@ typedef enum {
 #define APP_ASRT_OK(x) if( (x) != APP_OK ) return APP_ERR
 #define APP_ASRT_OK_END(x) if( (x) != APP_OK ) goto end
 #define APP_ASRT_OK_M(Fct, ...) \
-   if( (Fct) != APP_OK ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) != APP_OK ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, __VA_ARGS__); \
+        return APP_ERR; \
+    }
 
 // Check FST function and return the specified value if an error was encountered
 #define APP_FST_ASRT_H(Fct, ...) \
-   if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) < 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        return APP_ERR; \
+    }
 #define APP_FST_ASRT_H_END(Fct, ...) \
-   if( (Fct) < 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      goto end; \
-   }
+    if( (Fct) < 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        goto end; \
+    }
 #define APP_FST_ASRT(Fct, ...) \
-   if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      return APP_ERR; \
-   }
+    if( (Fct) != 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        return APP_ERR; \
+    }
 #define APP_FST_ASRT_END(Fct, ...) \
-   if( (Fct) != 0 ) { \
-      Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
-      goto end; \
-   }
+    if( (Fct) != 0 ) { \
+        Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
+        goto end; \
+    }
 // Memory helpers
 #define APP_MEM_ASRT(Buf, Fct) \
-   if( !(Buf = (Fct)) ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
-      return APP_ERR; \
-   }
+    if( !(Buf = (Fct)) ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+        return APP_ERR; \
+    }
 #define APP_MEM_ASRT_END(Buf, Fct) \
-   if( !(Buf = (Fct)) ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
-      goto end; \
-   }
+    if( !(Buf = (Fct)) ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+        goto end; \
+    }
 
-#define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
+#define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr = NULL; }
 
 // MPI helpers
 #ifdef HAVE_MPI
 #define APP_MPI_ASRT(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-      return APP_ERR; \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+        return APP_ERR; \
+    } \
 }
 #define APP_MPI_ASRT_END(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-      goto end; \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+        goto end; \
+    } \
 }
 #define APP_MPI_CHK(Fct) { \
-   int err = (Fct); \
-   if( err != MPI_SUCCESS ) { \
-      Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
-   } \
+    int err = (Fct); \
+    if( err != MPI_SUCCESS ) { \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) MPI call %s at line %d failed with code %d for MPI node %d\n", __func__, #Fct, __LINE__, err, App->RankMPI); \
+    } \
 }
-#define APP_MPI_IN_PLACE(Fld) (App->RankMPI?(Fld):MPI_IN_PLACE)
+#define APP_MPI_IN_PLACE(Fld) (App->RankMPI ? (Fld) : MPI_IN_PLACE)
 
-typedef struct TComponent_ TComponent;
-typedef struct TComponentSet_ TComponentSet;
+//! MPDP component description
+typedef struct {
+    //! ID of this component, corresponds to MPI_APPNUM
+    int id;
+    //! Name of the component
+    char name[APP_MAX_COMPONENT_NAME_LEN];
+    //! Communicator for the PEs of this component
+    MPI_Comm comm;
+    //! Number of PEs in this component
+    int nbPes;
+    //! Whether this component has been shared to other PEs of this PE's component
+    int shared;
+    //! Global ranks (in the main_comm of the context) of the members of this component
+    int * ranks;
+} TComponent;
+
+//! A series of components that share a communicator
+typedef struct {
+    //! How many components are in the set
+    int nbComponents;
+    //! IDs of the components in this set
+    int* componentIds;
+    //! Communicator shared by these components
+    MPI_Comm comm;
+    //! MPI group shared by these component, created for creating the communicator
+    MPI_Group group;
+} TComponentSet;
 
 #endif //HAVE_MPI
 
@@ -221,7 +272,7 @@ typedef struct {
     char      *Info;    //!< Additional info
 } TApp_Arg;
 
-// Application controller definition
+//! Application controller definition
 typedef struct {
    char*          Name;                  ///< Name of applicaton
    char*          Version;               ///< Version of application
@@ -230,7 +281,6 @@ typedef struct {
    char*          LogFile;               ///< Log file
    int            LogSplit;              ///< Split the log file per MPI rank path
    int            LogFlush;              ///< Forche buffer flush at every message
-//   char*          TmpDir;               ///< Tmp directory
    char*          Tag;                   ///< Identificateur
    FILE*          LogStream;             ///< Log file associated stream
    int            LogNoBox;              ///< Display header and footer boxes
@@ -251,26 +301,29 @@ typedef struct {
 
    char*          LibsVersion[APP_LIBSMAX];
 
-   int            Seed, *OMPSeed;        ///< Random number generator seed
+   int            Seed;
+   int           *OMPSeed;               ///< Random number generator seed
    int           *TotalsMPI;             ///< MPI total number of items arrays
    int           *CountsMPI;             ///< MPI count gathering arrays
    int           *DisplsMPI;             ///< MPI displacement gathering arrays
-   int            NbMPI;                 ///< Number of MPI process
-   int            RankMPI;               ///< Rank of MPI process
+   int            NbMPI;                 ///< Number of MPI process \todo Figure out why this isn't in #ifdef HAVE_MPI
+   int            RankMPI;               ///< Rank of MPI process \todo Figure out how this is different from WorldRank and the why it isn't in #ifdef HAVE_MPI
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
-   int            NbNodeMPI, NodeRankMPI; ///< Number of MPI process on the current node
+   int            NbNodeMPI;
+   int            NodeRankMPI;           ///< Number of MPI process on the current node
 #ifdef HAVE_MPI
    MPI_Comm       Comm;
-   MPI_Comm       NodeComm, NodeHeadComm; ///< Communicator for the current node and the head nodes
+   MPI_Comm       NodeComm;              ///< Communicator for the current node
+   MPI_Comm       NodeHeadComm;          ///< Communicator for the head nodes
 
-   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context
+   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context \todo Figure out if there is any case where this isn't going to be MPI_COMM_WORLD
    int            WorldRank;             ///< Global rank of this PE
    int            ComponentRank;         ///< Local rank of this PE (within its component)
-   TComponent*    SelfComponent;         ///< This PE's component
+   TComponent *   SelfComponent;         ///< This PE's component
    int            NumComponents;         ///< How many components are part of the MPMD context
-   TComponent*    AllComponents;         ///< List of components in this context
+   TComponent *   AllComponents;         ///< List of components in this context
    int            NbSets;                ///< How many sets of components are stored in this context
    int            SizeSets;              ///< Size of the array that stores sets of components
    TComponentSet* Sets;                  ///< List of sets that are already stored in this context
@@ -283,13 +336,14 @@ typedef struct {
 extern __thread TApp *App;               ///< Per thread App pointer
 
 static inline char* App_TimeString(TApp_Timer *Timer,int Total) {
-   snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
-   return(Timer->String);
+    snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
+    return(Timer->String);
 }
 #endif
 
 typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Index);
 
+//! Alias to the \ref Lib_Log function with \ref APP_MAIN implicitly provided as first argument
 #define App_Log(LEVEL, ...) Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__)
 
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
@@ -298,7 +352,12 @@ void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
-void  Lib_Log(const TApp_Lib Lib, TApp_LogLevel Level, const char * const Format, ...);
+void Lib_Log(
+    const TApp_Lib lib,
+    const TApp_LogLevel level,
+    const char * const format,
+    ...
+);
 int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);
 int   Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val);
 void  App_LogStream(const char * const Stream);
@@ -315,8 +374,20 @@ int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
 int   App_ParseDate(char *Param, char *Value, time_t *Var);
-int   App_ParseDateSplit(char *Param, char *Value, int *Year, int *Month, int *Day, int *Hour, int *Min);
-int   App_ParseCoords(char *Param, char *Value, double *Lat, double *Lon, int Index);
+int App_ParseDateSplit(
+    const char * const param,
+    char * const value,
+    int * const year,
+    int * const month,
+    int * const day,
+    int * const hour,
+    int * const min);
+int App_ParseCoords(
+    const char * const Param,
+    const char * const Value,
+    double * const Lat,
+    double * const Lon,
+    const int Index);
 void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
