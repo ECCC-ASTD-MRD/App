@@ -79,7 +79,6 @@ contains
     is_valid = c_associated(this % c_timer)
   end function timer_is_valid
 
-  !> \copyparam IO_timer_create
   subroutine timer_create(this)
     implicit none
     class(App_Timer), intent(inout) :: this
@@ -90,7 +89,6 @@ contains
     end if
   end subroutine timer_create
 
-  !> \copyparam IO_timer_delete
   subroutine timer_delete(this)
     implicit none
     class(App_Timer), intent(inout) :: this
@@ -98,21 +96,18 @@ contains
     this % c_timer = C_NULL_PTR
   end subroutine timer_delete
 
-  !> \copyparam IO_timer_start
   subroutine timer_start(this)
     implicit none
     class(App_Timer), intent(inout) :: this
     call App_TimerStart(this % c_timer)
   end subroutine timer_start
 
-  !> \copyparam IO_timer_stop
   subroutine timer_stop(this)
     implicit none
     class(App_Timer), intent(inout) :: this
     call App_TimerStop(this % c_timer)
   end subroutine timer_stop
 
-  !> \copyparam IO_total_time_ms
   function timer_get_total_time_ms(this) result(time)
     implicit none
     class(App_Timer), intent(in) :: this
@@ -120,7 +115,6 @@ contains
     time = App_TimerTotalTime_ms(this % c_timer)
   end function timer_get_total_time_ms
 
-  !> \copyparam IO_latest_time_ms
   function timer_get_latest_time_ms(this) result(time)
     implicit none
     class(App_Timer), intent(in) :: this
@@ -128,7 +122,6 @@ contains
     time = App_TimerLatestTime_ms(this % c_timer)
   end function timer_get_latest_time_ms
 
-  !> \copyparam IO_time_since_start_ms
   function timer_get_time_since_start_ms(this) result(time)
     implicit none
     class(App_Timer), intent(in) :: this

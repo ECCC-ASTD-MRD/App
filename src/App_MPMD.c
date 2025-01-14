@@ -215,7 +215,7 @@ static void printComponent(
 //! is on board and will be able to ask for a communicator in common with any other
 //! participant (or even multiple other participants at once).
 TApp * App_MPMD_Init(
-    //! [in] Name of this component. Must be APP_MAX_COMPONENT_NAME_LEN - 1 characters at most
+    //! [in] Name of this component. Must be \ref APP_MAX_COMPONENT_NAME_LEN - 1 characters at most
     const char * const componentName,
     //! [in] Version of this application
     const char * const version,
@@ -687,7 +687,12 @@ static TComponentSet * createSet(
 
 
 //! Get the string (name) that corresponds to the given component ID
-const char * App_MPMD_ComponentIdToName(const int componentId) {
+const char * App_MPMD_ComponentIdToName(
+    //! [in] Component ID
+    const int componentId
+) {
+    //! \return Pointer to the string containing the component name. Caller must **not** free this pointer.
+
     const TApp * const app = App_GetInstance();
     if (!app) App_Log(APP_FATAL, "%s: Failed to get app instance!\n", __func__);
 

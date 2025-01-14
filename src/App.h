@@ -68,6 +68,7 @@
 //! \todo Remove this static list; it makes no sense: this library must be modified to add new clients apps/libs!
 //! The library must not be aware of its users!
 typedef enum {
+    //! Main application
     APP_MAIN = 0,
     APP_LIBRMN = 1,
     APP_LIBFST = 2,
