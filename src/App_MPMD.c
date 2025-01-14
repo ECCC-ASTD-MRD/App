@@ -235,7 +235,6 @@ TApp * App_MPMD_Init(
         TApp * const app = App_Init(0, componentName, version, "mpmd context attempt", "now");
         App_Start();
 
-        //! \todo Remove this once we have figured out how this mechanism is supposed to work
         App_ToleranceLevel("ERROR");
 
         if (provided != mpiThreadModel) {
@@ -689,7 +688,6 @@ static TComponentSet * createSet(
 
 //! Get the string (name) that corresponds to the given component ID
 const char * App_MPMD_ComponentIdToName(const int componentId) {
-    //! \todo Implement this function
     const TApp * const app = App_GetInstance();
     if (!app) App_Log(APP_FATAL, "%s: Failed to get app instance!\n", __func__);
 
