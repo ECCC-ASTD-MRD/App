@@ -9,4 +9,4 @@ double App_TimerTotalTime_ms_f(const TApp_Timer* Timer) { return App_TimerTotalT
 double App_TimerLatestTime_ms_f(const TApp_Timer* Timer) { return App_TimerLatestTime_ms(Timer); }
 double App_TimerTimeSinceStart_ms_f(const TApp_Timer* Timer) { return App_TimerTimeSinceStart_ms(Timer); }
 
-void sleep_us_f(const int num_us) { return sleep_us(num_us); }
+void sleep_us_f(const int num_us) { sleep_us(num_us); }
