@@ -1,10 +1,8 @@
 #include "App_MPMD.h"
 
 
-int main(int argc, char* argv[]) {
+int main() {
     App_MPMD_Init("Init2", "0.0.0", MPI_THREAD_SINGLE);
-    const int test5id = App_MPMD_GetSelfComponentId();
-
     App_MPMD_Finalize();
     return 0;
 }
