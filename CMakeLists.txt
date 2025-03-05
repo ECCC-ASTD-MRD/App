@@ -12,7 +12,6 @@ set(PROJECT_VERSION ${VERSION}${STATE})
 set(${NAME}_VERSION ${PROJECT_VERSION} CACHE INTERNAL "libApp version" FORCE) # Needed for cascaded version identification
 
 include(ec_doxygen)        # Doxygen target doc
-ec_build_info()            # Generate build include file
 
 include(ec_compiler_presets)
 
@@ -26,11 +25,11 @@ if (WITH_OMPI)
    find_package(OpenMP REQUIRED)
 endif()
 
+ec_build_config()
+ec_build_info()
+
 add_subdirectory(src src)
 add_subdirectory(test)
-
-configure_file(config.in ${CMAKE_BINARY_DIR}/${NAME}-config @ONLY)
-install(PROGRAMS ${CMAKE_BINARY_DIR}/${NAME}-config DESTINATION bin)
 
 #----- Generate the config file for the project to be usable via cmake's find_package command
 set(INCLUDE_INSTALL_DIR include)
