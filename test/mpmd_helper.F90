@@ -45,10 +45,7 @@ end subroutine validate_comm_size
 
 subroutine mpmd_end_test()
     implicit none
-    integer :: ierr
-    ! return_status = app_end(0)
     call App_MPMD_Finalize()
-    ! call MPI_Finalize(ierr)
 end subroutine mpmd_end_test
 
 

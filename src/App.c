@@ -584,9 +584,16 @@ void App_Start(void) {
 
 #ifdef HAVE_MPI
     // Make sure the header is printed before any other messages from other MPI tasks
-    if (App->NbMPI > 1 && mpiIsInit) {
-        MPI_Barrier(App->Comm);
-    }
+
+    //! GEM with the IO-server (MPDP) uses App, but not App's MPDP laucher. Therefore,
+    //! `MPI_Barrier(App->Comm)` will in definitely hang since not all PEs will execute
+    //! it and since `App_MPMD_Init()` isn't called, App->Comm is still MPI_COMM_WORLD
+
+    //! \todo Enable this only once GEM with the IO-server uses the App_MPMD launcher
+
+    // if (App->NbMPI > 1 && mpiIsInit) {
+    //     MPI_Barrier(App->Comm);
+    // }
 #endif //HAVE_MPI
 }
 

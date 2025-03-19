@@ -19,7 +19,7 @@ void validate_comm_size(const MPI_Comm comm, const int expected_num_procs) {
 }
 
 
-int main(int argc, char* argv[]) {
+int main() {
     App_MPMD_Init("mpmd_5", "0.0.0", MPI_THREAD_SINGLE);
     const int mpmd_5id = App_MPMD_GetSelfComponentId();
 
