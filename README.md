@@ -37,7 +37,7 @@ This packages manages various standard tasks needed by applications like:
 ## Environment variables
 - APP_PARAMS        : List of parameters for the application (instead of giving on command line)
 - APP_VERBOSE       : Define global verbose level (ERROR, WARNING, INFO, TRIVIAL, DEBUG, EXTRA, QUIET) default:INFO
-- APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN, FST, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH])
+- APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN, FST, BRP, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH])
 - APP_VERBOSE_NOBOX : Do not display header and footer
 - APP_VERBOSE_COLOR : Use color in log messages
 - APP_VERBOSE_TIME  : Display time for each message (NONE, DATETIME, TIME, SECOND, MSECOND) default:NONE
