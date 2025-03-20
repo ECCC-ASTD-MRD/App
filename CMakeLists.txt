@@ -12,11 +12,11 @@ set(PROJECT_VERSION ${VERSION}${STATE})
 set(${NAME}_VERSION ${PROJECT_VERSION} CACHE INTERNAL "libApp version" FORCE) # Needed for cascaded version identification
 
 include(ec_doxygen)        # Doxygen target doc
-
 include(ec_compiler_presets)
 
 set(CMAKE_CXX_STANDARD 11)
 
+link_libraries("-Wl,--disable-new-dtags")
 add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ _GNU_SOURCE)
 
 option(WITH_OMPI "Compile with OpenMP/MPI support" TRUE)
@@ -25,7 +25,6 @@ if (WITH_OMPI)
    find_package(OpenMP REQUIRED)
 endif()
 
-ec_build_config()
 ec_build_info()
 
 add_subdirectory(src src)
