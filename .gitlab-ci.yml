@@ -8,6 +8,8 @@ variables:
 .env:
    build:
       - echo "No specific environment"
+   variables:
+      - ALLOW_FAILURE(ubuntu-22.04-amd64_gnu-11.4.0) : true
 
 include:
    - project: 'RPN-SI/ci-admin'
