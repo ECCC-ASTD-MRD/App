@@ -9,9 +9,9 @@ variables:
    build:
       - echo "No specific environment"
    variables:
-      - ALLOW_FAILURE_ubuntu-22.04-amd64_gnu-11.4.0 : true
-      - ALLOW_FAILURE_rhel-8-amd64_gnu-9.3.0 : true
-      - ALLOW_FAILURE_rhel-9-amd64_gnu-11.5.0 : true
+      - ALLOW_FAILURE_ubuntu-22.04-amd64_gnu-11.4.0: true
+      - ALLOW_FAILURE_rhel-8-amd64_gnu-9.3.0: true
+      - ALLOW_FAILURE_rhel-9-amd64_gnu-11.5.0: true
 
 include:
    - project: 'RPN-SI/ci-admin'
