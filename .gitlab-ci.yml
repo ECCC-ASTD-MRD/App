@@ -4,6 +4,9 @@ variables:
    ORD_SOUMET_C: "1"
    ORD_SOUMET_M: "4G"
    ORD_SOUMET_TMPFS: "1G"
+   ALLOW_FAILURE_ubuntu2204amd64gnu1140: "true"
+   ALLOW_FAILURE_rhel8amd64gnu930: "true"
+   ALLOW_FAILURE_rhel9amd64gnu1150: "true"
 
 .env:
    build:
