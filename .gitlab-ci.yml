@@ -4,15 +4,12 @@ variables:
    ORD_SOUMET_C: "1"
    ORD_SOUMET_M: "4G"
    ORD_SOUMET_TMPFS: "1G"
-   ALLOW_FAILURE_ubuntu2204amd64gnu1140: "true"
-   ALLOW_FAILURE_rhel8amd64gnu930: "true"
-   ALLOW_FAILURE_rhel9amd64gnu1150: "true"
 
 .env:
    build:
       - echo "No specific environment"
    variables:
-      ALLOW_FAILURE_ARCHS : "ubuntu-22.04-amd64_gnu-11.4.0|rhel-8-amd64_gnu-9.3.0|rhel-9-amd64_gnu-11.5.0"
+      ALLOW_FAILURE_ARCHS: "ubuntu-22.04-amd64_gnu-11.4.0|rhel-8-amd64_gnu-9.3.0|rhel-9-amd64_gnu-11.5.0"
 
 include:
    - project: 'RPN-SI/ci-admin'
