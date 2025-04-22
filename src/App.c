@@ -604,7 +604,18 @@ int App_End(
     //! Application exit status to use (-1:Use error count)
     int Status
 ) {
-#ifdef _MPI
+    unsigned long *mem,*memt;
+    double sum,sumd2,avg,var,maxd,mind,fijk;
+    unsigned int i,imin,imax;
+    struct rusage usg;
+
+    getrusage(RUSAGE_SELF, &usg);
+    mem=(unsigned long*)calloc(2*App->NbMPI,sizeof(unsigned long));
+    memt=&mem[App->NbMPI];
+    mem[App->RankMPI]=usg.ru_maxrss;
+    sum=mem[App->RankMPI]/1024.0;
+
+#ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
     if (App->NbMPI > 1 && Status != INT_MIN) {
@@ -614,6 +625,34 @@ int App_End(
         } else {
             MPI_Reduce(&App->LogWarning, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
             MPI_Reduce(&App->LogError, NULL, 1, MPI_INT, MPI_SUM, 0, App->Comm);
+        }
+
+        // Calculate resident memory statistics
+        MPI_Reduce(mem, memt, App->NbMPI, MPI_UNSIGNED_LONG, MPI_SUM, 0, App->Comm);
+
+        if (!App->RankMPI) {
+            sum  = sumd2 = 0.0;
+            imin = 0;
+            imax = App->NbMPI-1;
+            maxd = memt[App->NbMPI-1]/1024.0;
+            mind = memt[0]/1024.0;
+
+            for(i=0;i<App->NbMPI;i++) {
+                fijk  = memt[i]/1024.0;
+                sum   = sum   + fijk;
+                sumd2 = sumd2 + fijk*fijk;
+                if (fijk > maxd) {
+                    maxd = fijk;
+                    imax = i;
+                }
+                if (fijk < mind) {
+                    mind = fijk;
+                    imin = i;
+                }
+            }
+
+            avg = sum / App->NbMPI;
+            var = sqrt((sumd2 + avg*avg*App->NbMPI - 2*avg*sum) / App->NbMPI);
         }
     }
 #endif
@@ -640,8 +679,21 @@ int App_End(
                 App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
             }
             App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTotalTime_ms(App->TimerLog));
+            App_Log(APP_VERBATIM, "Resident mem   : %.1f MB\n", sum);
 
+            if (App->NbMPI>1) {
+                App_Log(APP_VERBATIM, "   Average     : %.1f MB\n", avg);
+                App_Log(APP_VERBATIM, "   Minimum     : %.1f MB (rank %u)\n", mind,imin);
+                App_Log(APP_VERBATIM, "   Maximum     : %.1f MB (rank %u)\n", maxd,imax);
+                App_Log(APP_VERBATIM, "   STD         : %.1f MB\n", var);
 
+                for(i=0;i<App->NbMPI;i++) {
+                    fijk  = memt[i]/1024.0;
+                    if (fijk > (avg+var)) 
+                       App_Log(APP_VERBATIM, "   Above 1 STD : %.1f MB (rank %u)\n", fijk,i);
+                }
+            }
+ 
             if (Status != EXIT_SUCCESS) {
                 App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {

@@ -50,5 +50,5 @@ program mpmd_2
     end if
 
     call mpmd_end_test()
-
+    
 end program mpmd_2

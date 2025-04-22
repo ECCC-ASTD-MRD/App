@@ -19,13 +19,19 @@ if (EC_INIT_DONE LESS 2)
             # message(WARNING "Oversubscribe flag: ${OVERSUBSCRIBE_FLAG}")
         endif()
 
+        add_executable(app EXCLUDE_FROM_ALL app.c)
+        add_test(
+            NAME app
+            COMMAND $<TARGET_FILE:app>
+        )
+        target_link_libraries(app App::App)
+        add_dependencies(check app)
+
         add_executable(test_app_loglevel_noinit EXCLUDE_FROM_ALL test_app_loglevel_noinit.F90)
         add_test(
             NAME test_app_loglevel_noinit
             COMMAND $<TARGET_FILE:test_app_loglevel_noinit>
         )
-        set_tests_properties(test_app_loglevel_noinit
-            PROPERTIES PASS_REGULAR_EXPRESSION "INFO")
         target_link_libraries(test_app_loglevel_noinit App::App)
         add_dependencies(check test_app_loglevel_noinit)
 
