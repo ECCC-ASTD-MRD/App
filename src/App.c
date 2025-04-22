@@ -34,6 +34,7 @@ static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessib
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static char* AppMemUnits[]    = { "KB", "MB", "GB", "TB" };
 static char* AppLibNames[]    = { "main", "rmn", "fst", "brp", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
 static char* AppLibLog[]      = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
 static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA" };
@@ -604,16 +605,20 @@ int App_End(
     //! Application exit status to use (-1:Use error count)
     int Status
 ) {
+    char          *unit=NULL;
     unsigned long *mem,*memt;
-    double sum,sumd2,avg,var,maxd,mind,fijk;
-    unsigned int i,imin,imax;
-    struct rusage usg;
-
+    double         factor,sum,sumd2,avg,var,maxd,mind,fijk;
+    unsigned int   i,imin,imax;
+    struct rusage  usg;
+    
     getrusage(RUSAGE_SELF, &usg);
     mem=(unsigned long*)calloc(2*App->NbMPI,sizeof(unsigned long));
     memt=&mem[App->NbMPI];
-    mem[App->RankMPI]=usg.ru_maxrss;
-    sum=mem[App->RankMPI]/1024.0;
+    sum=mem[App->RankMPI]=usg.ru_maxrss;
+
+    // Get a readable size and units
+    factor=1.0/1024;
+    unit=AppMemUnits[1];
 
 #ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
@@ -634,11 +639,11 @@ int App_End(
             sum  = sumd2 = 0.0;
             imin = 0;
             imax = App->NbMPI-1;
-            maxd = memt[App->NbMPI-1]/1024.0;
-            mind = memt[0]/1024.0;
+            maxd = memt[App->NbMPI-1];
+            mind = memt[0];
 
             for(i=0;i<App->NbMPI;i++) {
-                fijk  = memt[i]/1024.0;
+                fijk  = memt[i];
                 sum   = sum   + fijk;
                 sumd2 = sumd2 + fijk*fijk;
                 if (fijk > maxd) {
@@ -653,6 +658,11 @@ int App_End(
 
             avg = sum / App->NbMPI;
             var = sqrt((sumd2 + avg*avg*App->NbMPI - 2*avg*sum) / App->NbMPI);
+
+            if (sum>1024*1024*10) {
+                factor/=1024;
+                unit=AppMemUnits[2];
+            }
         }
     }
 #endif
@@ -679,18 +689,18 @@ int App_End(
                 App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
             }
             App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTotalTime_ms(App->TimerLog));
-            App_Log(APP_VERBATIM, "Resident mem   : %.1f MB\n", sum);
+            App_Log(APP_VERBATIM, "Resident mem   : %.1f %s\n", sum*factor,unit);
 
             if (App->NbMPI>1) {
-                App_Log(APP_VERBATIM, "   Average     : %.1f MB\n", avg);
-                App_Log(APP_VERBATIM, "   Minimum     : %.1f MB (rank %u)\n", mind,imin);
-                App_Log(APP_VERBATIM, "   Maximum     : %.1f MB (rank %u)\n", maxd,imax);
-                App_Log(APP_VERBATIM, "   STD         : %.1f MB\n", var);
+                App_Log(APP_VERBATIM, "   Average     : %.1f %s\n", avg*factor,unit);
+                App_Log(APP_VERBATIM, "   Minimum     : %.1f %s (rank %u)\n", mind*factor,unit,imin);
+                App_Log(APP_VERBATIM, "   Maximum     : %.1f %s (rank %u)\n", maxd*factor,unit,imax);
+                App_Log(APP_VERBATIM, "   STD         : %.1f %s\n", var*factor,unit);
 
                 for(i=0;i<App->NbMPI;i++) {
-                    fijk  = memt[i]/1024.0;
+                    fijk  = memt[i];
                     if (fijk > (avg+var)) 
-                       App_Log(APP_VERBATIM, "   Above 1 STD : %.1f MB (rank %u)\n", fijk,i);
+                       App_Log(APP_VERBATIM, "   Above 1 STD : %.1f %s (rank %u)\n", fijk*factor,unit,i);
                 }
             }
  
