@@ -557,7 +557,9 @@ void App_Start(void) {
 #ifdef HAVE_OPENMP
             if (App->NbThread > 1) {
                 // OpenMP specification version
-                if       (_OPENMP >= 201811)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s5.0)\n", App->NbThread, _OPENMP, _OPENMP > 201811?" > ":"");
+                if       (_OPENMP >= 202411)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s6.0)\n", App->NbThread, _OPENMP, _OPENMP > 202411?" > ":"");
+                else if  (_OPENMP >= 202111)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s5.2)\n", App->NbThread, _OPENMP, _OPENMP > 202111?" > ":"");
+                else if  (_OPENMP >= 201811)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s5.0)\n", App->NbThread, _OPENMP, _OPENMP > 201811?" > ":"");
                 else if  (_OPENMP >= 201511)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n", App->NbThread, _OPENMP, _OPENMP > 201511?" > ":"");
                 else if  (_OPENMP >= 201307)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s4.0)\n", App->NbThread, _OPENMP, _OPENMP > 201307?" > ":"");
                 else if  (_OPENMP >= 201107)  App_Log(APP_VERBATIM, "OpenMP threads : %i (Standard: %d -- OpenMP %s3.1)\n", App->NbThread, _OPENMP, _OPENMP > 201107?" > ":"");
