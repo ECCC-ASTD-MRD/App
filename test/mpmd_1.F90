@@ -9,8 +9,13 @@ program mpmd_1
     integer :: comm_12, comm_123, comm_13, comm_14, comm_124, comm_134
     integer :: comm_15
     integer :: mpmd_1id, mpmd_2id, mpmd_3id, mpmd_4id, mpmd_5id
+    integer :: ierror
 
-    call App_MPMD_Init("mpmd_1", "0.0.0", MPI_THREAD_SINGLE)
+    app_ptr=App_Init(0,"mpmd_1","test", "mpmd context attempt","now")
+
+    call MPI_INIT(ierror)
+    call App_Start()
+    call App_MPMD_Init()
 
     mpmd_1id = App_MPMD_GetSelfComponentId()
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')

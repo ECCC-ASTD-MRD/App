@@ -20,7 +20,12 @@ void validate_comm_size(const MPI_Comm comm, const int expected_num_procs) {
 
 
 int main() {
-    App_MPMD_Init("mpmd_5", "0.0.0", MPI_THREAD_SINGLE);
+    MPI_Init(NULL, NULL);
+
+    App_Init(APP_MASTER, "mpmd_5", "test", "mpmd context attempt", "now");
+    App_Start();
+    App_MPMD_Init();
+
     const int mpmd_5id = App_MPMD_GetSelfComponentId();
 
     validate_comm_size(App_MPMD_GetSelfComm(), 5);
@@ -35,8 +40,10 @@ int main() {
     const MPI_Comm comm_15 = App_MPMD_GetSharedComm(2, (int[]){mpmd_1id, mpmd_5id});
     validate_comm_size(comm_15, 1 + 5);
 
-    App_End(0);
     App_MPMD_Finalize();
-    
+    App_End(0);
+
+    MPI_Finalize();
+
     return(0);
 }

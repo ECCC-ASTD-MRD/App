@@ -8,8 +8,14 @@ program mpmd_3
     integer :: comm_12, comm_123, comm_13, comm_234, comm_134, comm_34
     integer :: mpmd_1id, mpmd_2id, mpmd_3id, mpmd_4id
     character(32) :: str
+    integer :: ierror
 
-    call App_MPMD_init('mpmd_3', '0.0.0', MPI_THREAD_SINGLE)
+    app_ptr=app_init(0,"mpmd_3","test", "mpmd context attempt","now")
+
+    call MPI_INIT(ierror)
+    call App_Start()
+    call App_MPMD_Init()
+
     ! call mpmd_end_mpmd_()
     ! stop
 

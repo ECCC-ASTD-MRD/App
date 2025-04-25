@@ -8,8 +8,14 @@ program mpmd_4
     integer :: comm_14, comm_234, comm_124, comm_134, comm_24, comm_34
     integer :: mpmd_1id, mpmd_2id, mpmd_3id, mpmd_4id, mpmd_5id
     character(32) :: str
+    integer :: ierror
 
-    call App_MPMD_init('mpmd_4', '0.0.0', MPI_THREAD_SINGLE)
+    app_ptr=app_init(0,"mpmd_4","test", "mpmd context attempt","now")
+
+    call MPI_INIT(ierror)
+    call App_Start()
+    call App_MPMD_Init()
+
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')

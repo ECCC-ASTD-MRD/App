@@ -8,7 +8,7 @@
 
 #include "App.h"
 
-TApp * App_MPMD_Init(const char * const componentName, const char * const version, const int32_t mpiThreadModel);
+int App_MPMD_Init();
 void App_MPMD_Finalize();
 MPI_Comm App_MPMD_GetSharedComm(const int32_t nbComponents, const int32_t components[nbComponents]);
 MPI_Fint App_MPMD_GetSharedComm_F(const int32_t nbComponents, const int32_t components[nbComponents]);

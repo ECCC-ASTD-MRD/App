@@ -45,8 +45,11 @@ end subroutine validate_comm_size
 
 subroutine mpmd_end_test()
     implicit none
-    app_status=app_end(0)
+    integer :: ierror
+
     call App_MPMD_Finalize()
+    app_status=app_end(0)
+    call MPI_Finalize(ierror)
 end subroutine mpmd_end_test
 
 

@@ -43,16 +43,14 @@ static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RE
 unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 
 //! Return last error
-char * App_ErrorGet(void) {
-    return APP_LASTERROR;
-}
+char* App_ErrorGet(void)     { return APP_LASTERROR; }
 
-TApp* App_GetInstance(void) { return &AppInstance; }
-int App_IsDone(void)       { return App->State == APP_DONE; }
-int App_IsMPI(void)        { return App->NbMPI > 1; }
-int App_IsOMP(void)        { return App->NbThread > 1; }
-int App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
-int App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
+TApp* App_GetInstance(void)  { return &AppInstance; }
+int   App_IsDone(void)       { return App->State == APP_DONE; }
+int   App_IsMPI(void)        { return App->NbMPI > 1; }
+int   App_IsOMP(void)        { return App->NbThread > 1; }
+int   App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
+int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
 
 #ifdef HAVE_MPI
@@ -228,53 +226,60 @@ TApp * App_Init(
     // In coprocess threaded mode, we need a different App object than the master thread
     App = (Type == APP_THREAD) ? (TApp*)calloc(1, sizeof(TApp)) : &AppInstance;
 
-    App->Type = Type;
-    App->Name = Name ? strdup(Name) : strdup("");
-    App->Version = Version ? strdup(Version) : strdup("");
-    App->Desc = Desc ? strdup(Desc) : strdup("");
-    App->TimeStamp = Stamp ? strdup(Stamp) : strdup("");
-    App->LogFile = strdup("stderr");
-    App->LogStream = (FILE*)NULL;
-    App->Tag = NULL;
-    App->State = APP_STOP;
-    App->Percent = 0.0;
-    App->Step = 0;
-    App->Affinity = APP_AFFINITY_NONE;
-    App->NbThread = 0;
-    App->NbMPI = 1;
-    App->RankMPI = 0;
-    App->NbNodeMPI = 1;
-    App->NodeRankMPI = 0;
-    App->CountsMPI = NULL;
-    App->DisplsMPI = NULL;
-    App->OMPSeed = NULL;
-    App->Seed = time(NULL);
-    App->Signal = 0;
-    App->LogWarning = 0;
-    App->LogError = 0;
+    if (App) {
+        App->Type = Type;
+        App->Name = Name ? strdup(Name) : strdup("");
+        App->Version = Version ? strdup(Version) : strdup("");
+        App->Desc = Desc ? strdup(Desc) : strdup("");
+        App->TimeStamp = Stamp ? strdup(Stamp) : strdup("");
+        App->LogFile = strdup("stderr");
+        App->LogStream = (FILE*)NULL;
+        App->Tag = NULL;
+        App->State = APP_STOP;
+        App->Percent = 0.0;
+        App->Step = 0;
+        App->Affinity = APP_AFFINITY_NONE;
+        App->NbThread = 0;
+        App->NbMPI = 1;
+        App->RankMPI = 0;
+        App->NbNodeMPI = 1;
+        App->NodeRankMPI = 0;
+        App->CountsMPI = NULL;
+        App->DisplsMPI = NULL;
+        App->OMPSeed = NULL;
+        App->Seed = time(NULL);
+        App->Signal = 0;
+        App->LogWarning = 0;
+        App->LogError = 0;
 
 #ifdef HAVE_MPI
-    App->Comm = MPI_COMM_WORLD;
-    App->NodeComm = MPI_COMM_NULL;
-    App->NodeHeadComm = MPI_COMM_NULL;
+        App->Comm = MPI_COMM_WORLD;
+        App->NodeComm = MPI_COMM_NULL;
+        App->NodeHeadComm = MPI_COMM_NULL;
 
-    App->MainComm = MPI_COMM_NULL;
-    App->WorldRank = -1;
-    App->ComponentRank = -1;
-    App->SelfComponent = NULL;
-    App->NumComponents = 0;
-    App->AllComponents = NULL;
-    App->NbSets = 0;
-    App->SizeSets = 0;
-    App->Sets = NULL;
+        App->MainComm = MPI_COMM_NULL;
+        App->WorldRank = -1;
+        App->ComponentRank = -1;
+        App->SelfComponent = NULL;
+        App->NumComponents = 0;
+        App->AllComponents = NULL;
+        App->NbSets = 0;
+        App->SizeSets = 0;
+        App->Sets = NULL;
 #endif
 
-    App_InitEnv();
+        App_InitEnv();
 
-    // Trap signals if enabled (preemption)
-    if (App->Signal == 0) {
-       App_Trap(SIGUSR2);
-       App_Trap(SIGTERM);
+        // Trap signals if enabled (preemption)
+        if (App->Signal == 0) {
+            App_Trap(SIGUSR2);
+            App_Trap(SIGTERM);
+        }
+    } else {
+        // This can only happen in thread mode so reassgin global instance for log message and revert to NULL
+        App = &AppInstance;
+        App_Log(APP_FATAL, "%s: Unable to allocate App internal structure\n", __func__);
+        App = NULL;
     }
 
     //! \return L'application initialisée
