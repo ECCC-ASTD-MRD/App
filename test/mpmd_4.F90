@@ -13,8 +13,8 @@ program mpmd_4
     app_ptr=app_init(0,"mpmd_4","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    call App_Start()
     call App_MPMD_Init()
+    call App_Start()
 
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')

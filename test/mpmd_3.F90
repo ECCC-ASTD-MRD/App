@@ -13,8 +13,8 @@ program mpmd_3
     app_ptr=app_init(0,"mpmd_3","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    call App_Start()
     call App_MPMD_Init()
+    call App_Start()
 
     ! call mpmd_end_mpmd_()
     ! stop

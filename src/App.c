@@ -537,7 +537,9 @@ void App_Start(void) {
     App_LibRegister(APP_LIBRMN, HAVE_RMN);
 #endif
 
-    if (!App->RankMPI) {
+#ifdef HAVE_MPI
+    if (!App->RankMPI || !App->ComponentRank) {
+#endif
         if (!App->LogNoBox) {
             App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n");
             App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n", App->Name, App->Version, App->TimeStamp);
@@ -576,19 +578,21 @@ void App_Start(void) {
             }
 #endif //HAVE_OPENMP
 
-            if (App->NbMPI > 1) {
 #ifdef HAVE_MPI
+            if (App->NbMPI > 1) {
 #if defined MPI_VERSION && defined MPI_SUBVERSION
                 // MPI specification version
                 App_Log(APP_VERBATIM, "MPI processes  : %i (Standard: %d.%d)\n", App->NbMPI, MPI_VERSION, MPI_SUBVERSION);
 #else
                 App_Log(APP_VERBATIM, "MPI processes  : %i\n", App->NbMPI);
 #endif
-#endif //HAVE_MPI
             }
+#endif //HAVE_MPI
             App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n\n");
         }
+#ifdef HAVE_MPI
     }
+#endif
 
 #ifdef HAVE_MPI
     // Make sure the header is printed before any other messages from other MPI tasks
@@ -627,11 +631,12 @@ int App_End(
     factor=1.0/1024;
     unit=AppMemUnits[1];
 
+
 #ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
     if (App->NbMPI > 1 && Status != INT_MIN) {
-        if( !App->RankMPI ) {
+        if( !App->RankMPI) {
             MPI_Reduce(MPI_IN_PLACE, &App->LogWarning, 1, MPI_INT, MPI_SUM, 0, App->Comm);
             MPI_Reduce(MPI_IN_PLACE, &App->LogError, 1, MPI_INT, MPI_SUM, 0, App->Comm);
         } else {
@@ -678,7 +683,10 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    if (!App->RankMPI) {
+#ifdef HAVE_MPI
+    if (!App->RankMPI || !App->ComponentRank) {
+#endif
+
         if (!App->LogNoBox) {
             struct timeval end;
             gettimeofday(&end, NULL);
@@ -726,8 +734,9 @@ int App_End(
         App_LogClose();
 
         App->State = APP_DONE;
+#ifdef HAVE_MPI
     }
-
+#endif
     return (App->Signal>0) ? 128 + App->Signal : Status;
 }
 
@@ -849,7 +858,7 @@ void Lib_Log(
     //! \note If level is ERROR, the message will be written on stderr, for all other levels the message will be written to stdout or the log file
 
 #ifdef HAVE_MPI
-    if (App->LogRank != -1 && App->LogRank != App->RankMPI) {
+    if (App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
         return;
     }
 #endif

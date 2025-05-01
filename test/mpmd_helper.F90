@@ -47,8 +47,8 @@ subroutine mpmd_end_test()
     implicit none
     integer :: ierror
 
-    call App_MPMD_Finalize()
     app_status=app_end(0)
+    call App_MPMD_Finalize()
     call MPI_Finalize(ierror)
 end subroutine mpmd_end_test
 
