@@ -351,7 +351,7 @@ int App_MPMD_Init() {
             }
         }
 
-        // App_Start not call yet, means user wants App management per component, so we use the component comunicator
+        // App_Start not called yet, means user wants App management per component, so we use the component communicator
         if (app->State==APP_STOP && app->SelfComponent) app->Comm=app->SelfComponent->comm;
 
     } // omp single

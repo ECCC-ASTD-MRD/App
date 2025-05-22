@@ -61,6 +61,18 @@ int App_MPIProcCmp(const void *a, const void *b) {
 
 void App_SetMPIComm(MPI_Comm Comm) {
     App->Comm = Comm;
+
+    // Initialize MPI.
+    int mpiIsInit;
+    MPI_Initialized(&mpiIsInit);
+    if (mpiIsInit) {
+        MPI_Comm_size(App->Comm, &App->NbMPI);
+        MPI_Comm_rank(App->Comm, &App->RankMPI);
+
+        App->TotalsMPI = (int*)realloc(App->TotalsMPI,(App->NbMPI + 1) * sizeof(int));
+        App->CountsMPI = (int*)realloc(App->CountsMPI,(App->NbMPI + 1) * sizeof(int));
+        App->DisplsMPI = (int*)realloc(App->DisplsMPI,(App->NbMPI + 1) * sizeof(int));
+    }
 }
 #endif
 
@@ -246,6 +258,7 @@ TApp * App_Init(
         App->NodeRankMPI = 0;
         App->CountsMPI = NULL;
         App->DisplsMPI = NULL;
+        App->TotalsMPI = NULL;
         App->OMPSeed = NULL;
         App->Seed = time(NULL);
         App->Signal = 0;
@@ -492,17 +505,7 @@ void App_Start(void) {
     gettimeofday(&App->Time, NULL);
 
 #ifdef HAVE_MPI
-    // Initialize MPI.
-    int mpiIsInit;
-    MPI_Initialized(&mpiIsInit);
-    if (mpiIsInit) {
-        MPI_Comm_size(App->Comm, &App->NbMPI);
-        MPI_Comm_rank(App->Comm, &App->RankMPI);
-
-        App->TotalsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
-        App->CountsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
-        App->DisplsMPI = (int*)malloc((App->NbMPI + 1) * sizeof(int));
-    }
+    App_SetMPIComm(App->Comm);
 #endif
 
 #ifdef HAVE_OPENMP
