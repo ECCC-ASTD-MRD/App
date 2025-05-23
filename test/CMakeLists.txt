@@ -24,7 +24,7 @@ if (EC_INIT_DONE LESS 2)
             NAME app
             COMMAND $<TARGET_FILE:app>
         )
-        target_link_libraries(app App::App)
+        target_link_libraries(app App::App-ompi)
         add_dependencies(check app)
 
         add_executable(test_app_loglevel_noinit EXCLUDE_FROM_ALL test_app_loglevel_noinit.F90)

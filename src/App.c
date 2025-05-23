@@ -958,7 +958,7 @@ void Lib_Log(
                 fprintf(App->LogStream, APP_COLOR_RESET);
             }
 
-            // Force flush on error, when using colors of if APP_LOG_FLUSH flush is defined
+            // Force flush on error, when using colors or if APP_LOG_FLUSH flush is defined
             if (App->LogFlush || App->LogColor || effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) {
                 fflush(App->LogStream);
             }
@@ -1014,7 +1014,7 @@ void App_Progress(
 
 //! Define log level for application and libraries
 int App_LogLevel(
-    //! [in] Log level string ("INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
     const char * const level
 ) {
     //! \return Previous log level, or current if no level specified
@@ -1026,7 +1026,7 @@ int App_LogLevel(
 int Lib_LogLevel(
     //! [in] Library id
     const TApp_Lib lib,
-    //! [in] Log level string ("INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
     const char * const level
 ) {
     //! The default log level is "WARNING". It can be changed with the APP_VERBOSE environment variable.
