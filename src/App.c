@@ -621,8 +621,8 @@ int App_End(
 ) {
     char          *unit=NULL;
     unsigned long *mem,*memt;
-    double         factor,sum,sumd2,avg,var,maxd,mind,fijk;
-    unsigned int   i,imin,imax;
+    double         factor=0.0,sum=0.0,sumd2=0.0,avg=0.0,var=0.0,maxd=0.0,mind=0.0,fijk=0.0;
+    unsigned int   i,imin=0,imax=0;
     struct rusage  usg;
     
     getrusage(RUSAGE_SELF, &usg);
