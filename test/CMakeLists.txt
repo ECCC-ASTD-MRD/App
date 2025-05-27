@@ -20,10 +20,8 @@ if (EC_INIT_DONE LESS 2)
         endif()
 
         add_executable(app EXCLUDE_FROM_ALL app.c)
-        add_test(
-            NAME app
-            COMMAND $<TARGET_FILE:app>
-        )
+        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 1 $<TARGET_FILE:app>)
+
         target_link_libraries(app App::App-ompi)
         add_dependencies(check app)
 
