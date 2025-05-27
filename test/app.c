@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
     if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLOG)) {
        exit(EXIT_FAILURE);
     }
-       
     App_Init(APP_MASTER,title,VERSION,PROJECT_DESCRIPTION_STRING,BUILD_TIMESTAMP);
     App_Start();
 
