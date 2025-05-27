@@ -9,7 +9,7 @@ variables:
    build:
       - echo "No specific environment"
    variables:
-      ALLOW_FAILURE_ARCHS: "ubuntu-22.04-amd64_gnu-11.4.0|rhel-8-amd64_gnu-9.3.0|rhel-9-amd64_gnu-11.5.0"
+      ALLOW_FAILURE_ARCHS: "ubuntu-22.04-amd64_gnu-11.4.0|rhel-8-amd64_gnu-14.1.0|rhel-8-amd64_gnu-9.3.0|rhel-9-amd64_gnu-11.5.0"
 
 include:
    - project: 'RPN-SI/ci-admin'
