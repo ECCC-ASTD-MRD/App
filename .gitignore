@@ -7,5 +7,5 @@
 *~
 
 #----- build directory at the root path
-/build/
+/build**/*
 /.vscode/
