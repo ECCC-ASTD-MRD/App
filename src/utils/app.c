@@ -17,8 +17,11 @@ int main(int argc, char *argv[]) {
     if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLOG)) {
        exit(EXIT_FAILURE);
     }
-    App_Init(APP_MASTER,title,VERSION,PROJECT_DESCRIPTION_STRING,BUILD_TIMESTAMP);
+
+    App_Init(APP_MASTER,title?title:"app",VERSION,PROJECT_DESCRIPTION_STRING,GIT_COMMIT_TIMESTAMP );
     App_Start();
+
+    App_NodePrint();
 
     for(App->Step=1;(!step || App->Step<step);App->Step++) {
         App_Log(APP_INFO,"Step\n");
