@@ -32,11 +32,11 @@ This packages manages various standard tasks needed by applications like:
    - Signal trapping for stopping model on SIGUSR2/SIGTERM
 - Timing functions
 - Parallel process management OpenMP/MPI
-- MPMD
+- MPMD MPI process group management
 
 ## Environment variables
 - APP_PARAMS        : List of parameters for the application (instead of giving on command line)
-- APP_VERBOSE       : Define global verbose level (ERROR, WARNING, INFO, TRIVIAL, DEBUG, EXTRA, QUIET) default:INFO
+- APP_VERBOSE       : Define global verbose level (ERROR, WARNING, INFO, TRIVIAL, DEBUG, EXTRA, QUIET) default: WARNING
 - APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN, FST, BRP, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH])
 - APP_VERBOSE_NOBOX : Do not display header and footer
 - APP_VERBOSE_COLOR : Use color in log messages
@@ -181,7 +181,8 @@ This will load the specified compiler and define the ECCI_DATA_DIR variable for 
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=[your install path]-DWITH_OMPI=[TRUE|FALSE] -Drmn_ROOT=[rmnlib location]
-make -j 4
+make -j 4MP_NUM_THREADS  : Number of openMP threads (for internal purposes)
+
 make test
 make install
 ```
