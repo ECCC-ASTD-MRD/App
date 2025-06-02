@@ -1219,7 +1219,7 @@ void App_PrintArgs(
     if (Flags & APP_ARGSLOG)    printf("\n\t    --%-15s %s",      "logsplit", "Split log file per MPI rank");
     if (Flags & APP_ARGSLANG)   printf("\n\t-%s, --%-15s %s", "a", "language", "Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET", english, francais)");
 
-    printf("\n\t-%s, --%-15s %s", "v", "verbose",      "Verbose level (ERROR, WARNING, "APP_COLOR_GREEN"INFO"APP_COLOR_RESET", DEBUG, EXTRA, QUIET)");
+    printf("\n\t-%s, --%-15s %s", "v", "verbose",      "Verbose level (ERROR, "APP_COLOR_GREEN"WARNING"APP_COLOR_RESET", INFO, DEBUG, EXTRA, QUIET)");
     printf("\n\t    --%-15s %s",      "verbosetime",  "Display time in logs ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET", DATETIME, TIME, SECOND, MSECOND)");
     printf("\n\t    --%-15s %s",      "verboseutc", "Use UTC for time");
     printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");

@@ -29,6 +29,7 @@ ec_build_info()
 
 add_subdirectory(src/lib)
 add_subdirectory(src/utils)
+add_subdirectory(script)
 add_subdirectory(test)
 
 #----- Generate the config file for the project to be usable via cmake's find_package command
