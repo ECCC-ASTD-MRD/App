@@ -13,8 +13,6 @@ version=@PROJECT_VERSION@
 env=@EC_CI_ENV@
 arch=@EC_ARCH@
 
-has_rmn=@rmn_VERSION@@rmn_STATE@
-
 usage()
 {
     cat <<EOF
@@ -32,7 +30,6 @@ Available values for OPTION include:
   --version      library version [${version}]
   --env          environment version used [${env}]
   --arch         architecture of build [${arch}]
-  --has-rmn      which version of librmn is it compiled with [${has_rmn}]
 
 EOF
 }
