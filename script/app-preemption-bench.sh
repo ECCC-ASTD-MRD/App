@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 script=$(basename "${BASH_SOURCE[0]}")
+path=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 short="n:c:m:f:s:b:p:S:B:P:h"
 long="nbnodes:nbcores:mempercores:small:big:preemptive:nbsmall:nbbig:nbpremptive:help"
 opts=$(getopt -o $short --long $long --name "$script" -- "$@")
-usage="\nValidate GEM benchmark run\n
+usage="\nTest preemption capability and dalays\n
 Usage : ${script}\n
    -n : number of nodes in the cluster
    -c : number of cores per nodes
@@ -41,21 +42,18 @@ while :; do
 done
 
 #----- BEGIN PROVIDER SPECIFIC DEFINITIONS
-BinPath=/home/nil000/Projects/RPN/App/build/src/utils/
-
+BinPath=
 QSystem=PBS                                                  # Queuing system
-QSystem=SLURM                                                # Queuing system
 Queue=development                                            # Regular queue
 Queue=standard                                               # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-QueuePremptive=${Queue}                                      # Preemptive queue
 Delay=10                                                     # Delay for all regular jobs to start running
 
 # Define specific MPI environment
 MPI_ENV="
 . r.load.dot mrd/rpn/code-tools/latest/env/inteloneapi-2025.1.0
 
-export PATH=$BinPath:\$PATH"
+export PATH=${path}:\$PATH"
 
 # Scheduler parameters
 #----- END PROVIDER SPECIFIC DEFINITIONS
@@ -105,7 +103,7 @@ EOT
 EOT
          ;;
 
-      "*") # Other scheduler
+      "*") # PROVIDER SPECIFIC DEFINITIONS (Other scheduler)
          cat <<EOT > job${id}.sh
 EOT
          ;;
@@ -127,7 +125,7 @@ EOT
 
 jids=()
 
-#----- Launch small jobs
+# Launch small jobs
 echo "(INFO) Launching $NB_SMALL small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
 prepjob ${CONFIG_SMALL} Small
 
@@ -136,7 +134,7 @@ for n in $(seq $NB_SMALL); do
    jids+=(${jid})
 done
 
-#----- Launch big jobs
+# Launch big jobs
 echo "(INFO) Launching $NB_BIG big config (MPI=$((${CONFIG_BIG}*${NB_CORES})))"
 prepjob ${CONFIG_BIG} Big
 
@@ -147,11 +145,12 @@ done
 
 sleep ${Delay}
 
-#----- Preempt jobs (SIGTERM method)
+#----- PROVIDER SPECIFIC DEFINITIONS (Preemption method)
+# Preempt jobs (SIGTERM method)
 echo "(INFO) Sending SIGTERM signal ${jids[@]}"
 qsig -s SIGTERM ${jids[@]} 
 
-#----- Launch preemptive jobs
+# Launch preemptive jobs
 echo "(INFO) Launching $NB_PREEMPTIVE preemptive config (MPI=$((${CONFIG_PREEMPTIVE}*${NB_CORES})))"
 prepjob ${CONFIG_PREEMPTIVE} Preemptive
 

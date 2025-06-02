@@ -1,1 +1,1 @@
-install(PROGRAMS app-preemption.sh TYPE BIN)
+install(PROGRAMS app-preemption-bench.sh TYPE BIN)
