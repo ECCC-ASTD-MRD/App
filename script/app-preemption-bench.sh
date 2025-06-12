@@ -27,7 +27,7 @@ while :; do
         -n | --nbnodes      ) NB_NODES=$2;             shift 2 ;;
         -c | --nbcores      ) NB_CORES=$2;             shift 2 ;;
         -m | --mempercores  ) MEM=$2;                  shift 2 ;;
-        -f | --pccores      ) PC_CORES$2;              shift 2 ;;
+        -f | --pccores      ) PC_CORES=$2;             shift 2 ;;
 
         -s | --small        ) CONFIG_SMALL=$2;         shift 2 ;;
         -b | --big          ) CONFIG_BIG=$2;           shift 2 ;;
@@ -42,20 +42,17 @@ while :; do
 done
 
 #----- BEGIN PROVIDER SPECIFIC DEFINITIONS
-BinPath=
 QSystem=PBS                                                  # Queuing system
 Queue=development                                            # Regular queue
-Queue=standard                                               # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-Delay=10                                                     # Delay for all regular jobs to start running
+Delay=5                                                      # Delay for all regular jobs to start running
 
 # Define specific MPI environment
 MPI_ENV="
 . r.load.dot mrd/rpn/code-tools/latest/env/inteloneapi-2025.1.0
 
-export PATH=${path}:\$PATH"
-
-# Scheduler parameters
+export PATH=${path}:\$PATH
+"
 #----- END PROVIDER SPECIFIC DEFINITIONS
 
 NB_NODES=${NB_NODES:-4}                                      # Number of nodes on cluster
@@ -125,15 +122,6 @@ EOT
 
 jids=()
 
-# Launch small jobs
-echo "(INFO) Launching $NB_SMALL small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
-prepjob ${CONFIG_SMALL} Small
-
-for n in $(seq $NB_SMALL); do
-   jid=`${command}${Queue} jobSmall.sh` 
-   jids+=(${jid})
-done
-
 # Launch big jobs
 echo "(INFO) Launching $NB_BIG big config (MPI=$((${CONFIG_BIG}*${NB_CORES})))"
 prepjob ${CONFIG_BIG} Big
@@ -143,10 +131,26 @@ for n in $(seq $NB_BIG); do
    jids+=(${jid})
 done
 
+# Launch small jobs
+echo "(INFO) Launching $NB_SMALL small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
+prepjob ${CONFIG_SMALL} Small
+
+for n in $(seq $NB_SMALL); do
+   jid=`${command}${Queue} jobSmall.sh` 
+   jids+=(${jid})
+done
+
+# Queue 10 more
+echo "(INFO) Queuing 10 more small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
+for n in $(seq 10); do
+   jid=`${command}${Queue} jobSmall.sh` 
+   jids+=(${jid})
+done
+
 sleep ${Delay}
 
 #----- PROVIDER SPECIFIC DEFINITIONS (Preemption method)
-# Preempt jobs (SIGTERM method)
+# Preempt jobs (SIGTERM method test)
 echo "(INFO) Sending SIGTERM signal ${jids[@]}"
 qsig -s SIGTERM ${jids[@]} 
 
