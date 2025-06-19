@@ -116,7 +116,7 @@ secs0=$(date +%s)
 ${MPI_ENV}
 
 # Start MPI
-mpirun -n ${sz} app -s 0 -t ${id} -q \${secs0}
+mpirun -n ${sz} app -t ${id} -q \${secs0}
 EOT
 }
 

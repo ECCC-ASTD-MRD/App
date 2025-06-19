@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
 
-    int32_t step=10,ok;
+    int32_t step=0,ok;
     int64_t queued=0;
     char   *title=NULL;
 

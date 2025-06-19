@@ -1,6 +1,6 @@
-# Preemption validation Benchmarking
+# Preemption Validation Benchmark
 
-Welcome to the Preemption Benchmarking  
+Welcome to the Preemption validation Benchmark  
 
 You should have obtained this benchmark from https://github.com/ECCC-ASTD-MRD/App but it is also available through the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3). If you already have built the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3), you can jump to [Run validation benchmark](#run-validation-benchmark)
 
@@ -40,7 +40,11 @@ export PATH=[App install directory]/bin
 
 # Run validation benchmark
 
-- The application (``app``) to use in the submission scripts will be in the /bin install directory specified at the build/install step. 
+- The application (``app``) to use in the submission scripts will be in the /bin install directory specified at the build/install step (``-DCMAKE_INSTALL_PREFIX=[App install directory]``). 
+- You will have to pass the submission time (as Unix seconds since January 1st, 1970) with parameter -q to the ``app`` application 
+```bash
+app -q $(date +%s)
+```
 - An example of the validation script (``app-preemption-bench.sh``) that will be used by ECCC and that you can also use and adapt to your technological choice of scheduler and premption methods is also available in the same directory. This script call will be:
 ```bash
 /home/ords/cmdd/cmds/nil000/ssm/workspace/App/bin/app-preemption-bench.sh -n [number of nodes on system] -f 10 -B 0
