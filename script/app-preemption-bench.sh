@@ -151,8 +151,8 @@ sleep ${Delay}
 
 #----- PROVIDER SPECIFIC DEFINITIONS (Preemption method)
 # Preempt jobs (SIGTERM method test)
-echo "(INFO) Sending SIGTERM signal ${jids[@]}"
-qsig -s SIGTERM ${jids[@]} 
+#echo "(INFO) Sending SIGTERM signal ${jids[@]}"
+#qsig -s SIGTERM ${jids[@]} 
 
 # Launch preemptive jobs
 echo "(INFO) Launching $NB_PREEMPTIVE preemptive config (MPI=$((${CONFIG_PREEMPTIVE}*${NB_CORES})))"
