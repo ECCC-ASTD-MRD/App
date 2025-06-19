@@ -1,8 +1,8 @@
-# Preemption Benchmarking
+# Preemption validation Benchmarking
 
 Welcome to the Preemption Benchmarking  
 
-You should have obtained this benchmark from https://github.com/ECCC-ASTD-MRD/App but it is also available through the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3)
+You should have obtained this benchmark from https://github.com/ECCC-ASTD-MRD/App but it is also available through the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3). If you already have built the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3), you can jump to [Run validation benchmark](#run-validation-benchmark)
 
 # Test description
 
@@ -17,14 +17,15 @@ You should have obtained this benchmark from https://github.com/ECCC-ASTD-MRD/Ap
 * OpenMP support
 * CMake (version >= 3.20)
 
-# Build and run steps
+# Build
 
 ## Compiler specifics
 
 * Compiler specific definitions and flags are defined within the ```cmake_rpn``` submodule of each code repository. If you need to change or add any, 
 you can add or modify the rules into `[git source path]/cmake_rpn/modules/ec_compiler_presets/default/[architecture]/`
 
-## Build base library (librmn)
+## Build base library (App)
+* Note that this package is part of the [GEM Benchmark](https://github.com/ECCC-ASTD-MRD/gem/tree/benchmark-5.3), and will be built and installed when you build the librmn component of that benchmark 
 
 ```bash
 git clone git@github.com:ECCC-ASTD-MRD/App.git
@@ -37,10 +38,10 @@ make install
 export PATH=[App install directory]/bin
 ```
 
-## Run benchmark
+# Run validation benchmark
 
 - The application (``app``) to use in the submission scripts will be in the /bin install directory specified at the build/install step. 
-- An example of the validation script (``app-preemption-bench.sh``) that will be used by ECCC and that you can also use and adapt to your technological choice of scheduler and premption methods is also available in the same directory. This used call will be:
+- An example of the validation script (``app-preemption-bench.sh``) that will be used by ECCC and that you can also use and adapt to your technological choice of scheduler and premption methods is also available in the same directory. This script call will be:
 ```bash
 /home/ords/cmdd/cmds/nil000/ssm/workspace/App/bin/app-preemption-bench.sh -n [number of nodes on system] -f 10 -B 0
 ```
