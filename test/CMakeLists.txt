@@ -19,7 +19,7 @@ if (EC_INIT_DONE LESS 2)
             # message(WARNING "Oversubscribe flag: ${OVERSUBSCRIBE_FLAG}")
         endif()
 
-        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 1 $<TARGET_FILE:app>)
+        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 1 $<TARGET_FILE:app> -s 10)
 
         target_link_libraries(app App::App-ompi)
         add_dependencies(check app)
