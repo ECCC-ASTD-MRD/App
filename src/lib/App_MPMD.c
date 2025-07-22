@@ -24,7 +24,7 @@
 //!
 //! `mpirun -n1 mpmd_1 : -n4 mpmd_2`
 //!
-//! See the content of the `test` directory for examples of simple MPMD applications.
+//! See the content of the `test` directory in the source tree for examples of simple MPMD applications.
 
 
 #include "App_MPMD.h"
