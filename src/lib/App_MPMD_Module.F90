@@ -143,6 +143,7 @@ contains
         component_name = c_to_f_string(id_to_name_c(component_id))
     end function App_MPMD_ComponentIdToName
 
+
     !> \return Whether the given component is present in this MPMD context
     pure function App_MPMD_HasComponent(component_name) result(has_component)
         implicit none

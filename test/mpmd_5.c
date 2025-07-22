@@ -44,6 +44,5 @@ int main() {
     App_MPMD_Finalize();
 
     MPI_Finalize();
-
-    return(0);
+    return 0;
 }

@@ -1,5 +1,31 @@
 //! \file
 //! Implementation of MPMD functions
+//! \defgroup MPMD
+//! MPI Multiple Program Multiple Data (MPMD) helper functions
+//! @{
+//! This MPMD module works with the rest of the App library.
+//!
+//! Each typical MPMD applications will do the following:
+//! -# Call `MPI_Init()` to initialize MPI.
+//! -# Call \ref App_Init() to initialize the application. The application name will be used as the MPMD component name.
+//! -# Call \ref App_MPMD_Init()
+//! -# Call \ref App_Start() to signal the beginning of the execution.
+//! -# Call \ref App_MPMD_HasComponent() to confirm that the MPI execution context includes
+//!     another component with which this application needs to exchange data.
+//! -# Call \ref App_MPMD_GetSharedComm() to get a shared communicator between at least two components.
+//! -# Do actual work with the shared communicator.
+//! -# Call \ref App_End()
+//! -# Call \ref App_MPMD_Finalize()
+//! -# Call `MPI_Finalize()`
+//!
+//! To execute the applications in MPMD mode, an appropriate launch command for the MPI implementation must be used.
+//!
+//! Here is an example for OpenMPI:
+//!
+//! `mpirun -n1 mpmd_1 : -n4 mpmd_2`
+//!
+//! See the content of the `test` directory for examples of simple MPMD applications.
+
 
 #include "App_MPMD.h"
 
@@ -24,6 +50,7 @@ static const TComponentSet defaultSet = {
 };
 
 static void printComponent(const TComponent * const comp, const int verbose);
+
 
 //! Create a new string containing a textual representation of an array of positive integers
 static char * printIntArray(
@@ -61,9 +88,6 @@ static char * printIntArray(
 
 
 //! Find unique components
-//! \return Pointer to a new sorted array of unique components.
-//! The index of the array corresponds to the component id/MPI_APPNUM and can therefore be addressed directly.
-//! The caller must free when no longer needed.
 static TComponent * findUniqueComponents(
     //! [in] Number of PE in MPI_COMM_WORLD
     const int worldSize,
@@ -72,6 +96,10 @@ static TComponent * findUniqueComponents(
     //! [out] Number of unique components
     int * const nbComponents
 ) {
+    //! \return Pointer to a new sorted array of unique components.
+    //! The index of the array corresponds to the component id/MPI_APPNUM and can therefore be addressed directly.
+    //! The caller must free when no longer needed.
+
     *nbComponents = 0;
     for (int i = 0; i < worldSize; i++) {
         if (peComponentIds[i].id > *nbComponents) {
@@ -138,7 +166,6 @@ int App_MPMD_GetSelfComponentId() {
     //! \return Component id of this PE
 
     const TApp * const app = App_GetInstance();
-
     return app->SelfComponent->id;
 }
 
@@ -205,11 +232,12 @@ static void printComponent(
 }
 
 
-//! Initialize a common MPMD context by telling everyone who we are as a process.
-//! This is a collective call. Everyone who participate in it will know who else
-//! is on board and will be able to ask for a communicator in common with any other
-//! participant (or even multiple other participants at once).
+//! Initialize a common MPMD context by telling everyone who we are as a process
 int App_MPMD_Init() {
+    //! This is a collective call. Everyone who participate in it will know who else
+    //! is on board and will be able to ask for a communicator in common with any other
+    //! participant (or even multiple other participants at once).
+
     TApp * const app = App_GetInstance();
 
     #pragma omp single // For this entire function
@@ -270,7 +298,6 @@ int App_MPMD_Init() {
             App_Log(APP_FATAL, "%s: Global root should also be the root of its own component\n", __func__);
             app->SelfComponent = NULL;
         } else {
-
             // Create a communicator with the roots of each component
             MPI_Comm rootsComm = MPI_COMM_NULL;
             int rootRank = -1; // Rank of the root in the rootsComm communicator
@@ -356,19 +383,17 @@ int App_MPMD_Init() {
 
     } // omp single
 
-    return app->SelfComponent!=NULL;
+    return app->SelfComponent != NULL;
 }
 
 
-//! Terminate cleanly the MPMD run.
-//! Frees the memory allocated by TComponent and TComponentSet structs, and it calls MPI_Finalize()
+//! Terminate the MPMD execution cleanly
 void App_MPMD_Finalize() {
+    //! Frees the memory allocated by TComponent and TComponentSet structs, and it calls MPI_Finalize()
     #pragma omp single
     {
         TApp * const app = App_GetInstance();
-            
         if (app->MainComm != MPI_COMM_NULL) {
-
             printComponent(app->SelfComponent, 1);
 
             if (app->Sets != NULL) {
@@ -398,7 +423,7 @@ void App_MPMD_Finalize() {
 }
 
 
-//! Determine if a list of integer contains a given item
+//! Test if a list of integer contains a given item
 static int contains(
     //! Number of items in the list
     const int nbItems,
@@ -429,7 +454,6 @@ static void printList(
 
 
 //! Get a sorted list of components without duplication
-//! \return Cleaned up list. Caller must free this list when no longer needed.
 static int * cleanComponentList(
     //! [in] How many components there are in the initial list
     const int nbComponents,
@@ -438,6 +462,7 @@ static int * cleanComponentList(
     //! [out] How many components there are in the cleaned-up list
     int * const nbUniqueComponents
 ) {
+    //! \return Cleaned up list. Caller must free this list when no longer needed.
 
     int tmpList[nbComponents + 1];
 
@@ -497,7 +522,6 @@ static int * cleanComponentList(
 MPI_Comm App_MPMD_GetSelfComm() {
     //! \return The communicator for all PEs part of the same component as this PE
     const TApp * const app = App_GetInstance();
-
     return app->SelfComponent->comm;
 }
 
@@ -566,9 +590,7 @@ static void initComponentSet(
 }
 
 
-//! Create a set of components within this MPMD context.
-//! This will create a comm for them.
-//! \return A newly-created set (pointer). NULL if there was an error
+//! Create a set of components within this MPMD context
 static TComponentSet * createSet(
     //! TApp instance. *Must already be initialized.*
     TApp * const app,
@@ -577,6 +599,8 @@ static TComponentSet * createSet(
     //! List of components IDs in the set. *Must be sorted in ascending order and without duplicates*.
     const int components[nbComponents]
 ) {
+    //! This will create a communicator for them.
+    //! \return A newly-created set (pointer). NULL on error
 #ifndef NDEBUG
     {
         char * const compStr = printIntArray(nbComponents, components, 0);
@@ -675,9 +699,7 @@ const char * App_MPMD_ComponentIdToName(
 }
 
 
-//! Retrieve a communicator that encompasses all PEs part of the components
-//! in the given list. If the communicator does not already exist, it will be created.
-//! _This function call is collective if and only if the communicator gets created._
+//! Get a communicator that encompasses all PEs part of the components in the given list
 MPI_Comm App_MPMD_GetSharedComm(
     //! Number of components in the list
     const int32_t nbComponents,
@@ -686,8 +708,10 @@ MPI_Comm App_MPMD_GetSharedComm(
     //! duplicate IDs and does not have to be in a specific order.
     const int32_t components[nbComponents]
 ) {
-    TApp * const app = App_GetInstance();
+    //!  If the communicator does not already exist, it will be created.
+    //! _This function call is collective if and only if the communicator gets created._
 
+    TApp * const app = App_GetInstance();
     char * const compStr = printIntArray(nbComponents, components, 0);
 #ifndef NDEBUG
         printf("%02d %s(%p, %s, %d) from %d(%s)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, app->SelfComponent->id, app->SelfComponent->name);
@@ -764,8 +788,7 @@ end:
 }
 
 
-//! Callable from Fortran: Wrapper that converts the C communicator returned by
-//! App_MPMD_GetSharedComm into a Fortran communicator.
+//! Get shared Fortran communicator
 MPI_Fint App_MPMD_GetSharedComm_F(
     //! Number of components
     const int32_t nbComponents,
@@ -788,3 +811,6 @@ int32_t App_MPMD_HasComponent(
 
     return App_MPMD_GetComponentId(componentName) >= 0;
 }
+
+
+//! @}

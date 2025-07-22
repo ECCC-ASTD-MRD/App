@@ -1,9 +1,6 @@
 #ifndef MPMD_H__
 #define MPMD_H__
 
-//! \file
-//! MPMD interface definition
-
 #include <mpi.h>
 
 #include "App.h"
