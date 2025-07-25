@@ -615,7 +615,7 @@ void App_Start(void) {
     if (App->LogLevel[APP_MAIN]>=APP_STAT) {
         struct utsname buffer;
         if (uname(&buffer) ==0) {
-            App_Log(APP_STAT, "system name: %s, node name: %s, release: %s, version: %s, machine: %s\n", 
+            App_Log(APP_STAT, "System name: %s, Node name: %s, Release: %s, Version: %s, Machine: %s\n", 
                 buffer.sysname,buffer.nodename,buffer.release,buffer.version,buffer.machine);
         }
     }
