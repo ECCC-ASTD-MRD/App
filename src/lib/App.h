@@ -107,14 +107,16 @@ typedef enum {
     APP_WARNING = 4,
     //! Informational
     APP_INFO = 5,
+    //! Stats about process
+    APP_STAT = 6,
     //! Trivial
-    APP_TRIVIAL = 6,
+    APP_TRIVIAL = 7,
     //! Debug
-    APP_DEBUG = 7,
+    APP_DEBUG = 8,
     //! Extra
-    APP_EXTRA = 8,
+    APP_EXTRA = 9,
     //! Quiet \todo Say what quiet actually does
-    APP_QUIET = 9
+    APP_QUIET = 10
 } TApp_LogLevel;
 
 //! Log date detail level
@@ -353,6 +355,7 @@ void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
+int   App_Stats(const char * const Tag);
 void Lib_Log(
     const TApp_Lib lib,
     const TApp_LogLevel level,

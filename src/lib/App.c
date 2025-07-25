@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <sys/signal.h>
 #include <signal.h>
+#include <sys/utsname.h>
 #ifndef _AIX
    #include <sys/syscall.h>
 #endif
@@ -37,8 +38,8 @@ static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char* AppMemUnits[]    = { "KB", "MB", "GB", "TB" };
 static char* AppLibNames[]    = { "main", "rmn", "fst", "brp", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
 static char* AppLibLog[]      = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
-static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA" };
-static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
+static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA" };
+static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", APP_COLOR_BLUE, "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
 
 unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 
@@ -610,8 +611,38 @@ void App_Start(void) {
     //     MPI_Barrier(App->Comm);
     // }
 #endif //HAVE_MPI
+
+    if (App->LogLevel[APP_MAIN]>=APP_STAT) {
+        struct utsname buffer;
+        if (uname(&buffer) ==0) {
+            App_Log(APP_STAT, "system name: %s, node name: %s, release: %s, version: %s, machine: %s\n", 
+                buffer.sysname,buffer.nodename,buffer.release,buffer.version,buffer.machine);
+        }
+    }
 }
 
+
+//! Finaliser l'execution du modele et afficher le footer
+//! \return Process exit status
+int App_Stats(const char * const Tag) {
+    struct rusage  usg;
+    struct timeval end,dif;
+
+    if (App->LogLevel[APP_MAIN]>=APP_STAT) {
+        gettimeofday(&end, NULL);
+        timersub(&end, &App->Time, &dif);
+        getrusage(RUSAGE_SELF, &usg);
+
+        if (Tag) {
+           App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+              Tag,dif.tv_sec+dif.tv_usec/1e6,usg.ru_utime.tv_sec+usg.ru_utime.tv_usec/1e6,usg.ru_stime.tv_sec+usg.ru_stime.tv_usec/1e6,usg.ru_maxrss,usg.ru_nswap,usg.ru_minflt,usg.ru_majflt);
+        } else {
+           App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+              dif.tv_sec+dif.tv_usec/1e6,usg.ru_utime.tv_sec+usg.ru_utime.tv_usec/1e6,usg.ru_stime.tv_sec+usg.ru_stime.tv_usec/1e6,usg.ru_maxrss,usg.ru_nswap,usg.ru_minflt,usg.ru_majflt);
+        }
+    }
+    return(TRUE);
+}
 
 //! Finaliser l'execution du modele et afficher le footer
 //! \return Process exit status
@@ -1014,7 +1045,7 @@ void App_Progress(
 
 //! Define log level for application and libraries
 int App_LogLevel(
-    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA")
     const char * const level
 ) {
     //! \return Previous log level, or current if no level specified
@@ -1026,7 +1057,7 @@ int App_LogLevel(
 int Lib_LogLevel(
     //! [in] Library id
     const TApp_Lib lib,
-    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "TRIVIAL", "DEBUG", "EXTRA")
+    //! [in] Log level string ("FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA")
     const char * const level
 ) {
     //! The default log level is "WARNING". It can be changed with the APP_VERBOSE environment variable.
@@ -1047,6 +1078,8 @@ int Lib_LogLevel(
             App->LogLevel[lib] = APP_WARNING;
         } else if (strncasecmp(level, "INFO", 4) == 0) {
             App->LogLevel[lib] = APP_INFO;
+        } else if (strncasecmp(level, "STAT", 4) == 0) {
+            App->LogLevel[lib] = APP_STAT;
         } else if (strncasecmp(level, "TRIVIAL", 7) == 0) {
             App->LogLevel[lib] = APP_TRIVIAL;
         } else if (strncasecmp(level, "DEBUG", 5) == 0) {
