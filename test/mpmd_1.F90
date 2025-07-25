@@ -11,7 +11,7 @@ program mpmd_1
     integer :: mpmd_1id, mpmd_2id, mpmd_3id, mpmd_4id, mpmd_5id
     integer :: ierror
 
-    app_ptr=App_Init(0,"mpmd_1","test", "mpmd context attempt","now")
+    app_ptr = App_Init(0, "mpmd_1", "test", "mpmd context attempt", "now")
 
     call MPI_INIT(ierror)
     call App_MPMD_Init()

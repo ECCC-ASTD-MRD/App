@@ -70,9 +70,9 @@ void App_SetMPIComm(MPI_Comm Comm) {
         MPI_Comm_size(App->Comm, &App->NbMPI);
         MPI_Comm_rank(App->Comm, &App->RankMPI);
 
-        App->TotalsMPI = (int*)realloc(App->TotalsMPI,(App->NbMPI + 1) * sizeof(int));
-        App->CountsMPI = (int*)realloc(App->CountsMPI,(App->NbMPI + 1) * sizeof(int));
-        App->DisplsMPI = (int*)realloc(App->DisplsMPI,(App->NbMPI + 1) * sizeof(int));
+        App->TotalsMPI = (int*)realloc(App->TotalsMPI, (App->NbMPI + 1) * sizeof(int));
+        App->CountsMPI = (int*)realloc(App->CountsMPI, (App->NbMPI + 1) * sizeof(int));
+        App->DisplsMPI = (int*)realloc(App->DisplsMPI, (App->NbMPI + 1) * sizeof(int));
     }
 }
 #endif
@@ -650,22 +650,20 @@ int App_End(
     //! Application exit status to use (-1:Use error count)
     int Status
 ) {
-    char          *unit=NULL;
-    unsigned long *mem,*memt;
-    double         factor=0.0,sum=0.0,sumd2=0.0,avg=0.0,var=0.0,maxd=0.0,mind=0.0,fijk=0.0;
-    unsigned int   i,imin=0,imax=0;
-    struct rusage  usg;
-    
+    //! \return Process exit status
+
+    struct rusage usg;
     getrusage(RUSAGE_SELF, &usg);
-    mem=(unsigned long*)calloc(2*App->NbMPI,sizeof(unsigned long));
-    memt=&mem[App->NbMPI];
-    sum=mem[App->RankMPI]=usg.ru_maxrss;
+    unsigned long * const mem = (unsigned long*)calloc(2 * App->NbMPI, sizeof(unsigned long));
+    unsigned long * const memt = &mem[App->NbMPI];
+    double sum = mem[App->RankMPI] = usg.ru_maxrss;
 
     // Get a readable size and units
-    factor=1.0/1024;
-    unit=AppMemUnits[1];
+    double factor = 1.0 / 1024;
+    char * unit = AppMemUnits[1];
 
-
+    double avg = 0.0, var = 0.0, maxd = 0.0, mind = 0.0, fijk = 0.0;
+    unsigned int imin = 0, imax = 0;
 #ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
@@ -682,16 +680,17 @@ int App_End(
         MPI_Reduce(mem, memt, App->NbMPI, MPI_UNSIGNED_LONG, MPI_SUM, 0, App->Comm);
 
         if (!App->RankMPI) {
-            sum  = sumd2 = 0.0;
+            double sumd2 = 0.0;
+            sum  = 0.0;
             imin = 0;
             imax = App->NbMPI-1;
             maxd = memt[App->NbMPI-1];
             mind = memt[0];
 
-            for(i=0;i<App->NbMPI;i++) {
+            for(int i = 0; i < App->NbMPI; i++) {
                 fijk  = memt[i];
                 sum   = sum   + fijk;
-                sumd2 = sumd2 + fijk*fijk;
+                sumd2 = sumd2 + fijk * fijk;
                 if (fijk > maxd) {
                     maxd = fijk;
                     imax = i;
@@ -703,11 +702,11 @@ int App_End(
             }
 
             avg = sum / App->NbMPI;
-            var = sqrt((sumd2 + avg*avg*App->NbMPI - 2*avg*sum) / App->NbMPI);
+            var = sqrt((sumd2 + avg * avg * App->NbMPI - 2 * avg * sum) / App->NbMPI);
 
-            if (sum>1024*1024*10) {
-                factor/=1024;
-                unit=AppMemUnits[2];
+            if (sum > 1024 * 1024 * 10) {
+                factor /= 1024;
+                unit = AppMemUnits[2];
             }
         }
     }
@@ -720,7 +719,6 @@ int App_End(
 #ifdef HAVE_MPI
     if (!App->RankMPI || !App->ComponentRank) {
 #endif
-
         if (!App->LogNoBox) {
             struct timeval end;
             gettimeofday(&end, NULL);
@@ -738,21 +736,21 @@ int App_End(
                 App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
             }
             App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTotalTime_ms(App->TimerLog));
-            App_Log(APP_VERBATIM, "Resident mem   : %.1f %s\n", sum*factor,unit);
+            App_Log(APP_VERBATIM, "Resident mem   : %.1f %s\n", sum*factor, unit);
 
             if (App->NbMPI>1) {
-                App_Log(APP_VERBATIM, "   Average     : %.1f %s\n", avg*factor,unit);
-                App_Log(APP_VERBATIM, "   Minimum     : %.1f %s (rank %u)\n", mind*factor,unit,imin);
-                App_Log(APP_VERBATIM, "   Maximum     : %.1f %s (rank %u)\n", maxd*factor,unit,imax);
-                App_Log(APP_VERBATIM, "   STD         : %.1f %s\n", var*factor,unit);
+                App_Log(APP_VERBATIM, "   Average     : %.1f %s\n", avg * factor, unit);
+                App_Log(APP_VERBATIM, "   Minimum     : %.1f %s (rank %u)\n", mind * factor, unit, imin);
+                App_Log(APP_VERBATIM, "   Maximum     : %.1f %s (rank %u)\n", maxd * factor, unit, imax);
+                App_Log(APP_VERBATIM, "   STD         : %.1f %s\n", var*factor, unit);
 
-                for(i=0;i<App->NbMPI;i++) {
+                for(int i = 0; i < App->NbMPI; i++) {
                     fijk  = memt[i];
-                    if (fijk > (avg+var)) 
-                       App_Log(APP_VERBATIM, "   Above 1 STD : %.1f %s (rank %u)\n", fijk*factor,unit,i);
+                    if (fijk > (avg + var))
+                       App_Log(APP_VERBATIM, "   Above 1 STD : %.1f %s (rank %u)\n", fijk * factor, unit, i);
                 }
             }
- 
+
             if (Status != EXIT_SUCCESS) {
                 App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {
@@ -773,6 +771,7 @@ int App_End(
 #endif
     return (App->Signal>0) ? 128 + App->Signal : Status;
 }
+
 
 //! Trapper les signaux afin de terminer gracieusement
 void App_TrapProcess(
@@ -1670,6 +1669,9 @@ int App_ParseCoords(
     const int Index
 ) {
     //! \return 1 on success, 0 otherwise
+
+    // Hack to remove unused parameter warning
+    (void)(Param);
 
     char *ptr;
     double coord = strtod(Value, &ptr);
