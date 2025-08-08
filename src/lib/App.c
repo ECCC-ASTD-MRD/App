@@ -227,10 +227,10 @@ void App_InitEnv() {
     pthread_mutex_unlock(&App_mutex);
 }
 
-//! Initialiser la structure App
+//! Initialize an application
 TApp * App_Init(
-    //! [in] App type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
-    int Type,
+    //! [in] Application type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
+    const int Type,
     //! [in] Application name
     const char * const Name,
     //! [in] Application version
@@ -300,7 +300,7 @@ TApp * App_Init(
         App = NULL;
     }
 
-    //! \return L'application initialisée
+    //! \return Initialized application object pointer, or NULL on error
     return App;
 }
 
