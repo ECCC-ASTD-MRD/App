@@ -288,6 +288,7 @@ typedef struct {
    FILE*          LogStream;             ///< Log file associated stream
    int            LogNoBox;              ///< Display header and footer boxes
    int            LogRank;               ///< Force log from a single rank
+   int            LogThread;             ///< Display thread id
    int            LogWarning;            ///< Number of warnings
    int            LogError;              ///< Number of errors
    int            LogColor;              ///< Use coloring in the logs

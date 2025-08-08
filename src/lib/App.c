@@ -108,6 +108,7 @@ void App_InitEnv() {
             App->LogSplit = FALSE;
             App->LogFlush = FALSE;
             App->LogRank = 0;
+            App->LogThread = FALSE;
             App->UTC = FALSE;
 
             // Default log level is WARNING
@@ -135,6 +136,9 @@ void App_InitEnv() {
             }
             if ((envVarVal = getenv("APP_VERBOSE_RANK"))) {
                 App->LogRank = atoi(envVarVal);
+            }
+            if ((envVarVal = getenv("APP_VERBOSE_THREAD"))) {
+                App->LogThread = atoi(envVarVal);
             }
             if ((envVarVal = getenv("APP_LOG_SPLIT"))) {
                 App->LogSplit = TRUE;
@@ -622,9 +626,12 @@ void App_Start(void) {
 }
 
 
-//! Finaliser l'execution du modele et afficher le footer
+//! Display process stats
 //! \return Process exit status
-int App_Stats(const char * const Tag) {
+int App_Stats(
+    //! Tag to be added to statisitcs line (optional, use NULL otherwise)
+    const char * const Tag
+) {
     struct rusage  usg;
     struct timeval end,dif;
 
@@ -890,6 +897,14 @@ void Lib_Log(
 ) {
     //! \note If level is ERROR, the message will be written on stderr, for all other levels the message will be written to stdout or the log file
 
+    pid_t tid=0,pid=0;
+
+    if (App->LogThread) {
+       tid = (pid_t) syscall(SYS_gettid);
+       pid = (pid_t) syscall(SYS_getpid);
+       tid-=pid;
+    }
+
 #ifdef HAVE_MPI
     if (App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
         return;
@@ -958,19 +973,35 @@ void Lib_Log(
             }
 
 #ifdef HAVE_MPI
-           if (App_IsMPI() && App->LogRank == -1) {
+            if (App_IsMPI() && App->LogRank == -1) {
                 if (App->Step) {
-                    sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    if (App->LogThread) {
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) #%d %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    } else {
+                        sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    }
                 } else {
-                    sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    if (App->LogThread) {
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    } else {
+                        sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    }
             }
                 }
             else
 #endif
             if (App->Step) {
-                sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                if (App->LogThread) {
+                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);                  
+                } else {
+                   sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                }
             } else {
-                sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                if (App->LogThread) {
+                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]); 
+                } else {
+                    sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                }
             }
         }
 
