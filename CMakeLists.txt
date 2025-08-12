@@ -11,7 +11,6 @@ project(${NAME} DESCRIPTION "${DESCRIPTION}" LANGUAGES C Fortran)
 set(PROJECT_VERSION ${VERSION}${STATE})
 set(${NAME}_VERSION ${PROJECT_VERSION} CACHE INTERNAL "libApp version" FORCE) # Needed for cascaded version identification
 
-include(ec_doxygen)        # Doxygen target doc
 include(ec_compiler_presets)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -25,6 +24,7 @@ if (WITH_OMPI)
    find_package(OpenMP REQUIRED)
 endif()
 
+include(ec_doxygen)
 ec_build_info()
 
 add_subdirectory(src/lib)
