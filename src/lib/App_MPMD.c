@@ -1,6 +1,6 @@
 //! \file
 //! Implementation of MPMD functions
-//! \defgroup MPMD
+//! \defgroup MPMD MPDP
 //! MPI Multiple Program Multiple Data (MPMD) helper functions
 //! @{
 //! This MPMD module works with the rest of the App library.
@@ -151,7 +151,7 @@ int App_MPMD_GetComponentId(
     //! \return Component id if found, -1 otherwise
 
     const TApp * const app = App_GetInstance();
- 
+
     for (int i = 0; i < app->NumComponents; i++) {
         if (strncmp(app->AllComponents[i].name, componentName, APP_MAX_COMPONENT_NAME_LEN) == 0) {
             return app->AllComponents[i].id;
@@ -246,10 +246,6 @@ int App_MPMD_Init() {
         MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
         MPI_Comm_rank(MPI_COMM_WORLD, &app->WorldRank);
 
-#ifndef NDEBUG
-        printf("%s: PE %d/%d, component %s\n", __func__, app->WorldRank, worldSize, app->Name);
-#endif
-
         App_Log(APP_DEBUG, "%s: Initializing component %s PE %04d/%04d\n", __func__, app->Name, app->WorldRank, worldSize);
 
         app->MainComm = MPI_COMM_WORLD;
@@ -267,6 +263,8 @@ int App_MPMD_Init() {
             int flag;
             MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appNum, &flag);
         }
+        App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, appNum);
+
         TComponentId peComponentId = {.id = *appNum};
         strncpy(peComponentId.name, app->Name, APP_MAX_COMPONENT_NAME_LEN);
         MPI_Gather(&peComponentId, sizeof(TComponentId), MPI_BYTE, peComponentIds, sizeof(TComponentId), MPI_BYTE, 0, MPI_COMM_WORLD);
@@ -379,7 +377,7 @@ int App_MPMD_Init() {
         }
 
         // App_Start not called yet, means user wants App management per component, so we use the component communicator
-        if (app->State==APP_STOP && app->SelfComponent) app->Comm=app->SelfComponent->comm;
+        if (app->State == APP_STOP && app->SelfComponent) app->Comm = app->SelfComponent->comm;
 
     } // omp single
 
@@ -806,7 +804,7 @@ int32_t App_MPMD_HasComponent(
     const char * const componentName
 ) {
     //! \return 1 if given component is present in this MPMD context, 0 if not.
-   
+
     App_Log(APP_DEBUG, "%s: Checking for presence of component \"%s\" ...\n", __func__, componentName);
 
     return App_MPMD_GetComponentId(componentName) >= 0;
