@@ -77,6 +77,7 @@ void App_SetMPIComm(MPI_Comm Comm) {
 }
 #endif
 
+
 //! Ajouter une librairie (info pour header de log)
 void App_LibRegister(
     //! [in] Library
@@ -223,6 +224,7 @@ void App_InitEnv() {
     pthread_mutex_unlock(&App_mutex);
 }
 
+
 //! Initialize an application
 TApp * App_Init(
     //! [in] Application type (APP_MASTER = single independent process, APP_THREAD = threaded co-process)
@@ -336,6 +338,7 @@ void App_Free(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
+
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
     //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
@@ -363,14 +366,14 @@ int App_NodeGroup() {
 
         // Check if we have more than one group
         int mult = color;
-        for(cptr = names; !mult && i < App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
+        for (cptr = names; !mult && i < App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
             if( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
                 mult = 1;
             }
         }
 
         // If we have more than one node
-        if( mult ) {
+        if (mult) {
             // Split the MPI procs into node groups
             APP_MPI_ASRT( MPI_Comm_split(App->Comm, color, App->RankMPI, &App->NodeComm) );
 
@@ -379,7 +382,7 @@ int App_NodeGroup() {
             APP_MPI_ASRT( MPI_Comm_size(App->NodeComm, &App->NbNodeMPI) );
 
             // Create a communicator for the head process of each node
-            APP_MPI_ASRT( MPI_Comm_split(App->Comm, App->NodeRankMPI?MPI_UNDEFINED:0, App->RankMPI, &App->NodeHeadComm) );
+            APP_MPI_ASRT( MPI_Comm_split(App->Comm, App->NodeRankMPI ? MPI_UNDEFINED : 0, App->RankMPI, &App->NodeHeadComm) );
         } else {
             App->NbNodeMPI = App->NbMPI;
             App->NodeRankMPI = App->RankMPI;
@@ -398,6 +401,7 @@ int App_NodeGroup() {
 
     return APP_OK;
 }
+
 
 int App_NodePrint() {
 #ifdef HAVE_MPI
@@ -445,6 +449,7 @@ int App_NodePrint() {
     return APP_OK;
 }
 
+
 //! Initialiser l'emplacement des threads
 int App_ThreadPlace(void) {
     //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
@@ -482,7 +487,7 @@ int App_ThreadPlace(void) {
 
                 case APP_AFFINITY_SOCKET:
                     // Pack threads over scattered MPI (hope it fits with sockets)
-                    CPU_SET((App->NodeRankMPI*incmpi) + omp_get_thread_num(), &set);
+                    CPU_SET((App->NodeRankMPI * incmpi) + omp_get_thread_num(), &set);
                     break;
 
                 case APP_AFFINITY_NONE:
@@ -499,6 +504,7 @@ int App_ThreadPlace(void) {
     return TRUE;
 }
 
+
 //! Initialiser l'execution de l'application et afficher l'entete
 void App_Start(void) {
     App->State = APP_RUN;
@@ -506,6 +512,8 @@ void App_Start(void) {
     gettimeofday(&App->Time, NULL);
 
 #ifdef HAVE_MPI
+    //! \bug The \ref App_SetMPIComm function sets App->Comm with the communicator provided as argument, but we provide App->Comm here.
+    //! The only place where App->Comm is set is in \ref App_Init with MPI_COMM_WORLD as value
     App_SetMPIComm(App->Comm);
 #endif
 
@@ -622,9 +630,9 @@ void App_Start(void) {
 }
 
 
-//! Finaliser l'execution du modele et afficher le footer
-//! \return Process exit status
+//! Log resource usage
 int App_Stats(const char * const Tag) {
+    //! \return Always TRUE
     struct rusage  usg;
     struct timeval end,dif;
 
@@ -641,11 +649,11 @@ int App_Stats(const char * const Tag) {
               dif.tv_sec+dif.tv_usec/1e6,usg.ru_utime.tv_sec+usg.ru_utime.tv_usec/1e6,usg.ru_stime.tv_sec+usg.ru_stime.tv_usec/1e6,usg.ru_maxrss,usg.ru_nswap,usg.ru_minflt,usg.ru_majflt);
         }
     }
-    return(TRUE);
+    return TRUE;
 }
 
+
 //! Finaliser l'execution du modele et afficher le footer
-//! \return Process exit status
 int App_End(
     //! Application exit status to use (-1:Use error count)
     int Status
@@ -668,7 +676,7 @@ int App_End(
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
     if (App->NbMPI > 1 && Status != INT_MIN) {
-        if( !App->RankMPI) {
+        if (!App->RankMPI) {
             MPI_Reduce(MPI_IN_PLACE, &App->LogWarning, 1, MPI_INT, MPI_SUM, 0, App->Comm);
             MPI_Reduce(MPI_IN_PLACE, &App->LogError, 1, MPI_INT, MPI_SUM, 0, App->Comm);
         } else {
@@ -769,7 +777,7 @@ int App_End(
 #ifdef HAVE_MPI
     }
 #endif
-    return (App->Signal>0) ? 128 + App->Signal : Status;
+    return (App->Signal > 0) ? 128 + App->Signal : Status;
 }
 
 
@@ -787,6 +795,7 @@ void App_TrapProcess(
     }
 }
 
+
 void App_Trap(const int Signal) {
     struct sigaction new;
     new.sa_sigaction = NULL;
@@ -802,11 +811,13 @@ void App_Trap(const int Signal) {
     // signal(Signal, App_TrapProcess);
 }
 
+
 void App_LogStream(const char * const Stream) {
       App->LogFile = strdup(Stream);
 }
 
-//! Ouvrir le fichier log
+
+//! Open log file
 void App_LogOpen(void) {
     pthread_mutex_lock(&App_mutex);
     {
@@ -839,7 +850,8 @@ void App_LogOpen(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
-//! Fermer le fichier log
+
+//! Close logfile
 void App_LogClose(void) {
     pthread_mutex_lock(&App_mutex);
     {
@@ -852,7 +864,8 @@ void App_LogClose(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
-//! Imprimer un message de manière standard
+
+//! Add log entry
 void App_Log4Fortran(
     //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
     TApp_LogLevel Level,
@@ -861,6 +874,7 @@ void App_Log4Fortran(
 ) {
     Lib_Log(APP_MAIN, Level, "%s\n", Message);
 }
+
 
 void Lib_Log4Fortran(
     //! [in] Identificateur de la librairie
@@ -877,7 +891,7 @@ void Lib_Log4Fortran(
 }
 
 
-//! Print message to log
+//! Add log entry
 void Lib_Log(
     //! [in] Library id
     const TApp_Lib lib,
@@ -1016,7 +1030,7 @@ void Lib_Log(
 }
 
 
-//! Imprimer un message d'indication d'avancement
+//! Print progress message
 void App_Progress(
     //! [in] Pourcentage d'avancement
     const float Percent,
@@ -1052,7 +1066,7 @@ int App_LogLevel(
 }
 
 
-//! Definir le niveau de log courant pour une librairie
+//! Set current library log level
 int Lib_LogLevel(
     //! [in] Library id
     const TApp_Lib lib,
@@ -1099,7 +1113,8 @@ int Lib_LogLevel(
     return previousLevel;
 }
 
-//! Definir le niveau de log courant pour l'application
+
+//! Set current application log level
 int App_LogLevelNo(
     //! [in] Niveau de log
     const TApp_LogLevel Level
@@ -1107,6 +1122,7 @@ int App_LogLevelNo(
     //! \return Previous log level, or current if no level specified
     return Lib_LogLevelNo(APP_MAIN, Level);
 }
+
 
 //! Set the rank of the MPI process that will display messages
 int App_LogRank(
@@ -1120,6 +1136,7 @@ int App_LogRank(
     //! \return Rank of the old MPI process that displayed the messages
     return old_rank;
 }
+
 
 //! Set the log level
 int Lib_LogLevelNo(
@@ -1146,7 +1163,8 @@ int Lib_LogLevelNo(
     return pl;
 }
 
-//! Definir le niveau de tolerance aux erreur pour l'application
+
+//! Set the application tolerance level
 int App_ToleranceLevel(
     //! [in] Niveau de tolerance ("ERROR", "SYSTEM", "FATAL", "QUIET")
     const char * const Level
@@ -1188,7 +1206,8 @@ int App_ToleranceNo(
     return pl;
 }
 
-//! Definir le format du temps dans les log
+
+//! Set log timestamp format
 int App_LogTime(
     //! [in] Niveau de détail temporel à afficher
     const char * const LogTime
@@ -1214,6 +1233,7 @@ int App_LogTime(
     //! \return Previous time format, or current if no level specified
     return pf;
 }
+
 
 //! Print arguments information
 void App_PrintArgs(
@@ -1260,6 +1280,8 @@ void App_PrintArgs(
 }
 
 #define LST_ASSIGN(type, lst, val) *(type)lst = val; lst = (type)lst + 1
+
+
 //! Extract argument value
 static inline int App_GetArgs(
     //! [in, out] Argument definition
@@ -1294,6 +1316,7 @@ static inline int App_GetArgs(
     //! \return 1 on succes, but quits the process on error
     return 1;
 }
+
 
 //! Parse default arguments
 int App_ParseArgs(
@@ -1444,6 +1467,7 @@ int App_ParseArgs(
 
     return ok;
 }
+
 
 //! Parse key value file
 int App_ParseInput(
