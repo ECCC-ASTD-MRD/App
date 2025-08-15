@@ -109,6 +109,7 @@ void App_InitEnv() {
             App->LogSplit = FALSE;
             App->LogFlush = FALSE;
             App->LogRank = 0;
+            App->LogThread = FALSE;
             App->UTC = FALSE;
 
             // Default log level is WARNING
@@ -136,6 +137,9 @@ void App_InitEnv() {
             }
             if ((envVarVal = getenv("APP_VERBOSE_RANK"))) {
                 App->LogRank = atoi(envVarVal);
+            }
+            if ((envVarVal = getenv("APP_VERBOSE_THREAD"))) {
+                App->LogThread = atoi(envVarVal);
             }
             if ((envVarVal = getenv("APP_LOG_SPLIT"))) {
                 App->LogSplit = TRUE;
@@ -676,29 +680,34 @@ void App_Start(void) {
         struct utsname buffer;
         if (uname(&buffer) ==0) {
             App_Log(APP_STAT, "System name: %s, Node name: %s, Release: %s, Version: %s, Machine: %s\n", 
-                buffer.sysname,buffer.nodename,buffer.release,buffer.version,buffer.machine);
+                buffer.sysname, buffer.nodename, buffer.release, buffer.version, buffer.machine);
         }
     }
 }
 
 
 //! Log resource usage
-int App_Stats(const char * const Tag) {
+int App_Stats(
+    //! Tag to be added to statisitcs line (optional, use NULL otherwise)
+    const char * const Tag
+) {
     //! \return Always TRUE
     struct rusage  usg;
-    struct timeval end,dif;
+    struct timeval end, dif;
 
-    if (App->LogLevel[APP_MAIN]>=APP_STAT) {
+    if (App->LogLevel[APP_MAIN] >= APP_STAT) {
         gettimeofday(&end, NULL);
         timersub(&end, &App->Time, &dif);
         getrusage(RUSAGE_SELF, &usg);
 
         if (Tag) {
-           App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
-              Tag,dif.tv_sec+dif.tv_usec/1e6,usg.ru_utime.tv_sec+usg.ru_utime.tv_usec/1e6,usg.ru_stime.tv_sec+usg.ru_stime.tv_usec/1e6,usg.ru_maxrss,usg.ru_nswap,usg.ru_minflt,usg.ru_majflt);
+            App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+                Tag, dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
+                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
         } else {
-           App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
-              dif.tv_sec+dif.tv_usec/1e6,usg.ru_utime.tv_sec+usg.ru_utime.tv_usec/1e6,usg.ru_stime.tv_sec+usg.ru_stime.tv_usec/1e6,usg.ru_maxrss,usg.ru_nswap,usg.ru_minflt,usg.ru_majflt);
+            App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+                dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
+                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
         }
     }
     return TRUE;
@@ -956,6 +965,14 @@ void Lib_Log(
 ) {
     //! \note If level is ERROR, the message will be written on stderr, for all other levels the message will be written to stdout or the log file
 
+    pid_t tid=0, pid=0;
+
+    if (App->LogThread) {
+       tid = (pid_t) syscall(SYS_gettid);
+       pid = (pid_t) syscall(SYS_getpid);
+       tid -= pid;
+    }
+
 #ifdef HAVE_MPI
     if (App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
         return;
@@ -1024,19 +1041,35 @@ void Lib_Log(
             }
 
 #ifdef HAVE_MPI
-           if (App_IsMPI() && App->LogRank == -1) {
+            if (App_IsMPI() && App->LogRank == -1) {
                 if (App->Step) {
-                    sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    if (App->LogThread) {
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) #%d %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    } else {
+                        sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                    }
                 } else {
-                    sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    if (App->LogThread) {
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    } else {
+                        sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    }
             }
                 }
             else
 #endif
             if (App->Step) {
-                sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                if (App->LogThread) {
+                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);                  
+                } else {
+                   sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                }
             } else {
-                sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                if (App->LogThread) {
+                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]); 
+                } else {
+                    sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                }
             }
         }
 

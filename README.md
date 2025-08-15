@@ -43,7 +43,8 @@ This packages manages various standard tasks needed by applications like:
 - APP_VERBOSE_COLOR : Use color in log messages
 - APP_VERBOSE_TIME  : Display time for each message (NONE, DATETIME, TIME, SECOND, MSECOND) default:NONE
 - APP_VERBOSE_UTC   : Display time in UTC
-- APP_VERBOSE_RANK  : Enable log on a specific rank default:0  (-1=all rank)
+- APP_VERBOSE_RANK  : Enable log on a specific rank default:0 (-1=all rank)
+- APP_VERBOSE_THREAD: Display thread id default:FALSE (be aware that id might not be an ordered 0 to nbthread)
 - APP_TOLERANCE     : Tolerance level trigerring an exit (ERROR, SYSTEM, FATAL, QUIET) default:QUIET
 - APP_NOTRAP        : Disable signal trapping (SIGTERM, SIGUSR2)
 - APP_LOG_SPLIT     : Split log stream/file per MPI PE
