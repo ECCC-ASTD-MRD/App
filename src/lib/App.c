@@ -339,6 +339,58 @@ void App_Free(void) {
 }
 
 
+#ifdef HAVE_MPI
+//! Test if all the processes of a MPI communicator are on the same host
+int App_SameHost(
+    //! [in] MPI communicator
+    MPI_Comm comm
+) {
+    //! \return 1 if all the processes are on the same host, 0 otherwise
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    int size;
+    MPI_Comm_size(comm, &size);
+
+    const long hostId = gethostid();
+    long hostIds[size];
+    MPI_Allgather(&hostId, 1, MPI_LONG, hostIds, 1, MPI_LONG, comm);
+
+#ifndef NDEBUG
+    if (rank == 0) {
+        App_Log(APP_DEBUG, "%s: communicator size = %d\n", __func__, size);
+        for (int i = 0; i < size; i++) {
+            App_Log(APP_DEBUG, "%s: hostIds[%06d] = %ld\n", __func__, i, hostIds[i]);
+        }
+    }
+#endif
+
+    for (int i = 0; i < size; i++) {
+        hostIds[i] = (hostIds[i] == hostId ? 0 : 1);
+    }
+
+    // MPI_Allreduce can not be done in place for inter-communicators
+    long different[size];
+    MPI_Allreduce(hostIds, different, size, MPI_LONG, MPI_SUM, comm);
+
+    for (int i = 0; i < size; i++) {
+        if (different[i]) return 0;
+    }
+    return 1;
+}
+
+
+//! \copydoc App_SameHost
+int App_SameHost_F(
+    MPI_Fint comm
+) {
+    //! \note This function should not be called directly, it exists only to serve the Fortran interface app_samehost(comm)
+    MPI_Comm ccomm = MPI_Comm_f2c(comm);
+    return App_SameHost(ccomm);
+}
+#endif
+
+
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
     //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"

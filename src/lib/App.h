@@ -413,8 +413,9 @@ int   App_NodeGroup();
 int   App_NodePrint();
 
 #ifdef HAVE_MPI
-void  App_SetMPIComm(MPI_Comm Comm);
-int   App_MPIProcCmp(const void *a, const void *b);
+void App_SetMPIComm(MPI_Comm Comm);
+int App_MPIProcCmp(const void *a, const void *b);
+int App_SameHost(MPI_Comm comm);
 
 #include "App_MPMD.h"
 #endif

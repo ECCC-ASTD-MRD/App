@@ -33,7 +33,6 @@ if (EC_INIT_DONE LESS 2)
         add_dependencies(check test_app_loglevel_noinit)
 
         if (TARGET App::App-ompi)
-
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general
             add_test(NAME atomic COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 12 $<TARGET_FILE:atomic>)
@@ -73,6 +72,10 @@ if (EC_INIT_DONE LESS 2)
             add_executable(mpmd_5 EXCLUDE_FROM_ALL mpmd_5.c)
             target_link_libraries(mpmd_5 App::App-ompi)
             add_dependencies(check mpmd_5)
+
+            add_executable(same_host EXCLUDE_FROM_ALL same_host.F90)
+            target_link_libraries(same_host App::App-ompi)
+            add_dependencies(check same_host)
 
             add_test(NAME App_MPMD_Init COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 2 $<TARGET_FILE:init1> :
@@ -126,6 +129,10 @@ if (EC_INIT_DONE LESS 2)
             add_test(NAME mpmd10 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                     -n 1 $<TARGET_FILE:mpmd_1> :
                     -n 5 $<TARGET_FILE:mpmd_5>
+            )
+
+            add_test(NAME same_host COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+                -n 1 $<TARGET_FILE:same_host> 1
             )
         endif()
     endif()
