@@ -110,7 +110,7 @@ contains
         integer :: shared_comm
 
         interface
-            function App_MPMD_GetSharedComm_C(num_components, components) result(comm) bind(C, name='App_MPMD_GetSharedComm_F')
+            function App_MPMD_GetSharedComm_C(num_components, components) result(comm) bind(C, name = 'App_MPMD_GetSharedComm_F')
                 import :: C_INT32_T, C_PTR
                 implicit none
                 ! type(C_PTR),        value, intent(in) :: components
