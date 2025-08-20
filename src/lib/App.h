@@ -16,7 +16,7 @@
 
 #ifdef HAVE_MPI
 #   include <mpi.h>
-#include "App_Shared_Memory.h"
+#   include "App_Shared_Memory.h"
 #endif
 
 #ifndef TRUE
