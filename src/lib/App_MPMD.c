@@ -1,6 +1,6 @@
 //! \file
 //! Implementation of MPMD functions
-//! \defgroup MPMD MPMP
+//! \defgroup MPMD MPMD
 //! MPI Multiple Program Multiple Data (MPMD) helper functions
 //! @{
 //! This MPMD module works with the rest of the App library.
