@@ -220,6 +220,13 @@ module app
         use, intrinsic :: iso_c_binding
     end FUNCTION
 
+#ifdef HAVE_MPI
+    ! int App_SameHost(MPI_Comm comm);
+    logical(C_BOOL) FUNCTION app_samehost(comm) BIND(C, name = "App_SameHost_F")
+        use, intrinsic :: iso_c_binding
+        integer(C_INT), value, intent(in) :: comm
+    end FUNCTION
+
     !   int   App_NodeGroup(void);
     integer(C_INT) FUNCTION app_nodegroup() BIND(C, name = "App_NodeGroup")
         use, intrinsic :: iso_c_binding
@@ -230,7 +237,7 @@ module app
         use, intrinsic :: iso_c_binding
         integer(C_INT), value :: comm
     end SUBROUTINE
-
+#endif
 end interface
 
 contains

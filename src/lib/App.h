@@ -16,7 +16,7 @@
 
 #ifdef HAVE_MPI
 #   include <mpi.h>
-#include "App_Shared_Memory.h"
+#   include "App_Shared_Memory.h"
 #endif
 
 #ifndef TRUE
@@ -197,12 +197,20 @@ typedef enum {
         Lib_Log(APP_MAIN, APP_ERROR,  __VA_ARGS__); \
         goto end; \
     }
-// Memory helpers
+
+//! Validate successful memory allocation, log error and return if not
+//! \param [in] Buf Buffer variable (pointer)
+//! \param [in] Buf Allocation function call (usually of the malloc family)
+//! \return APP_ERROR if allocation not successful
 #define APP_MEM_ASRT(Buf, Fct) \
     if( !(Buf = (Fct)) ) { \
-        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
+        Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for %s at line %d.\n", __func__, #Buf, __LINE__); \
         return APP_ERR; \
     }
+
+//! Validate successful memory allocation, log error and goto end if not
+//! \param [in] Buf Buffer variable (pointer)
+//! \param [in] Buf Allocation function call (usually of the malloc family)
 #define APP_MEM_ASRT_END(Buf, Fct) \
     if( !(Buf = (Fct)) ) { \
         Lib_Log(APP_MAIN, APP_ERROR, "(%s) Could not allocate memory for field %s at line %d.\n", __func__, #Buf, __LINE__); \
@@ -311,7 +319,7 @@ typedef struct {
    int           *CountsMPI;             ///< MPI count gathering arrays
    int           *DisplsMPI;             ///< MPI displacement gathering arrays
    int            NbMPI;                 ///< Number of MPI process \todo Figure out why this isn't in #ifdef HAVE_MPI
-   int            RankMPI;               ///< Rank of MPI process \todo Figure out how this is different from WorldRank and the why it isn't in #ifdef HAVE_MPI
+   int            RankMPI;               ///< Rank of MPI process in the App->Comm communicator
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
@@ -406,8 +414,9 @@ int   App_NodeGroup();
 int   App_NodePrint();
 
 #ifdef HAVE_MPI
-void  App_SetMPIComm(MPI_Comm Comm);
-int   App_MPIProcCmp(const void *a, const void *b);
+void App_SetMPIComm(MPI_Comm Comm);
+int App_MPIProcCmp(const void *a, const void *b);
+int App_SameHost(MPI_Comm comm);
 
 #include "App_MPMD.h"
 #endif

@@ -40,7 +40,7 @@ target_include_directories(App-shared PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
 )
 target_include_directories(App-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
- 
+
 add_dependencies(App-static ${PROJECT_NAME}_build_info)
 set_target_properties(App-static App-shared PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -56,7 +56,7 @@ add_library(App::App-shared ALIAS App-shared)
 add_library(App::App-static ALIAS App-static)
 add_library(App::App ALIAS App-static) # Default to static
 
-if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND) 
+if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
     message(STATUS "Generating App ompi library")
 
     list(APPEND PROJECT_F_FILES
@@ -130,7 +130,7 @@ install(TARGETS ${static_targets}
     PUBLIC_HEADER DESTINATION include
 )
 
-install(FILES 
+install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/include/app.mod
     ${CMAKE_CURRENT_BINARY_DIR}/include/app_atomic_module.mod
     ${CMAKE_CURRENT_BINARY_DIR}/include/app_mutex_module.mod
