@@ -563,6 +563,12 @@ void App_Start(void) {
                 }
             }
 
+            struct utsname buffer;
+            if (uname(&buffer) ==0) {
+                App_Log(APP_VERBATIM, "\nSystem         : %s (%s)\nOS             : %s %s (%s)\n",
+                buffer.nodename,buffer.machine,buffer.sysname,buffer.release,buffer.version);
+            }
+            
             if (App->UTC) {
                 App_Log(APP_VERBATIM, "\nStart time     : (UTC) %s", asctime(gmtime(&App->Time.tv_sec)));
             } else {
@@ -596,6 +602,7 @@ void App_Start(void) {
 #endif
             }
 #endif //HAVE_MPI
+
             App_Log(APP_VERBATIM, "-------------------------------------------------------------------------------------\n\n");
         }
 #ifdef HAVE_MPI
@@ -615,14 +622,6 @@ void App_Start(void) {
     //     MPI_Barrier(App->Comm);
     // }
 #endif //HAVE_MPI
-
-    if (App->LogLevel[APP_MAIN]>=APP_STAT) {
-        struct utsname buffer;
-        if (uname(&buffer) ==0) {
-            App_Log(APP_STAT, "System name: %s, Node name: %s, Release: %s, Version: %s, Machine: %s\n", 
-                buffer.sysname,buffer.nodename,buffer.release,buffer.version,buffer.machine);
-        }
-    }
 }
 
 
