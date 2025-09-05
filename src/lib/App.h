@@ -252,7 +252,7 @@ typedef struct {
     //! Communicator for the PEs of this component
     MPI_Comm comm;
     //! Number of PEs in this component
-    int nbPes;
+    int size;
     //! Whether this component has been shared to other PEs of this PE's component
     int shared;
     //! Global ranks (in the main_comm of the context) of the members of this component

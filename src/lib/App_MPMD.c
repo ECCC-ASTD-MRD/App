@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <linux/limits.h>
+
 
 //! MPMD component identification
 typedef struct {
@@ -39,7 +41,12 @@ typedef struct {
     int id;
     //! Name of the component
     char name[APP_MAX_COMPONENT_NAME_LEN];
- } TComponentId;
+    //! Process rank in MPI_COMM_WORLD
+    int worldRank;
+    //! Processor Name (host name)
+    char processorName[MPI_MAX_PROCESSOR_NAME];
+} TComponentMap;
+
 
 //! Default values for a TComponentSet struct
 static const TComponentSet defaultSet = {
@@ -48,8 +55,6 @@ static const TComponentSet defaultSet = {
     .comm = MPI_COMM_NULL,
     .group = MPI_GROUP_NULL
 };
-
-static void printComponent(const TComponent * const comp, const int verbose);
 
 
 //! Create a new string containing a textual representation of an array of positive integers
@@ -92,7 +97,7 @@ static TComponent * findUniqueComponents(
     //! [in] Number of PE in MPI_COMM_WORLD
     const int worldSize,
     //! [in] List of component ID for each PE
-    const TComponentId peComponentIds[worldSize],
+    const TComponentMap peComponentIds[worldSize],
     //! [out] Number of unique components
     int * const nbComponents
 ) {
@@ -161,6 +166,42 @@ int App_MPMD_GetComponentId(
 }
 
 
+//! Get component size (number of processes)
+int App_MPMD_GetComponentSize(
+    //! [in] Component id
+    const int componentId
+) {
+    //! \return Component size if found, -1 otherwise
+
+    const TApp * const app = App_GetInstance();
+
+    if (componentId >= 0 && componentId < app->NumComponents) {
+        return app->AllComponents[componentId].size;
+    }
+    return -1;
+}
+
+
+//! Get component process' world rank
+int App_MPMD_GetComponentPeWRank(
+    //! [in] Component id
+    const int componentId,
+    //! [in] Rank within the component
+    const int localRank
+) {
+    //! \return Process' world rank if found, -1 otherwise
+
+    const TApp * const app = App_GetInstance();
+
+    if (componentId >= 0 && componentId < app->NumComponents) {
+        if (localRank >= 0 && localRank < app->AllComponents[componentId].size) {
+            return app->AllComponents[componentId].ranks[localRank];
+        }
+    }
+    return -1;
+}
+
+
 //! Get the id of the component to which this PE belongs
 int App_MPMD_GetSelfComponentId() {
     //! \return Component id of this PE
@@ -209,6 +250,23 @@ static void getRanksStr(
 }
 
 
+//! Get the string (name) that corresponds to the given component ID
+const char * App_MPMD_ComponentIdToName(
+    //! [in] Component ID
+    const int componentId
+) {
+    //! \return Pointer to the string containing the component name. Caller must **not** free this pointer.
+
+    const TApp * const app = App_GetInstance();
+
+    if (0 <= componentId && componentId < app->NumComponents) {
+        return app->AllComponents[componentId].name;
+    } else {
+        return NULL;
+    }
+}
+
+
 //! Print a text representation of the provided component to the application log
 static void printComponent(
     //! The component whose info we want to print
@@ -220,15 +278,52 @@ static void printComponent(
     char ranksStr[256];
 
     getCommStr(comp->comm, commStr);
-    getRanksStr(comp->nbPes, comp->ranks, verbose, ranksStr);
+    getRanksStr(comp->size, comp->ranks, verbose, ranksStr);
     App_Log(APP_DEBUG,
             "Component %s: \n"
             "  id:              %d\n"
             "  comm:            %s\n"
-            "  nbPes:           %d\n"
+            "  size:            %d\n"
             "  shared:          %d\n"
             "  ranks:           %s\n",
-            App_MPMD_ComponentIdToName(comp->id), comp->id, commStr, comp->nbPes, comp->shared, ranksStr);
+            App_MPMD_ComponentIdToName(comp->id), comp->id, commStr, comp->size, comp->shared, ranksStr);
+}
+
+
+//! Print component map
+static int App_MPMD_PrintComponentMap(
+    //! [in] Number of processes in MPI_COMM_WORLD
+    const int size,
+    //! [in] Component map
+    const TComponentMap map[size],
+    //! [in] Csv file path or NULL to print in the application log
+    const char filePath[PATH_MAX]
+) {
+    //! The component map is written in csv format in no particular order.
+    //! If NULL is provided instead of a file path, the map is written to the application log with the log level APP_INFO.
+
+    //! \return 1 on success, 0 otherwise
+    const char header[] = "Process Rank, MPI_APPNUM, Component Name, Hostname\n";
+
+    if (filePath) {
+        FILE * fd = fopen(filePath, "w");
+        if (fd) {
+            fprintf(fd, header);
+            for (int i = 0; i < size; i++) {
+                fprintf(fd, "%06d, %1d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].id, map[i].name, map[i].processorName);
+            }
+            fclose(fd);
+        } else {
+            App_Log(APP_ERROR, "Could not open output file (%s) to write component map!\n", filePath);
+            return 0;
+        }
+    } else {
+        App_Log(APP_INFO, header);
+        for (int i = 0; i < size; i++) {
+            App_Log(APP_INFO, "%06d, %1d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].id, map[i].name, map[i].processorName);
+        }
+    }
+    return 1;
 }
 
 
@@ -253,9 +348,9 @@ int App_MPMD_Init() {
         // We need to assign a unique id for the component, but multiple mpi processors may share the same component name
         // This needs to be a collective call : MPI_Gather()
         // In order to allocate our input buffer, we must set a maximum component name length
-        TComponentId * peComponentIds = NULL;
+        TComponentMap * peComponentIds = NULL;
         if (app->WorldRank == 0) {
-            peComponentIds = malloc(worldSize * sizeof(TComponentId));
+            peComponentIds = malloc(worldSize * sizeof(TComponentMap));
         }
 
         int * appNum;
@@ -263,14 +358,19 @@ int App_MPMD_Init() {
             int flag;
             MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appNum, &flag);
         }
-        App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, appNum);
+        App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, *appNum);
 
-        TComponentId peComponentId = {.id = *appNum};
+        TComponentMap peComponentId = {.id = *appNum, .worldRank = app->WorldRank};
+        {
+            int processorNameLen;
+            MPI_Get_processor_name(peComponentId.processorName, &processorNameLen);
+        }
         strncpy(peComponentId.name, app->Name, APP_MAX_COMPONENT_NAME_LEN);
-        MPI_Gather(&peComponentId, sizeof(TComponentId), MPI_BYTE, peComponentIds, sizeof(TComponentId), MPI_BYTE, 0, MPI_COMM_WORLD);
+        MPI_Gather(&peComponentId, sizeof(TComponentMap), MPI_BYTE, peComponentIds, sizeof(TComponentMap), MPI_BYTE, 0, MPI_COMM_WORLD);
         if (app->WorldRank == 0) {
             app->AllComponents = findUniqueComponents(worldSize, peComponentIds, &(app->NumComponents));
             App_Log(APP_DEBUG, "%s: app->NumComponents = %d\n", __func__, app->NumComponents);
+            App_MPMD_PrintComponentMap(worldSize, peComponentIds, NULL);
             free(peComponentIds);
         }
         MPI_Bcast(&(app->NumComponents), 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -286,11 +386,11 @@ int App_MPMD_Init() {
         app->SelfComponent->id = componentId;
         MPI_Comm_split(MPI_COMM_WORLD, componentId, app->WorldRank, &app->SelfComponent->comm);
         MPI_Comm_rank(app->SelfComponent->comm, &app->ComponentRank);
-        MPI_Comm_size(app->SelfComponent->comm, &app->SelfComponent->nbPes);
+        MPI_Comm_size(app->SelfComponent->comm, &app->SelfComponent->size);
 
         // Declare that rank 0 of this component is "active" as a logger
         if (app->ComponentRank == 0) App_LogRank(app->WorldRank);
-        // App_Log(APP_INFO, "%s: Initializing component %s (ID %d) with %d PEs\n", __func__, app->Name, componentId, app->SelfComponent->nbPes);
+        // App_Log(APP_INFO, "%s: Initializing component %s (ID %d) with %d PEs\n", __func__, app->Name, componentId, app->SelfComponent->size);
 
         if (app->WorldRank == 0 && app->ComponentRank != 0) {
             App_Log(APP_FATAL, "%s: Global root should also be the root of its own component\n", __func__);
@@ -324,7 +424,7 @@ int App_MPMD_Init() {
             // Determine global ranks of the PEs in this component and share with other components
 
             // Self-component info that is only valid on a PE from this component
-            app->SelfComponent->ranks = malloc(app->SelfComponent->nbPes * sizeof(int));
+            app->SelfComponent->ranks = malloc(app->SelfComponent->size * sizeof(int));
 
             // Each component gathers the world ranks of its members
             MPI_Allgather(&app->WorldRank, 1, MPI_INT, app->SelfComponent->ranks, 1, MPI_INT, app->SelfComponent->comm);
@@ -336,20 +436,20 @@ int App_MPMD_Init() {
             // Share the number of PEs in each component
             for (int i = 0; i < app->NumComponents; i++) {
                 // \todo Make sure that rootWorldRanks is in the same order as app->AllComponents
-                MPI_Bcast(&app->AllComponents[i].nbPes, 1, MPI_INT, rootWorldRanks[i], MPI_COMM_WORLD);
+                MPI_Bcast(&app->AllComponents[i].size, 1, MPI_INT, rootWorldRanks[i], MPI_COMM_WORLD);
             }
 
             {
                 char rankStr[1024];
                 char * pos = &rankStr[0];
-                for (int i = 0;  i < app->SelfComponent->nbPes; i++) {
+                for (int i = 0;  i < app->SelfComponent->size; i++) {
                     pos = pos + sprintf(pos, "%d", app->SelfComponent->ranks[i]);
-                    if (i < app->SelfComponent->nbPes - 1) {
+                    if (i < app->SelfComponent->size - 1) {
                         pos = pos + sprintf(pos, ", ");
                     }
                 }
     #ifndef NDEBUG
-                printf("PE %d : %d - %d/%d ranks = %s\n", app->WorldRank, app->SelfComponent->id, app->ComponentRank, app->SelfComponent->nbPes, rankStr);
+                printf("PE %d : %d - %d/%d ranks = %s\n", app->WorldRank, app->SelfComponent->id, app->ComponentRank, app->SelfComponent->size, rankStr);
     #endif
             }
 
@@ -360,10 +460,10 @@ int App_MPMD_Init() {
             if (app->ComponentRank == 0) {
                 for (int i = 0; i < app->NumComponents; i++) {
                     if (app->AllComponents[i].ranks == NULL) {
-                        app->AllComponents[i].ranks = malloc(app->AllComponents[i].nbPes * sizeof(int));
+                        app->AllComponents[i].ranks = malloc(app->AllComponents[i].size * sizeof(int));
                     }
 
-                    MPI_Bcast(app->AllComponents[i].ranks, app->AllComponents[i].nbPes, MPI_INT, i, rootsComm);
+                    MPI_Bcast(app->AllComponents[i].ranks, app->AllComponents[i].size, MPI_INT, i, rootsComm);
                 }
             }
 
@@ -632,8 +732,8 @@ static TComponentSet * createSet(
     for (int i = 0; i < nbComponents; i++) {
         TComponent * const comp = &app->AllComponents[components[i]];
         if (!comp->shared) {
-            if (comp->ranks == NULL) comp->ranks = (int*)malloc(comp->nbPes * sizeof(int));
-            MPI_Bcast(comp->ranks, comp->nbPes, MPI_INT, 0, app->SelfComponent->comm);
+            if (comp->ranks == NULL) comp->ranks = (int*)malloc(comp->size * sizeof(int));
+            MPI_Bcast(comp->ranks, comp->size, MPI_INT, 0, app->SelfComponent->comm);
             comp->shared = 1;
         }
     }
@@ -648,15 +748,15 @@ static TComponentSet * createSet(
 
         int newGroupSize = 0;
         for (int i = 0; i < nbComponents; i++) {
-            newGroupSize += app->AllComponents[components[i]].nbPes;
+            newGroupSize += app->AllComponents[components[i]].size;
         }
 
         int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
         int currentPe = 0;
         for (int i = 0; i < nbComponents; i++) {
             const TComponent* comp = &(app->AllComponents[components[i]]);
-            memcpy(newGroupRanks + currentPe, comp->ranks, comp->nbPes * sizeof(int));
-            currentPe += comp->nbPes;
+            memcpy(newGroupRanks + currentPe, comp->ranks, comp->size * sizeof(int));
+            currentPe += comp->size;
         }
 
         MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
@@ -677,23 +777,6 @@ static TComponentSet * createSet(
 #endif
 
     return newSet;
-}
-
-
-//! Get the string (name) that corresponds to the given component ID
-const char * App_MPMD_ComponentIdToName(
-    //! [in] Component ID
-    const int componentId
-) {
-    //! \return Pointer to the string containing the component name. Caller must **not** free this pointer.
-
-    const TApp * const app = App_GetInstance();
-
-    if (0 <= componentId && componentId < app->NumComponents) {
-        return app->AllComponents[componentId].name;
-    } else {
-        return NULL;
-    }
 }
 
 
@@ -811,4 +894,18 @@ int32_t App_MPMD_HasComponent(
 }
 
 
+//! Get the rank of the current process in its component communicator
+int App_MPMD_GetSelfComponentRank() {
+    //! \return Rank of the current process in its component communicator
+    const TApp * const app = App_GetInstance();
+    return app->ComponentRank;
+}
+
+
+//! Get the size (number of processes) of the component's communicator
+int App_MPMD_GetSelfComponentSize() {
+    //! \return Size (number of processes) of the component's communicator
+    const TApp * const app = App_GetInstance();
+    return app->SelfComponent->size;
+}
 //! @}

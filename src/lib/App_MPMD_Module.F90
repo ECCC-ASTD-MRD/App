@@ -62,6 +62,24 @@ contains
     end function App_MPMD_GetSelfComponentId
 
 
+    !> Get the size of the component to which this PE belongs
+    !> \return Number of processes in the component to which this one belongs
+    pure function App_MPMD_GetSelfComponentSize() result(component_size)
+        implicit none
+        integer :: component_size
+
+        interface
+            pure function App_MPMD_GetSelfComponentSize_C() result(size) bind(C, name = 'App_MPMD_GetSelfComponentSize')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T) :: size
+            end function
+        end interface
+
+        component_size = App_MPMD_GetSelfComponentSize_C()
+    end function
+
+
     !> Get the component id corresponding to the provided name
     !> \return Component id corresponding to the provided name
     pure function App_MPMD_GetComponentId(component_name) result(component_id)
@@ -80,6 +98,44 @@ contains
 
         component_id = App_MPMD_GetComponentId_C(trim(component_name)//achar(0))
     end function App_MPMD_GetComponentId
+
+
+    pure function App_MPMD_GetComponentSize(component_id) result(component_size)
+        implicit none
+        integer, intent(in) :: component_id
+        integer :: component_size
+
+        interface
+            pure function App_MPMD_GetComponentSize_C(id) result(size) bind(C, name = 'App_MPMD_GetComponentSize')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T), value, intent(in) :: id
+                integer(C_INT32_T) :: size
+            end function App_MPMD_GetComponentSize_C
+        end interface
+
+        component_size = App_MPMD_GetComponentSize_C(component_id)
+    end function
+
+
+    pure function App_MPMD_GetComponentPeWRank(component_id, local_rank) result(world_rank)
+        implicit none
+        integer, intent(in) :: component_id
+        integer, intent(in) :: local_rank
+        integer :: world_rank
+
+        interface
+            pure function App_MPMD_GetComponentPeWRank_C(id, lRank) result(wRank) bind(C, name = 'App_MPMD_GetComponentPeWRank')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T), value, intent(in) :: id
+                integer(C_INT32_T), value, intent(in) :: lRank
+                integer(C_INT32_T) :: wRank
+            end function App_MPMD_GetComponentPeWRank_C
+        end interface
+
+        world_rank = App_MPMD_GetComponentPeWRank_C(component_id, local_rank)
+    end function
 
 
     !> \return The communicator for all PEs part of the same component as me.
