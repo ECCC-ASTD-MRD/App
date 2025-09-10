@@ -20,6 +20,25 @@ test:rhel-8-amd64_gnu-14.2.0:
    variables:
       ORD_SOUMET_MPI : mpi
       ORD_SOUMET_M : 1G
+      ECCI_ARCH : rhel-8-amd64_gnu-14.2.0
+   stage: test
+   tags:
+      - concurrent
+   needs:
+     - build:rhel-8-amd64_gnu-14.2.0
+   script:
+      - set +e
+      - env
+      - unset SSMUSE_LD_PREPEND
+      - . r.load.dot ${ECCI_ENV}/exp/rhel-8-amd64-64@gnu-14.2.0
+      - !reference [.env, build]
+      - set -e
+      - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
+      - make check
+   rules:
+      - if: $ECCI_ARCH =~ $ALLOW_FAILURE
+        allow_failure: true
+      - when: always
 
 #deploy:staging:
 #   stage: deploy
