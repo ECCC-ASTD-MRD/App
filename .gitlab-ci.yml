@@ -24,11 +24,13 @@ test:rhel-8-amd64_gnu-14.2.0:
       - set +e
       - unset SSMUSE_LD_PREPEND
       - . r.load.dot ${ECCI_ENV}/exp/rhel-8-amd64-64@gnu-14.2.0
-      - echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
       - !reference [.env, build]
       - set -e
       - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
       - make check
+      - echo F_FLAGS=${F_FLAGS}
+      - echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
+      - ldd test/atomic
 
 #deploy:staging:
 #   stage: deploy
