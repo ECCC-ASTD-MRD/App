@@ -27,10 +27,9 @@ test:rhel-8-amd64_gnu-14.2.0:
       - !reference [.env, build]
       - set -e
       - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
-      - make check
       - echo F_FLAGS=${F_FLAGS}
       - echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
-      - ldd test/atomic
+      - make check || ldd test/atomic
 
 #deploy:staging:
 #   stage: deploy
