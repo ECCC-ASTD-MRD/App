@@ -16,6 +16,11 @@ include:
      ref: dev
      file: '/ci/.gitlab-ci-config.yml'
 
+test:rhel-8-amd64_gnu-14.2.0:
+   variables:
+      ORD_SOUMET_MPI : mpi
+      ORD_SOUMET_CM : 1G
+
 #deploy:staging:
 #   stage: deploy
 #   only:
