@@ -29,7 +29,7 @@ build:rhel-8-amd64_gnu-14.2.0:
       - mkdir -pv ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
       - SRC_DIR=$(pwd)
       - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
-      - cmake -DCMAKE_VERBOSE_MAKE_FILE=ON ${SRC_DIR}
+      - cmake -DCMAKE_VERBOSE_MAKEFILE=ON ${SRC_DIR}
       - time make -j $NCPUS
    rules:
       - if: $ECCI_ARCH =~ $ALLOW_FAILURE
