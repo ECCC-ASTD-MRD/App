@@ -20,20 +20,6 @@ test:rhel-8-amd64_gnu-14.2.0:
    variables:
       ORD_SOUMET_MPI : mpi
       ORD_SOUMET_M : 1G
-  #  script:
-  #     - set +e
-  #     - unset SSMUSE_LD_PREPEND
-  #     - . r.load.dot ${ECCI_ENV}/exp/rhel-8-amd64-64@gnu-14.2.0
-  #     - !reference [.env, build]
-  #     - set -e
-  #     - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
-  #     - echo F_FLAGS=${F_FLAGS}
-  #     - env | grep LD | sort
-  #     - echo ======================================== Begin MPI env ========================================
-  #     - mpirun -n 1 env
-  #     - echo ========================================  End MPI env  ========================================
-  #     - make check || mpirun -n 1 ldd test/atomic
-  #     - ldd test/atomic
 
 #deploy:staging:
 #   stage: deploy
