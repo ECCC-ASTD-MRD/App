@@ -49,6 +49,9 @@ test:rhel-8-amd64_gnu-14.2.0:
       - cd ${PIPELINE_SUBDIR}/build_${ECCI_ARCH}
       - echo F_FLAGS=${F_FLAGS}
       - env | grep LD | sort
+      - echo ======================================== Begin MPI env ========================================
+      - mpirun -n 1 env
+      - echo ========================================  End MPI env  ========================================
       - make check || mpirun -n 1 ldd test/atomic
 
 #deploy:staging:
