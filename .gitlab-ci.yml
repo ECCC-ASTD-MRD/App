@@ -53,6 +53,7 @@ test:rhel-8-amd64_gnu-14.2.0:
       - mpirun -n 1 env
       - echo ========================================  End MPI env  ========================================
       - make check || mpirun -n 1 ldd test/atomic
+      - ldd test/atomic
 
 #deploy:staging:
 #   stage: deploy
