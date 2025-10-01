@@ -31,7 +31,10 @@ target_include_directories(App-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
 )
-target_include_directories(App-static INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+target_include_directories(App-static INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod>
+    $<INSTALL_INTERFACE:include/fmod>)
 
 add_library(App-shared SHARED $<TARGET_OBJECTS:App-static>)
 target_include_directories(App-shared PUBLIC
@@ -39,14 +42,17 @@ target_include_directories(App-shared PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
 )
-target_include_directories(App-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+target_include_directories(App-shared INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod>
+    $<INSTALL_INTERFACE:include/fmod>)
 
 add_dependencies(App-static ${PROJECT_NAME}_build_info)
 set_target_properties(App-static App-shared PROPERTIES
     VERSION ${PROJECT_VERSION}
     PUBLIC_HEADER "${PROJECT_INCLUDE_FILES}"
     INTERFACE_COMPILE_DEFINITIONS HAVE_APP="${PROJECT_VERSION}"
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/fmod
     OUTPUT_NAME App
     POSITION_INDEPENDENT_CODE ON
 )
@@ -85,7 +91,10 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
     )
-    target_include_directories(App-ompi-static INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>)
+    target_include_directories(App-ompi-static INTERFACE 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi>
+        $<INSTALL_INTERFACE:include/fmod-ompi>)
     target_compile_definitions(App-ompi-static PUBLIC HAVE_MPI HAVE_OPENMP)
     target_link_libraries(App-ompi-static PUBLIC MPI::MPI_C MPI::MPI_Fortran OpenMP::OpenMP_C OpenMP::OpenMP_Fortran)
 
@@ -95,7 +104,10 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/atomic>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
     )
-    target_include_directories(App-ompi-shared INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>)
+    target_include_directories(App-ompi-shared INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi>
+        $<INSTALL_INTERFACE:include/fmod-ompi>)
     target_compile_definitions(App-ompi-shared PUBLIC HAVE_MPI HAVE_OPENMP)
     target_link_libraries(App-ompi-shared PUBLIC MPI::MPI_C MPI::MPI_Fortran OpenMP::OpenMP_C OpenMP::OpenMP_Fortran)
 
@@ -103,7 +115,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         VERSION ${PROJECT_VERSION}
         PUBLIC_HEADER "${PROJECT_INCLUDE_FILES}"
         INTERFACE_COMPILE_DEFINITIONS HAVE_APP="${PROJECT_VERSION}"
-        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ompi
+        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi
         OUTPUT_NAME App-ompi
         POSITION_INDEPENDENT_CODE ON
     )
@@ -131,18 +143,22 @@ install(TARGETS ${static_targets}
 )
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/include/app.mod
-    ${CMAKE_CURRENT_BINARY_DIR}/include/app_atomic_module.mod
-    ${CMAKE_CURRENT_BINARY_DIR}/include/app_mutex_module.mod
-    ${CMAKE_CURRENT_BINARY_DIR}/include/app_timer_module.mod
-    TYPE INCLUDE
+    ${CMAKE_CURRENT_BINARY_DIR}/include/fmod/app.mod
+    ${CMAKE_CURRENT_BINARY_DIR}/include/fmod/app_atomic_module.mod
+    ${CMAKE_CURRENT_BINARY_DIR}/include/fmod/app_mutex_module.mod
+    ${CMAKE_CURRENT_BINARY_DIR}/include/fmod/app_timer_module.mod
+    DESTINATION include/fmod
 )
 
 if (TARGET App::App-ompi)
     install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_mpmd.mod
-        ${CMAKE_CURRENT_BINARY_DIR}/include/ompi/app_shared_memory_module.mod
-        TYPE INCLUDE
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app_atomic_module.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app_mutex_module.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app_timer_module.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app_mpmd.mod
+        ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi/app_shared_memory_module.mod
+        DESTINATION include/fmod-ompi
     )
 endif()
 

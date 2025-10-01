@@ -3,7 +3,7 @@ variables:
    ORD_SOUMET_W: "10"
    ORD_SOUMET_C: "30"
    ORD_SOUMET_M: "16G"
-   ORD_SOUMET_TMPFS: "1G"
+   ORD_SOUMET_TMPFS: "256M"
 
 .env:
    build:
@@ -15,6 +15,11 @@ include:
    - project: 'RPN-SI/ci-admin'
      ref: dev
      file: '/ci/.gitlab-ci-config.yml'
+
+test:rhel-8-amd64_gnu-14.2.0:
+   variables:
+      ORD_SOUMET_MPI : mpi
+      ORD_SOUMET_M : 1G
 
 #deploy:staging:
 #   stage: deploy
