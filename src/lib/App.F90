@@ -232,10 +232,10 @@ module app
         use, intrinsic :: iso_c_binding
     end FUNCTION
 
-    !   void App_SetMPIComm(MPI_Comm Comm);
-    SUBROUTINE app_setmpicomm(comm) BIND(C, name = "App_SetMPIComm")
+    !   void App_SetMPICommF(MPI_Comm Comm);
+    SUBROUTINE app_setmpicomm(comm) BIND(C, name = "App_SetMPIComm_F")
         use, intrinsic :: iso_c_binding
-        integer(C_INT), value :: comm
+        integer(C_INT32_T), value :: comm
     end SUBROUTINE
 #endif
 end interface

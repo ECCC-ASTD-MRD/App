@@ -75,6 +75,10 @@ void App_SetMPIComm(MPI_Comm Comm) {
         App->DisplsMPI = (int*)realloc(App->DisplsMPI, (App->NbMPI + 1) * sizeof(int));
     }
 }
+
+void App_SetMPIComm_F(MPI_Fint Comm) {
+    App_SetMPIComm(MPI_Comm_f2c(Comm));
+}
 #endif
 
 

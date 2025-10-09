@@ -55,6 +55,10 @@ if (EC_INIT_DONE LESS 2)
             target_link_libraries(init2 App::App-ompi)
             add_dependencies(check init2)
 
+            add_executable(set_comm EXCLUDE_FROM_ALL set_comm.F90)
+            target_link_libraries(set_comm App::App-ompi)
+            add_dependencies(check set_comm)
+
             add_library(mpmd_helper EXCLUDE_FROM_ALL mpmd_helper.F90)
             target_link_libraries(mpmd_helper App::App-ompi)
             add_executable(mpmd_1 EXCLUDE_FROM_ALL mpmd_1.F90)
@@ -80,6 +84,9 @@ if (EC_INIT_DONE LESS 2)
             add_test(NAME App_MPMD_Init COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 2 $<TARGET_FILE:init1> :
                 -n 4 $<TARGET_FILE:init2>
+            )
+            add_test(NAME set_comm COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+                -n 2 $<TARGET_FILE:set_comm>
             )
             add_test(NAME mpmd1 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 1 $<TARGET_FILE:mpmd_1>
