@@ -293,7 +293,7 @@ TApp * App_Init(
 #endif
 
         App_InitEnv();
-
+        
         // Trap signals if enabled (preemption)
         if (App->Signal == 0) {
             App_Trap(SIGUSR2);
@@ -1044,7 +1044,7 @@ void Lib_Log(
             }
 
 #ifdef HAVE_MPI
-            if (App_IsMPI() && App->LogRank == -1) {
+            if (App_IsMPI() && App->LogRank == -1 && !App->LogSplit) {
                 if (App->Step) {
                     if (App->LogThread) {
                         sprintf(prefix, "%s%sP%03dT%03d (%s) #%d %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
@@ -1057,8 +1057,8 @@ void Lib_Log(
                     } else {
                         sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
                     }
-            }
                 }
+            }
             else
 #endif
             if (App->Step) {

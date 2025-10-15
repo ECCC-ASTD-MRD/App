@@ -12,6 +12,7 @@ program set_comm
     call MPI_INIT(ierror)
     call App_Start()
 
+    call app_log(APP_INFO,'setting communicator')
     comm=MPI_COMM_WORLD
     call app_setmpicomm(comm)
  
