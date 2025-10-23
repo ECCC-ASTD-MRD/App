@@ -357,6 +357,12 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
 
 //! Alias to the \ref Lib_Log function with \ref APP_MAIN implicitly provided as first argument
 #define App_Log(LEVEL, ...) Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__)
+#define App_LogAllRanks(LEVEL, ...) { \
+   int32_t ___app_rank=App->LogRank; \
+   App->LogRank=-1; \
+   Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__) \
+   App->LogRank=___app_rank; \
+}
 
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
 TApp* App_GetInstance(void);
@@ -365,12 +371,7 @@ void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
 int   App_Stats(const char * const Tag);
-void Lib_Log(
-    const TApp_Lib lib,
-    const TApp_LogLevel level,
-    const char * const format,
-    ...
-);
+void  Lib_Log(const TApp_Lib lib, const TApp_LogLevel level, const char * const format, ...);
 int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);
 int   Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val);
 void  App_LogStream(const char * const Stream);
@@ -387,7 +388,7 @@ int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
 int   App_ParseDate(char *Param, char *Value, time_t *Var);
-int App_ParseDateSplit(
+int   App_ParseDateSplit(
     const char * const param,
     char * const value,
     int * const year,

@@ -939,6 +939,19 @@ void App_Log4Fortran(
     Lib_Log(APP_MAIN, Level, "%s\n", Message);
 }
 
+//! Add log entry from all ranks
+void App_LogAllRanks4Fortran(
+    //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
+    TApp_LogLevel Level,
+    //! [in] Message à jouter au journal
+    const char *Message
+) {
+   int32_t ___app_rank=App->LogRank;
+   App->LogRank=-1;
+   Lib_Log(APP_MAIN, Level, "%s\n", Message);
+   App->LogRank=___app_rank;
+}
+
 
 void Lib_Log4Fortran(
     //! [in] Identificateur de la librairie
@@ -953,7 +966,6 @@ void Lib_Log4Fortran(
     (void)len;
     Lib_Log(Lib, Level, "%s\n", Message);
 }
-
 
 //! Add log entry
 void Lib_Log(

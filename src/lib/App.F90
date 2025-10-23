@@ -81,6 +81,14 @@ module app
         character(kind = C_CHAR), dimension(*), intent(in) :: msg
     end SUBROUTINE
 
+    !   void  App_LogAllRanks(TApp_LogLevel Level, const char *Format, ...);
+    SUBROUTINE app_logallrank4fortran(level, msg) BIND(C, name = "App_LogAllRanks4Fortran")
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer(C_INT), value :: level
+        character(kind = C_CHAR), dimension(*), intent(in) :: msg
+    end SUBROUTINE
+
     !   void  Lib_Log(TApp_Lib Lib, TApp_LogLevel Level, const char *Format, ...);
     SUBROUTINE lib_log4Fortran(lib, level, msg) BIND(C, name = "Lib_Log4Fortran")
         use, intrinsic :: iso_c_binding
@@ -287,6 +295,17 @@ contains
 
         c_str = app_strc(msg)
         call app_log4fortran(level, c_str)
+    end SUBROUTINE
+
+    SUBROUTINE app_logallranks(level, msg)
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer :: level
+        character(len = *) :: msg
+        character(len = APP_MSGMAX) :: c_str
+
+        c_str = app_strc(msg)
+        call app_logallranks4fortran(level, c_str)
     end SUBROUTINE
 
     SUBROUTINE lib_log(lib, level, msg)
