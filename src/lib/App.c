@@ -865,6 +865,7 @@ void App_Trap(const int Signal) {
     new.sa_sigaction = NULL;
     new.sa_handler = App_TrapProcess;
     new.sa_flags = 0x0;
+    new.sa_restorer = NULL;
     sigemptyset(&new.sa_mask);
 
     // POSIX way
