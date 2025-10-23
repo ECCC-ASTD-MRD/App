@@ -82,7 +82,7 @@ module app
     end SUBROUTINE
 
     !   void  App_LogAllRanks(TApp_LogLevel Level, const char *Format, ...);
-    SUBROUTINE app_logallrank4fortran(level, msg) BIND(C, name = "App_LogAllRanks4Fortran")
+    SUBROUTINE app_logallranks4fortran(level, msg) BIND(C, name = "App_LogAllRanks4Fortran")
         use, intrinsic :: iso_c_binding
         implicit none
         integer(C_INT), value :: level
