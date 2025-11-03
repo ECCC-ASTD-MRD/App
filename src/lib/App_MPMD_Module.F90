@@ -13,6 +13,10 @@
 ! 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 !---------------------------------- LICENCE END ---------------------------------
 
+!> \file
+
+
+!> Fortran interface for App's MPMD functionalities
 module app_mpmd
     use, intrinsic :: iso_c_binding
     use, intrinsic :: iso_fortran_env
@@ -81,7 +85,7 @@ contains
 
 
     !> Get the component id corresponding to the provided name
-    !> \return Component id corresponding to the provided name
+    !> \return Component id corresponding to the provided name or -1 if not found
     pure function App_MPMD_GetComponentId(component_name) result(component_id)
         implicit none
         character(len = *), intent(in) :: component_name
