@@ -695,7 +695,9 @@ static TComponentSet * createSet(
     //! Number of components in the set
     const int nbComponents,
     //! List of components IDs in the set. *Must be sorted in ascending order and without duplicates*.
-    const int components[nbComponents]
+    const int components[nbComponents],
+    //! Include only PE0 of each component in the new set
+    const int pe0Only
 ) {
     //! This will create a communicator for them.
     //! \return A newly-created set (pointer). NULL on error
@@ -747,19 +749,29 @@ static TComponentSet * createSet(
         MPI_Comm_group(app->MainComm, &mainGroup);
 
         int newGroupSize = 0;
-        for (int i = 0; i < nbComponents; i++) {
-            newGroupSize += app->AllComponents[components[i]].size;
-        }
+        if (pe0Only) {
+            int * const newGroupRanks = (int*) malloc(nbComponents * sizeof(int));
 
-        int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
-        int currentPe = 0;
-        for (int i = 0; i < nbComponents; i++) {
-            const TComponent* comp = &(app->AllComponents[components[i]]);
-            memcpy(newGroupRanks + currentPe, comp->ranks, comp->size * sizeof(int));
-            currentPe += comp->size;
-        }
+            for (int i = 0; i < nbComponents; i++) {
+                newGroupRanks[i] = app->AllComponents[components[i]].ranks[0];
+            }
+            MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
+            free(newGroupRanks);
+        } else {
+            for (int i = 0; i < nbComponents; i++) {
+                newGroupSize += app->AllComponents[components[i]].size;
+            }
 
-        MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
+            int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
+            int currentPe = 0;
+            for (int i = 0; i < nbComponents; i++) {
+                const TComponent * const comp = &(app->AllComponents[components[i]]);
+                memcpy(newGroupRanks + currentPe, comp->ranks, comp->size * sizeof(int));
+                currentPe += comp->size;
+            }
+            MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
+            free(newGroupRanks);
+        }
 
         // This call is collective among all group members, but not main_comm
         MPI_Comm_create_group(app->MainComm, unionGroup, 0, &unionComm);
@@ -767,8 +779,6 @@ static TComponentSet * createSet(
         // Initialize in place, in the list of sets
         initComponentSet(newSet, nbComponents, components, unionComm, unionGroup);
         app->NbSets++;
-
-        free(newGroupRanks);
     }
 
 #ifndef NDEBUG
@@ -845,7 +855,7 @@ MPI_Comm App_MPMD_GetSharedComm(
     }
 
     // Not created yet, so we have to do it now
-    const TComponentSet * const set = createSet(app, nbUniqueComponents, uniqueComponents);
+    const TComponentSet * const set = createSet(app, nbUniqueComponents, uniqueComponents, 0);
 
     if (set == NULL) {
         // Oh nooo, something went wrong
