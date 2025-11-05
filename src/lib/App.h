@@ -342,6 +342,7 @@ typedef struct {
 #endif //HAVE_MPI
 
    TApp_Timer     *TimerLog;             ///< Time spent on log printing
+   int32_t        (*Finalize)(void);     ///< Application specific finalization function
 } TApp;
 
 #ifndef APP_BUILD

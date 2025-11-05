@@ -18,13 +18,12 @@ module app
        enumerator :: APP_MASTER = 0, APP_THREAD = 1
     end enum
 
-    ! Maximum component lane length (including null character). Must be kept in sync with the definition in App.h!
-    integer, parameter :: APP_MAX_COMPONENT_NAME_LEN = 32
-    integer, parameter :: APP_MSGMAX = 4097  ! Maximum message length (including C '/0')
-    type(C_PTR) :: app_ptr                 ! Global (opaque) app structure pointer
-    integer :: app_status                  ! To recuperate application status
-    character(len = APP_MSGMAX) :: app_msg   ! String to write output messages
-    character(len = *) , parameter :: EOL = char(13) // char(11)
+    integer, parameter :: APP_MAX_COMPONENT_NAME_LEN = 32       ! Maximum component lane length (including null character). Must be kept in sync with the definition in App.h
+    integer, parameter :: APP_MSGMAX = 4097                     ! Maximum message length (including C '/0')
+    type(C_PTR) :: app_ptr                                      ! Global (opaque) app structure pointer
+    integer :: app_status                                       ! To recuperate application status
+    character(len = APP_MSGMAX) :: app_msg                      ! String to write output messages
+    character(len = *), parameter :: EOL = char(13) // char(11) ! C end of line definition
 
     interface
 
@@ -51,6 +50,13 @@ module app
         integer(C_INT), value :: lib
         character(C_CHAR), dimension(*) :: version
     end SUBROUTINE
+
+    !   int App_FinalizeCallBack_F(int32_t (*func)(void))
+    SUBROUTINE app_finalizecallback(c_func_ptr) BIND(C, NAME='App_FinalizeCallBack_F')
+        USE, INTRINSIC :: ISO_C_BINDING
+        IMPLICIT NONE
+        TYPE(C_FUNPTR), INTENT(IN) :: c_func_ptr
+    END SUBROUTINE app_finalizecallback
 
     !   void  App_Start(void);
     SUBROUTINE app_start() BIND(C, name = "App_Start")

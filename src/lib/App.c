@@ -398,6 +398,13 @@ int App_SameHost_F(
 }
 #endif
 
+int App_FinalizeCallBack_F(
+    int32_t (*func)(void)
+) {
+
+   App->Finalize=func;
+   return(TRUE);
+}
 
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
@@ -740,6 +747,9 @@ int App_End(
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
     if (App->NbMPI > 1 && Status != INT_MIN) {
+        // Get largest error code
+        //MPI_Reduce(MPI_IN_PLACE, &Status, 1, MPI_INT, MPI_MIN, 0, App->Comm);
+
         if (!App->RankMPI) {
             MPI_Reduce(MPI_IN_PLACE, &App->LogWarning, 1, MPI_INT, MPI_SUM, 0, App->Comm);
             MPI_Reduce(MPI_IN_PLACE, &App->LogError, 1, MPI_INT, MPI_SUM, 0, App->Comm);
@@ -788,6 +798,9 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
+    if (App->Finalize) {
+        App->Finalize();
+    }
 #ifdef HAVE_MPI
     if (!App->RankMPI || !App->ComponentRank) {
 #endif
