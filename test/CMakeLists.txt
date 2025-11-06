@@ -32,6 +32,14 @@ if (EC_INIT_DONE LESS 2)
         target_link_libraries(test_app_loglevel_noinit App::App)
         add_dependencies(check test_app_loglevel_noinit)
 
+        add_executable(finalize_c EXCLUDE_FROM_ALL finalize.c)
+        target_link_libraries(finalize_c App::App)
+        add_dependencies(check finalize_c)
+
+        add_executable(finalize_f EXCLUDE_FROM_ALL finalize.F90)
+        target_link_libraries(finalize_f App::App)
+        add_dependencies(check finalize_f)
+
         if (TARGET App::App-ompi)
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general

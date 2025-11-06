@@ -8,11 +8,11 @@ program set_comm
     integer :: ierror
 
     app_ptr = App_Init(0, "set_comm", "test", "comm setting test", "now")
-
+    call app_libregister(APP_LIBVGRID,"whatever"//c_null_char)
     call MPI_INIT(ierror)
     call App_Start()
 
-    call MPI_Barrier(MPI_COMM_WORLD,ierror);
+    call MPI_Barrier(MPI_COMM_WORLD,ierror); 
     call app_log(APP_INFO,'setting communicator')
     comm=MPI_COMM_WORLD
     call app_setmpicomm(comm)
