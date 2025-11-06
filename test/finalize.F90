@@ -1,21 +1,9 @@
-
-
 program finalize
     use app
     use, intrinsic :: iso_c_binding
     implicit none
 
-!    ABSTRACT INTERFACE
-!    FUNCTION function_template() RESULT(y)
-!        use, intrinsic :: iso_c_binding
-!        integer(C_INT32_T) :: y
-!    END FUNCTION function_template
-!    END INTERFACE
-
-
-    TYPE(C_FUNPTR) :: func_ptr_to_c
-!    PROCEDURE(function_template), POINTER :: func
-!    func => finalizef
+    type(C_FUNPTR) :: func_ptr_to_c
 
     func_ptr_to_c=C_FUNLOC(finalizef)
     call app_finalizecallback(func_ptr_to_c)
