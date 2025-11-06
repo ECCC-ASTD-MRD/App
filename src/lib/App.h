@@ -371,6 +371,7 @@ void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
+int   App_FinalizeCallback(int32_t (*func)(void));
 int   App_Stats(const char * const Tag);
 void  Lib_Log(const TApp_Lib lib, const TApp_LogLevel level, const char * const format, ...);
 int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);

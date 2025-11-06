@@ -398,7 +398,9 @@ int App_SameHost_F(
 }
 #endif
 
-int App_FinalizeCallBack_F(
+//! Register a function callback for process finalization when calling App_End(). Usefull in case of out of flow exit
+int App_FinalizeCallback(
+    //! [in] Pointer to callback function
     int32_t (*func)(void)
 ) {
 

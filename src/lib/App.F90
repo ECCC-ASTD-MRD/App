@@ -51,11 +51,11 @@ module app
         character(C_CHAR), dimension(*) :: version
     end SUBROUTINE
 
-    !   int App_FinalizeCallBack_F(int32_t (*func)(void))
-    SUBROUTINE app_finalizecallback(c_func_ptr) BIND(C, NAME='App_FinalizeCallBack_F')
+    !   int App_FinalizeCallback_F(int32_t (*func)(void))
+    SUBROUTINE app_finalizecallback(c_func_ptr) BIND(C, NAME='App_FinalizeCallback')
         USE, INTRINSIC :: ISO_C_BINDING
         IMPLICIT NONE
-        TYPE(C_FUNPTR), INTENT(IN) :: c_func_ptr
+        TYPE(C_FUNPTR), INTENT(IN), value :: c_func_ptr
     END SUBROUTINE app_finalizecallback
 
     !   void  App_Start(void);
