@@ -21,9 +21,11 @@ char * strpath(
     if (!lastSlash) lastSlash = path;
     char * const new = (char*)calloc(strlen(file) + (lastSlash - path) + 2, 1);
 
-    strncpy(new, path, (lastSlash - path));
-    strcat(new, "/");
-    strcat(new, file);
+    if (new) {
+        strncpy(new, path, (lastSlash - path));
+        strcat(new, "/");
+        strcat(new, file);
+    }
 
     return new;
 }
@@ -42,7 +44,9 @@ char * strcatalloc(
     if (src) {
         if (dst) {
             dst = (char*)realloc(dst, strlen(dst) + strlen(src) + 1);
-            strcat(dst, src);
+            if (dst) {
+                strcat(dst, src);
+            }
         } else {
             dst = strdup(src);
         }
@@ -93,33 +97,35 @@ int strrindex(
     int num = -1;
     if (str) {
         char * origStr = strdup(str);
-        char * lParenPos = index(origStr, '(');
-        char * rParenPos = index(origStr, ')');
+        if (origStr) {
+            char * lParenPos = index(origStr, '(');
+            char * rParenPos = index(origStr, ')');
 
-        if (!lParenPos || !rParenPos) {
+            if (!lParenPos || !rParenPos) {
+                free(origStr);
+                return -1;
+            }
+
+            sscanf(lParenPos, "(%i)", &num);
+
+            char * charItr = origStr;
+            int newLen = 0;
+            int copy = 1;
+            while(*charItr != '\0') {
+                if (*charItr == '(') {
+                    copy = 0;
+                }
+
+                if (copy) str[newLen++] = *charItr;
+
+                if (*charItr == ')') {
+                    copy = 1;
+                }
+                charItr++;
+            }
+            str[newLen] = '\0';
             free(origStr);
-            return -1;
         }
-
-        sscanf(lParenPos, "(%i)", &num);
-
-        char * charItr = origStr;
-        int newLen = 0;
-        int copy = 1;
-        while(*charItr != '\0') {
-            if (*charItr == '(') {
-                copy = 0;
-            }
-
-            if (copy) str[newLen++] = *charItr;
-
-            if (*charItr == ')') {
-                copy = 1;
-            }
-            charItr++;
-        }
-        str[newLen] = '\0';
-        free(origStr);
     }
     return num;
 }
