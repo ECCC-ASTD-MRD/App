@@ -33,30 +33,30 @@ program mpmd_3
     end if
 
     call App_Log(APP_WARNING, 'Expecting failure to retrieve shared comm')
-    comm_12 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_1id])
+    comm_12 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_1id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_2id, ', ', mpmd_1id, ')'
     call validate_comm_size(comm_12, 0, str)
 
-    comm_123 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_3id, mpmd_1id])
+    comm_123 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_3id, mpmd_1id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_2id, ', ', mpmd_3id, ', ', mpmd_1id, ')'
     call validate_comm_size(comm_123, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST3, str)
 
-    comm_13 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_3id])
+    comm_13 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_3id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_1id, ', ', mpmd_3id, ')'
     call validate_comm_size(comm_13, NUM_PROCS_TEST1 + NUM_PROCS_TEST3, str)
 
     if (App_MPMD_HasComponent('mpmd_4')) then
-        comm_234 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id, mpmd_2id])
+        comm_234 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id, mpmd_2id], .false.)
         write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_3id, ', ', mpmd_4id, ', ', mpmd_2id, ')'
         call validate_comm_size(comm_234, NUM_PROCS_TEST2 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
     end if
 
     if (App_MPMD_HasComponent('mpmd_4')) then
-        comm_134 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_3id])
+        comm_134 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_3id], .false.)
         write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_1id, ', ', mpmd_3id, ')'
         call validate_comm_size(comm_134, NUM_PROCS_TEST1 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 
-        comm_34 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id])
+        comm_34 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id], .false.)
         write(str, '(a,i1,a,i1,a)') '(', mpmd_3id, ', ', mpmd_4id, ')'
         call validate_comm_size(comm_34, NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
     end if

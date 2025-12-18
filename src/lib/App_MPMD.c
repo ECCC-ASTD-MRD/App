@@ -52,6 +52,7 @@ typedef struct {
 static const TComponentSet defaultSet = {
     .nbComponents = 0,
     .componentIds = NULL,
+    .nbPes = 0,
     .comm = MPI_COMM_NULL,
     .group = MPI_GROUP_NULL
 };
@@ -273,9 +274,9 @@ const char * App_MPMD_ComponentIdToName(
 
 //! Print a text representation of the provided component to the application log
 static void printComponent(
-    //! The component whose info we want to print
+    //! [in] The component whose info we want to print
     const TComponent * const comp,
-    //! Whether to print the global rank of every PE in the component
+    //! [in] Whether to print the global rank of every PE in the component
     const int verbose
 ) {
     char commStr[32];
@@ -336,6 +337,8 @@ int App_MPMD_Init() {
     //! This is a collective call. Everyone who participate in it will know who else
     //! is on board and will be able to ask for a communicator in common with any other
     //! participant (or even multiple other participants at once).
+
+    //! \return 1 on success, 0 otherwise
 
     TApp * const app = App_GetInstance();
 
@@ -527,14 +530,15 @@ void App_MPMD_Finalize() {
 
 //! Test if a list of integer contains a given item
 static int contains(
-    //! Number of items in the list
+    //! [in] Number of items in the list
     const int nbItems,
-    //! List in which to search
+    //! [in] List in which to search
     const int list[nbItems],
-    //! Item to search for
+    //! [in] Item to search for
     const int item
 ) {
     //! \return 1 if a certain item is in the given list, 0 otherwise
+
     for (int i = 0; i < nbItems; i++) if (list[i] == item) return 1;
     return 0;
 }
@@ -623,6 +627,7 @@ static int * cleanComponentList(
 //! Get the communicator for for component to which this PE belongs
 MPI_Comm App_MPMD_GetSelfComm() {
     //! \return The communicator for all PEs part of the same component as this PE
+
     const TApp * const app = App_GetInstance();
     return app->SelfComponent->comm;
 }
@@ -641,20 +646,23 @@ static TComponentSet * findSet(
     //! [in] Number of components in the provided set
     const int nbComponents,
     //! [in] What components are in the set we want. *Must be sorted in ascending order and without duplicates*.
-    const int components[nbComponents]
+    const int components[nbComponents],
+    //! [in] Number of PEs in the set to find. Set to -1 to ignore this check.
+    const int nbPes
 ) {
     //! \return The set containing the given components (if found), or NULL if it wasn't found.
 
 #ifndef NDEBUG
     {
         char * const compStr = printIntArray(nbComponents, components, 0);
-        printf("%02d %s(%p, %s, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents);
+        printf("%02d %s(%p, %s, %d, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, nbPes);
+        free(compStr);
     }
 #endif
 
     for (int setIdx = 0; setIdx < app->NbSets; setIdx++) {
         TComponentSet * const set = &app->Sets[setIdx];
-        if (set->nbComponents == nbComponents) {
+        if (set->nbComponents == nbComponents && (nbPes == -1 || set->nbPes == nbPes)) {
             int allSame = 1;
             for (int compIdx = 0; compIdx < nbComponents; compIdx++) {
                 if (set->componentIds[compIdx] != components[compIdx]) {
@@ -673,20 +681,23 @@ static TComponentSet * findSet(
 
 //! Initialize the given component set with specific values
 static void initComponentSet(
-    //! Set to be initialized
+    //! [in, out] Set to be initialized
     TComponentSet * const set,
-    //! Number of components in the set
+    //! [in] Number of components in the set
     const int nbComponents,
-    //! List of component IDs that are part of the set
+    //! [in] List of component IDs that are part of the set
     const int componentIds[nbComponents],
-    //! MPI communicator that is common (and exclusive) to the given components
+    //! [in] Number of PEs in the set
+    const int nbPes,
+    //! [in] MPI communicator that is common (and exclusive) to the given components
     const MPI_Comm comm,
-    //! MPI group that contains all (global) PEs from the given components
+    //! [in] MPI group that contains all (global) PEs from the given components
     const MPI_Group group
 ) {
     set->nbComponents = nbComponents;
     set->componentIds = (int*)malloc(nbComponents * sizeof(int));
     memcpy(set->componentIds, componentIds, nbComponents * sizeof(int));
+    set->nbPes = nbPes;
     set->comm = comm;
     set->group = group;
 }
@@ -694,21 +705,22 @@ static void initComponentSet(
 
 //! Create a set of components within this MPMD context
 static TComponentSet * createSet(
-    //! TApp instance. *Must already be initialized.*
+    //! [in, out] TApp instance. *Must already be initialized.*
     TApp * const app,
-    //! Number of components in the set
+    //! [in] Number of components in the set
     const int nbComponents,
-    //! List of components IDs in the set. *Must be sorted in ascending order and without duplicates*.
+    //! [in] List of components IDs in the set. *Must be sorted in ascending order and without duplicates*.
     const int components[nbComponents],
-    //! Include only PE0 of each component in the new set
-    const int pe0Only
+    //! [in] Include only PE0 of each component in the new set
+    const int pes0Only
 ) {
     //! This will create a communicator for them.
     //! \return A newly-created set (pointer). NULL on error
 #ifndef NDEBUG
     {
         char * const compStr = printIntArray(nbComponents, components, 0);
-        printf("%02d %s(%p, %s, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents);
+        printf("%02d %s(%p, %s, %d, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, pes0Only);
+        free(compStr);
     }
 #endif
 
@@ -753,8 +765,10 @@ static TComponentSet * createSet(
         MPI_Comm_group(app->MainComm, &mainGroup);
 
         int newGroupSize = 0;
-        if (pe0Only) {
-            int * const newGroupRanks = (int*) malloc(nbComponents * sizeof(int));
+        if (pes0Only) {
+            newGroupSize = nbComponents;
+
+            int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
 
             for (int i = 0; i < nbComponents; i++) {
                 newGroupRanks[i] = app->AllComponents[components[i]].ranks[0];
@@ -781,7 +795,7 @@ static TComponentSet * createSet(
         MPI_Comm_create_group(app->MainComm, unionGroup, 0, &unionComm);
 
         // Initialize in place, in the list of sets
-        initComponentSet(newSet, nbComponents, components, unionComm, unionGroup);
+        initComponentSet(newSet, nbComponents, components, newGroupSize, unionComm, unionGroup);
         app->NbSets++;
     }
 
@@ -794,25 +808,27 @@ static TComponentSet * createSet(
 }
 
 
-//! Get a communicator that encompasses all PEs part of the components in the given list
+//! Get a communicator that encompasses all PEs or only the PE0 of the components in the given list
 MPI_Comm App_MPMD_GetSharedComm(
-    //! Number of components in the list
+    //! [in] Number of components in the list
     const int32_t nbComponents,
-    //! The list of components IDs for which we want a shared communicator.
+    //! [in] The list of components IDs for which we want a shared communicator.
     //! This list *must* contain the component of the calling PE. It may contain
     //! duplicate IDs and does not have to be in a specific order.
-    const int32_t components[nbComponents]
+    const int32_t components[nbComponents],
+    //! [in] Include only the PE0 of each component in the communicator
+    const int32_t pes0Only
 ) {
     //!  If the communicator does not already exist, it will be created.
-    //! _This function call is collective if and only if the communicator gets created._
+    //! \note This function call is collective if and only if the communicator gets created.
 
     // Can do much if the list of component is NULL. This also prevents the warning about CWE-690
     if (components == NULL) return MPI_COMM_NULL;
     TApp * const app = App_GetInstance();
     char * const compStr = printIntArray(nbComponents, components, 0);
 #ifndef NDEBUG
-        printf("%02d %s(%p, %s, %d) from %d(%s)\n", app->WorldRank, __func__,
-            (void *)app, compStr, nbComponents, app->SelfComponent->id, app->SelfComponent->name);
+        printf("%02d %s(%p, %s, %d, %d) from %d(%s)\n", app->WorldRank, __func__,
+            (void *)app, compStr, nbComponents, pes0Only, app->SelfComponent->id, app->SelfComponent->name);
 #endif
     MPI_Comm sharedComm = MPI_COMM_NULL;
 
@@ -849,7 +865,7 @@ MPI_Comm App_MPMD_GetSharedComm(
 
     // Check whether a communicator has already been created for this set of components
     {
-        const TComponentSet * set = findSet(app, nbUniqueComponents, uniqueComponents);
+        const TComponentSet * set = findSet(app, nbUniqueComponents, uniqueComponents, pes0Only ? nbUniqueComponents : -1);
         if (set) {
 #ifndef NDEBUG
             printf("%02d (PE %02d of comp %s) Found already existing set for %s\n",
@@ -862,7 +878,7 @@ MPI_Comm App_MPMD_GetSharedComm(
     }
 
     // Not created yet, so we have to do it now
-    const TComponentSet * const set = createSet(app, nbUniqueComponents, uniqueComponents, 0);
+    const TComponentSet * const set = createSet(app, nbUniqueComponents, uniqueComponents, pes0Only);
 
     if (set == NULL) {
         // Oh nooo, something went wrong
@@ -888,13 +904,15 @@ end:
 
 //! Get shared Fortran communicator
 MPI_Fint App_MPMD_GetSharedComm_F(
-    //! Number of components
+    //! [in] Number of components
     const int32_t nbComponents,
-    //! List of component IDs that should be grouped
-    const int32_t components[nbComponents]
+    //! [in] List of component IDs that should be grouped
+    const int32_t components[nbComponents],
+    //! [in] Include only the PE0 of each component in the communicator
+    const int32_t pes0Only
 ) {
     //! \return The Fortran communicator shared by the given components
-    return MPI_Comm_c2f(App_MPMD_GetSharedComm(nbComponents, components));
+    return MPI_Comm_c2f(App_MPMD_GetSharedComm(nbComponents, components, pes0Only));
 }
 
 

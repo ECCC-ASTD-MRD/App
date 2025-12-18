@@ -48,6 +48,24 @@ contains
     end subroutine App_MPMD_Init
 
 
+    !> Get the rank of the PE in its component
+    !> \return Rank of this PE in its component
+    pure function App_MPMD_GetSelfComponentRank() result(component_rank)
+        implicit none
+        integer :: component_rank
+
+        interface
+            pure function App_MPMD_GetSelfComponentRank_C() result(rank) bind(C, name = 'App_MPMD_GetSelfComponentRank')
+                import :: C_INT32_T
+                implicit none
+                integer(C_INT32_T) :: rank
+            end function App_MPMD_GetSelfComponentRank_C
+        end interface
+
+        component_rank = App_MPMD_GetSelfComponentRank_C()
+    end function App_MPMD_GetSelfComponentRank
+
+
     !> Get the id of the component to which this PE belongs
     !> \return Component id of this PE
     pure function App_MPMD_GetSelfComponentId() result(component_id)
@@ -158,29 +176,40 @@ contains
         self_comm = App_MPMD_GetSelfComm_C()
     end function App_MPMD_GetSelfComm
 
-    !> Retrieve a communicator that encompasses all PEs part of one of the components
-    !> in the given list. If the communicator does not already exist, it will be created.
-    !> _This function call is collective if and only if the communicator must be created._
-    function App_MPMD_GetSharedComm(component_list) result(shared_comm)
+    !> Get a communicator that encompasses all PEs of the components in the given list
+    !> or only the PE0 of each component. If the communicator does not already exist, it will be created.
+    !> \note This function call is collective if and only if the communicator must be created.
+    function App_MPMD_GetSharedComm(component_list, include_pes0Only) result(shared_comm)
         implicit none
         !> The list of components IDs for which we want a shared communicator.
         !> This list *must* contain the component of the calling PE. It may contain
         !> duplicate IDs and does not have to be in a specific order.
         integer, dimension(:), target, intent(in) :: component_list
+        !> Include only the PE0 of each component in the new communicator if true
+        logical, intent(in) :: include_pes0Only
         integer :: shared_comm
 
+        integer :: c_pes0Only
+
         interface
-            function App_MPMD_GetSharedComm_C(num_components, components) result(comm) bind(C, name = 'App_MPMD_GetSharedComm_F')
+            function App_MPMD_GetSharedComm_C(num_components, components, pes0Only) result(comm) bind(C, name = 'App_MPMD_GetSharedComm_F')
                 import :: C_INT32_T, C_PTR
                 implicit none
                 ! type(C_PTR),        value, intent(in) :: components
-                integer(C_INT32_T),        intent(in) :: components
+                integer(C_INT32_T), intent(in) :: components
                 integer(C_INT32_T), value, intent(in) :: num_components
+                integer(C_INT32_T), value, intent(in) :: pes0Only
                 integer(C_INT32_T) :: comm
             end function App_MPMD_GetSharedComm_C
         end interface
 
-        shared_comm = App_MPMD_GetSharedComm_C(size(component_list), component_list(1))
+        if (include_pes0Only) then
+            c_pes0Only = 1
+        else
+            c_pes0Only = 0
+        end if
+
+        shared_comm = App_MPMD_GetSharedComm_C(size(component_list), component_list(1), c_pes0Only)
     end function App_MPMD_GetSharedComm
 
 

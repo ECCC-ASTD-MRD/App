@@ -32,53 +32,53 @@ program mpmd_4
         error stop 1
     end if
 
-    comm_14 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_4id])
+    comm_14 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_4id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_1id, ')'
     call validate_comm_size(comm_14, NUM_PROCS_TEST1 + NUM_PROCS_TEST4, '(4, 1)')
 
-    comm_234 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_3id, mpmd_4id])
+    comm_234 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_3id, mpmd_4id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_2id, ', ', mpmd_3id, ', ', mpmd_4id, ')'
     call validate_comm_size(comm_234, NUM_PROCS_TEST2 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 
-    comm_124 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_2id])
+    comm_124 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_2id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_1id, ', ', mpmd_2id, ')'
     call validate_comm_size(comm_124, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST4, str)
 
-    comm_134 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_3id])
+    comm_134 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_3id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_1id, ', ', mpmd_3id, ')'
     call validate_comm_size(comm_134, NUM_PROCS_TEST1 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 
-    comm_24 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_4id])
+    comm_24 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_4id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_2id, ', ', mpmd_4id, ')'
     call validate_comm_size(comm_24, NUM_PROCS_TEST2 + NUM_PROCS_TEST4, str)
 
-    comm_34 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id])
+    comm_34 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_3id, ', ', mpmd_4id, ')'
     call validate_comm_size(comm_34, NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 
     ! Set list should have been doubled, so check if the comms are still there (not collective)
     comm_14 = MPI_COMM_NULL
-    comm_14 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id])
+    comm_14 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_1id, ')'
     call validate_comm_size(comm_14, NUM_PROCS_TEST1 + NUM_PROCS_TEST4, str)
     comm_234 = MPI_COMM_NULL
-    comm_234 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id, mpmd_2id])
+    comm_234 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_4id, mpmd_2id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_3id, ', ', mpmd_4id, ', ', mpmd_2id, ')'
     call validate_comm_size(comm_234, NUM_PROCS_TEST2 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
     comm_124 = MPI_COMM_NULL
-    comm_124 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_2id, mpmd_1id])
+    comm_124 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_2id, mpmd_1id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_2id, ', ', mpmd_1id, ')'
     call validate_comm_size(comm_124, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST4, str)
     comm_134 = MPI_COMM_NULL
-    comm_134 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_1id, mpmd_4id])
+    comm_134 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_1id, mpmd_4id], .false.)
     write(str, '(a,i1,a,i1,a,i1,a)') '(', mpmd_3id, ', ', mpmd_1id, ', ', mpmd_4id, ')'
     call validate_comm_size(comm_134, NUM_PROCS_TEST1 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
     comm_24 = MPI_COMM_NULL
-    comm_24 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_2id])
+    comm_24 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_2id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_2id, ')'
     call validate_comm_size(comm_24, NUM_PROCS_TEST2 + NUM_PROCS_TEST4, str)
     comm_34 = MPI_COMM_NULL
-    comm_34 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_3id])
+    comm_34 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_3id], .false.)
     write(str, '(a,i1,a,i1,a)') '(', mpmd_4id, ', ', mpmd_3id, ')'
     call validate_comm_size(comm_34, NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 

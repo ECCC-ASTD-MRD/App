@@ -37,7 +37,7 @@ int main() {
         exit(1);
     }
 
-    const MPI_Comm comm_15 = App_MPMD_GetSharedComm(2, (int[]){mpmd_1id, mpmd_5id});
+    const MPI_Comm comm_15 = App_MPMD_GetSharedComm(2, (int[]){mpmd_1id, mpmd_5id}, 0);
     validate_comm_size(comm_15, 1 + 5);
 
     App_End(0);
