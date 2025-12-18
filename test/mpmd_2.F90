@@ -29,12 +29,10 @@ program mpmd_2
 
     comm_12 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_1id], .false.)
     call validate_comm_size(comm_12, NUM_PROCS_TEST1 + NUM_PROCS_TEST2, '(2, 1)')
-    print *, 'mpmd_2 - here 1?'
 
     ! Get it again, with inverted IDs. This should *not* be a collective call (mpmd_1 does not do it)
     comm_12 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_2id], .false.)
     call validate_comm_size(comm_12, NUM_PROCS_TEST1 + NUM_PROCS_TEST2, '(2, 1)')
-    print *, 'mpmd_2 - here 2?'
 
     if (App_MPMD_HasComponent('mpmd_3')) then
         comm_123 = App_MPMD_GetSharedComm([mpmd_2id, mpmd_3id, mpmd_1id, mpmd_1id, mpmd_2id], .false.)

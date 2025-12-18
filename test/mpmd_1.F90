@@ -29,37 +29,31 @@ program mpmd_1
         comm_12 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_2id], .false.)
         call validate_comm_size(comm_12, NUM_PROCS_TEST1 + NUM_PROCS_TEST2, '(1, 2)')
     end if
-    print *, 'mpmd_1 - here 1?'
 
     if (App_MPMD_HasComponent("mpmd_2") .and. App_MPMD_HasComponent("mpmd_3")) then
         comm_123 = App_MPMD_GetSharedComm([mpmd_3id, mpmd_1id, mpmd_2id], .false.)
         call validate_comm_size(comm_123, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST3, '(1, 2, 3)')
     end if
-    print *, 'mpmd_1 - here 2?'
 
     if (App_MPMD_HasComponent("mpmd_3")) then
         comm_13 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_3id], .false.)
         call validate_comm_size(comm_13, NUM_PROCS_TEST1 + NUM_PROCS_TEST3, '(1, 3)')
     end if
-    print *, 'mpmd_1 - here 3?'
 
     if (App_MPMD_HasComponent("mpmd_4")) then
         comm_14 = App_MPMD_GetSharedComm([mpmd_1id, mpmd_4id], .false.)
         call validate_comm_size(comm_14, NUM_PROCS_TEST1 + NUM_PROCS_TEST4, '(1, 4)')
     end if
-    print *, 'mpmd_1 - here 4?'
 
     if (App_MPMD_HasComponent("mpmd_2") .and. App_MPMD_HasComponent("mpmd_4")) then
         comm_124 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_2id], .false.)
         call validate_comm_size(comm_124, NUM_PROCS_TEST1 + NUM_PROCS_TEST2 + NUM_PROCS_TEST4, '(1, 2, 4)')
     end if
-    print *, 'mpmd_1 - here 5?'
 
     if (App_MPMD_HasComponent("mpmd_3") .and. App_MPMD_HasComponent("mpmd_4")) then
         comm_134 = App_MPMD_GetSharedComm([mpmd_4id, mpmd_1id, mpmd_3id], .false.)
         call validate_comm_size(comm_134, NUM_PROCS_TEST1 + NUM_PROCS_TEST3 + NUM_PROCS_TEST4, '(1, 3, 4)')
     end if
-    print *, 'mpmd_1 - here 6?'
 
     if (App_MPMD_HasComponent("mpmd_5")) then
         comm_15 = App_MPMD_GetSharedComm([mpmd_5id, mpmd_1id], .false.)
