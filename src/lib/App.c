@@ -706,25 +706,75 @@ int App_Stats(
     //! \return Always TRUE
     struct rusage  usg;
     struct timeval end, dif;
+    int64_t rss,pss,uss;
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
         gettimeofday(&end, NULL);
         timersub(&end, &App->Time, &dif);
         getrusage(RUSAGE_SELF, &usg);
 
+        App_GetSS(&rss,&pss,&uss);
+
         if (Tag) {
-            App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+            App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f,RSS: %ld, PSS: %ld, USS: %ld, Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
                 Tag, dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
-                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
+                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, rss, pss, uss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
         } else {
-            App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+            App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %ld, PSS: %ld, USS: %ld, Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
                 dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
-                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
+                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, rss, pss, uss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
         }
+
     }
     return TRUE;
 }
 
+int App_GetSS(
+    //! [out] (RSS) Resident Set Size    : Private memory of the process itself and total shared memory used
+    int64_t *RSS,
+    //! [out] (PSS) Proportional Set Size: Private memory of the process itself and a partitioned size of the shared memory
+    int64_t *PSS,
+    //! [out] (USS) Unique Set Size      : Private memory of a process
+    int64_t *USS
+) {
+
+    FILE *fd=NULL;
+    char *line,buf[1024],field[64];
+    int   len,n=0;
+    
+    *RSS=0,*PSS=0,*USS=0;
+
+    fd=fopen("/proc/self/smaps_rollup","re");
+
+    while ((line=fgets(buf, sizeof(buf), fd))) {
+       // Extract line components
+        if (sscanf(buf, "%63s %n", field, &len) == 1 && *field && field[strlen(field) - 1] == ':') {
+            const char* c = line + len;
+            // Only parse P* and R* lines
+            if (field[0]=='P') {
+                if (strncmp(field, "Pss:", 4) == 0) {
+                    *PSS = strtoull(c, NULL, 10); n++;
+                } else if (strncmp(field, "Private_Clean:", 14) == 0) {
+                    *USS += strtoull(c, NULL, 10); n++;
+                } else if (strncmp(field, "Private_Dirty:", 14) == 0) {
+                    *USS +=strtoull(c, NULL, 10); n++;
+                }
+            } else if (field[0]=='R') {
+                if (strncmp(field, "Rss:", 4) == 0) {
+                    *RSS = strtoull(c, NULL, 10); n++;
+                }
+            }
+        }
+
+        // We only need 4 values
+        if (n==4)
+           break;
+    }      
+
+    fclose(fd);
+
+    return(n);
+}
 
 //! Finaliser l'execution du modele et afficher le footer
 int App_End(
@@ -859,13 +909,12 @@ int App_End(
     return (App->Signal > 0) ? 128 + App->Signal : Status;
 }
 
-
 //! Trapper les signaux afin de terminer gracieusement
 void App_TrapProcess(
     //! [in] Signal Signal to be trapped
     const int Signal
 ) {
-    App_Log(APP_INFO, "Trapped signal %i\n", Signal);
+    App_Log(APP_WARNING, "Trapped signal %i\n", Signal);
     App->Signal = Signal;
 
     switch(Signal) {

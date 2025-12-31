@@ -24,6 +24,9 @@
    #define FALSE  0
 #endif
 
+#define APP_PROCESS 0
+#define APP_NODE    1
+
 #define APP_COLOR_BLINK      "\x1b[5m"
 #define APP_COLOR_BLACK      "\x1b[0;30m"
 #define APP_COLOR_RED        "\x1b[0;31m"
@@ -415,6 +418,7 @@ int   App_IsSingleNode(void);
 int   App_IsAloneNode(void);
 int   App_NodeGroup();
 int   App_NodePrint();
+int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
 
 #ifdef HAVE_MPI
 void App_SetMPIComm(MPI_Comm Comm);

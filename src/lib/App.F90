@@ -10,6 +10,7 @@ module app
 
 
     enum, bind(C)
+       enumerator :: APP_PROCESS = 0, APP_NODE = 1
        enumerator :: APP_VERBATIM = -1, APP_ALWAYS = 0, APP_FATAL = 1, APP_SYSTEM = 2, APP_ERROR = 3, APP_WARNING = 4, APP_INFO = 5,          &
           APP_TRIVIAL = 6, APP_DEBUG = 7, APP_EXTRA = 8, APP_QUIET = 9
        enumerator :: APP_MAIN = 0, APP_LIBRMN = 1, APP_LIBFST = 2, APP_LIBBRP = 3, APP_LIBWB = 4, APP_LIBGMM = 5, APP_LIBVGRID = 6, APP_LIBINTERPV = 7,       &
@@ -70,6 +71,20 @@ module app
         integer(C_INT), value :: status
     end FUNCTION
 
+    !   int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
+    integer(C_INT) FUNCTION app_getss(rss,pss,uss) BIND(C, name = "App_GetSS")
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer(C_INT64_T):: rss,pss,uss
+    end FUNCTION
+
+    !   void  App_Stats(char *Tag);
+    integer(C_INT) FUNCTION app_stats4fortran(tag) BIND(C, name = "App_Stats")
+        use, intrinsic :: iso_c_binding
+        implicit none
+        character(kind = C_CHAR), dimension(*), intent(in) :: tag
+    end FUNCTION
+     
     !   void  App_LogStream(char *Stream);
     SUBROUTINE app_logstream4fortran(stream) BIND(C, name = "App_LogStream")
         use, intrinsic :: iso_c_binding
@@ -277,6 +292,17 @@ contains
         c_str = str
         c_str(i+1:i+1) = C_NULL_CHAR
     end FUNCTION
+
+    SUBROUTINE app_stats(tag)
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer :: i
+        character(len = *), intent(in) :: tag
+        character(len = APP_MSGMAX) :: c_str
+
+        c_str = app_strc(tag)
+        i=app_stats4fortran(c_str)
+    end SUBROUTINE
 
     SUBROUTINE app_logstream(stream)
         use, intrinsic :: iso_c_binding

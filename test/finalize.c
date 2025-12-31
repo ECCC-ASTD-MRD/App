@@ -14,6 +14,8 @@ int main() {
     App_Init(APP_MASTER, "finalize_c", "test", "finalize test", "now");
     App_Start();
 
+    App_Stats(NULL);
+
     App_End(0);
 
     return(0);

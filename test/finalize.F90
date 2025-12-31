@@ -4,12 +4,15 @@ program finalize
     implicit none
 
     type(C_FUNPTR) :: func_ptr_to_c
+    integer :: n
 
     func_ptr_to_c=C_FUNLOC(finalizef)
     call app_finalizecallback(func_ptr_to_c)
-    app_ptr = App_Init(0, "finalize_c", "test", "finalize test", "now")
+    app_ptr = App_Init(0, "finalize_f", "test", "finalize test", "now")
     call App_Start()
    
+    call app_stats('')
+
     app_status=app_end(0)
 
 contains
