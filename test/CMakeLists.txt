@@ -33,10 +33,18 @@ if (EC_INIT_DONE LESS 2)
         add_dependencies(check test_app_loglevel_noinit)
 
         add_executable(finalize_c EXCLUDE_FROM_ALL finalize.c)
+        add_test(
+            NAME finalize_c
+            COMMAND $<TARGET_FILE:finalize_c>
+        )
         target_link_libraries(finalize_c App::App)
         add_dependencies(check finalize_c)
 
         add_executable(finalize_f EXCLUDE_FROM_ALL finalize.F90)
+        add_test(
+            NAME finalize_f
+            COMMAND $<TARGET_FILE:finalize_f>
+        )
         target_link_libraries(finalize_f App::App)
         add_dependencies(check finalize_f)
 

@@ -9,7 +9,6 @@ int32_t finalize() {
 int main() {
 
     App_FinalizeCallback(finalize);
-//    App->Finalize=finalize;
 
     App_Init(APP_MASTER, "finalize_c", "test", "finalize test", "now");
     App_Start();
