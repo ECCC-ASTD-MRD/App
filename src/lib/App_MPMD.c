@@ -66,8 +66,10 @@ static char * printIntArray(
     //! [in] Maximum number of elements to print. Use 0 to print all elements.
     const int maxElems
 ) {
+    //! \return Pointer to the string representing the array or NULL on error
     //! \note User must free the returned pointer after use
 
+    if (!array) return NULL;
     int maxVal = 0;
     for (int i = 0; i < nbElems; i++) {
         if (array[i] > maxVal) maxVal = array[i];
@@ -79,14 +81,16 @@ static char * printIntArray(
 
     const int nbPrint = 0 == maxElems ? nbElems : ( nbElems < maxElems ? nbElems : maxElems );
     char * const str = malloc(nbPrint * (width + 2) + 1);
-    char * pos = str + sprintf(str, "{");
-    for (int i = 0; i < nbPrint; i++) {
-        pos = pos + sprintf(pos, fmtStr, array[i]);
-        if (i < nbPrint - 1) {
-            pos = pos + sprintf(pos, ", ");
+    if (str) {
+        char * pos = str + sprintf(str, "{");
+        for (int i = 0; i < nbPrint; i++) {
+            pos = pos + sprintf(pos, fmtStr, array[i]);
+            if (i < nbPrint - 1) {
+                pos = pos + sprintf(pos, ", ");
+            }
         }
+        sprintf(pos, "}");
     }
-    sprintf(pos, "}");
 
     return str;
 }
@@ -802,10 +806,13 @@ MPI_Comm App_MPMD_GetSharedComm(
     //!  If the communicator does not already exist, it will be created.
     //! _This function call is collective if and only if the communicator gets created._
 
+    // Can do much if the list of component is NULL. This also prevents the warning about CWE-690
+    if (components == NULL) return MPI_COMM_NULL;
     TApp * const app = App_GetInstance();
     char * const compStr = printIntArray(nbComponents, components, 0);
 #ifndef NDEBUG
-        printf("%02d %s(%p, %s, %d) from %d(%s)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, app->SelfComponent->id, app->SelfComponent->name);
+        printf("%02d %s(%p, %s, %d) from %d(%s)\n", app->WorldRank, __func__,
+            (void *)app, compStr, nbComponents, app->SelfComponent->id, app->SelfComponent->name);
 #endif
     MPI_Comm sharedComm = MPI_COMM_NULL;
 
