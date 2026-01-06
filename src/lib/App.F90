@@ -263,7 +263,8 @@ contains
         character(len = *) :: version
         character(len = *) :: desc
         character(len = *) :: stamp
-        app_init = app_init4fortran(type, name // C_NULL_CHAR, version // C_NULL_CHAR, desc // C_NULL_CHAR, stamp // C_NULL_CHAR)
+        app_init = app_init4fortran(type, trim(name) // C_NULL_CHAR, trim(version) // C_NULL_CHAR, &
+            trim(desc) // C_NULL_CHAR, trim(stamp) // C_NULL_CHAR)
     end FUNCTION
 
     FUNCTION app_strc(str) result(c_str)
