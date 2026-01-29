@@ -698,7 +698,7 @@ void App_Start(void) {
 }
 
 
-//! Log resource usage
+//! Log resource usage (time, memory, page faults)
 int App_Stats(
     //! Tag to be added to statisitcs line (optional, use NULL otherwise)
     const char * const Tag

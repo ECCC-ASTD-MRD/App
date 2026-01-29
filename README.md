@@ -32,7 +32,7 @@ This packages manages various standard tasks needed by applications like:
    - Signal trapping for stopping model on SIGUSR2/SIGTERM
 - Timing functions
 - Parallel process management OpenMP/MPI
-- MPI memory usage stats 
+- Single process and MPI memory usage stats
 - MPMD MPI process group management
 
 ## Environment variables
