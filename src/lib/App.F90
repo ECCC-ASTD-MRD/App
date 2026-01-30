@@ -78,8 +78,15 @@ module app
         integer(C_INT64_T):: rss,pss,uss
     end FUNCTION
 
-    !   void  App_Stats(char *Tag);
-    integer(C_INT) FUNCTION app_stats4fortran(tag) BIND(C, name = "App_Stats")
+    !   int   App_GetCPU(int32_t *FreqMin,int32_t *FreqMax,int32_t *TempMin,int32_t *TempMax);
+    integer(C_INT) FUNCTION app_getcpu(fmin,fmax,tmin,tmax) BIND(C, name = "App_GetCPU")
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer(C_INT32_T):: fmin,fmax,tmin,tmax
+    end FUNCTION
+
+    !   void  App_LogStats(char *Tag);
+    integer(C_INT) FUNCTION app_logstats4fortran(tag) BIND(C, name = "App_LogStats")
         use, intrinsic :: iso_c_binding
         implicit none
         character(kind = C_CHAR), dimension(*), intent(in) :: tag
@@ -293,7 +300,7 @@ contains
         c_str(i+1:i+1) = C_NULL_CHAR
     end FUNCTION
 
-    SUBROUTINE app_stats(tag)
+    SUBROUTINE app_logstats(tag)
         use, intrinsic :: iso_c_binding
         implicit none
         integer :: i
@@ -301,7 +308,7 @@ contains
         character(len = APP_MSGMAX) :: c_str
 
         c_str = app_strc(tag)
-        i=app_stats4fortran(c_str)
+        i=app_logstats4fortran(c_str)
     end SUBROUTINE
 
     SUBROUTINE app_logstream(stream)

@@ -2,7 +2,7 @@
 
 int32_t finalize() {
 
-    fprintf(stderr,"Finalizing\n");
+    App_Log(APP_INFO,"Finalizing\n");
     return(TRUE);
 }
 
@@ -13,7 +13,7 @@ int main() {
     App_Init(APP_MASTER, "finalize_c", "test", "finalize test", "now");
     App_Start();
 
-    App_Stats(NULL);
+    App_LogStats("C");
 
     App_End(0);
 

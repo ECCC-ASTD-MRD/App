@@ -29,30 +29,35 @@ This packages manages various standard tasks needed by applications like:
    - When using MPI, messages are prepended by the PE number
    - Shows count of error and warnings at end/close of log
 - Process signal trapping
-   - Signal trapping for stopping model on SIGUSR2/SIGTERM
+   - Signal trapping for stopping model on **SIGUSR2**/**SIGTERM**
 - Timing functions
 - Parallel process management OpenMP/MPI
 - Single process and MPI memory usage stats
 - MPMD MPI process group management
 
 ## Environment variables
-- APP_PARAMS        : List of parameters for the application (instead of giving on command line)
-- APP_VERBOSE       : Define global verbose level (ERROR, WARNING, INFO, STAT, TRIVIAL, DEBUG, EXTRA, QUIET) default: WARNING
-- APP_VERBOSE_[lib] : Verbose level per library, overrides global (lib=[RMN, FST, BRP, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH])
-- APP_VERBOSE_NOBOX : Do not display header and footer
-- APP_VERBOSE_COLOR : Use color in log messages
-- APP_VERBOSE_TIME  : Display time for each message (NONE, DATETIME, TIME, SECOND, MSECOND) default:NONE
-- APP_VERBOSE_UTC   : Display time in UTC
-- APP_VERBOSE_RANK  : Enable log on a specific rank default:0 (-1=all rank)
-- APP_VERBOSE_THREAD: Display thread id default:FALSE (be aware that id might not be an ordered 0 to nbthread)
-- APP_TOLERANCE     : Tolerance level trigerring an exit (ERROR, SYSTEM, FATAL, QUIET) default:QUIET
-- APP_NOTRAP        : Disable signal trapping (SIGTERM, SIGUSR2)
-- APP_LOG_SPLIT     : Split log stream/file per MPI PE
-- APP_LOG_STREAM    : Define log stream/file (stdout, stderr, filename) default:stderr
-- APP_LOG_FLUSH     : Force flush of buffers at every message (default flush only on error)
+- **APP_PARAMS**        : List of parameters for the application (instead of giving on command line)
+- **APP_VERBOSE**      : Define global verbose level (**ERROR, WARNING, INFO, STAT, TRIVIAL, DEBUG, EXTRA, QUIET**) default: **WARNING**
+   - Log level **STAT** can be expanded to include which type of statisics from the **App_LogStat** function you want to be output (**TIME,MEM,CPU**). Default is to output all stats but you can specify which ones as **STAT**:[type]. ex:
+      - **STAT:TIME** : Prints the real, user and system time of the process
+      - **STAT:MEM**  : Prints the resident, proportional and unique memory setsize 
+      - **STAT:CPU**  : Prints the CPU frequency and temperature range 
+      - **STAT:TIME:MEM**
+- **APP_VERBOSE_[lib]** : Verbose level per library, overrides global (lib=[**RMN, FST, BRP, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH**])
+- **APP_VERBOSE_NOBOX** : Do not display header and footer
+- **APP_VERBOSE_COLOR** : Use color in log messages
+- **APP_VERBOSE_TIME**  : Display time for each message (**NONE, DATETIME, TIME, SECOND, MSECOND**) default:**NONE**
+- **APP_VERBOSE_UTC**   : Display time in UTC
+- **APP_VERBOSE_RANK**  : Enable log on a specific rank default:0 (-1=all rank)
+- **APP_VERBOSE_THREAD**: Display thread id default:FALSE (be aware that id might not be an ordered 0 to nbthread)
+- **APP_TOLERANCE**     : Tolerance level trigerring an exit (**ERROR, SYSTEM, FATAL, QUIET**) default:**QUIET**
+- **APP_NOTRAP**        : Disable signal trapping (**SIGTERM, SIGUSR2**)
+- **APP_LOG_SPLIT**     : Split log stream/file per MPI PE
+- **APP_LOG_STREAM**    : Define log stream/file (**stdout, stderr, filename**) default:stderr
+- **APP_LOG_FLUSH**     : Force flush of buffers at every message (default flush only on error)
 
-- CMCLNG           : Language to use (francais, english)
-- OMP_NUM_THREADS  : Number of openMP threads (for internal purposes)
+- **CMCLNG**           : Language to use (**francais, english**)
+- **OMP_NUM_THREADS**  : Number of openMP threads (for internal purposes)
 
 ## Example output log
 ```

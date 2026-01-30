@@ -11,7 +11,7 @@ program finalize
     app_ptr = App_Init(0, "finalize_f", "test", "finalize test", "now")
     call App_Start()
    
-    call app_stats('')
+    call app_logstats('FORTRAN')
 
     app_status=app_end(0)
 
@@ -23,7 +23,7 @@ contains
 
         integer(C_INT32_T) :: finalizef
 
-        write(6,*) "Finalizing"
+        call app_log(APP_INFO,"Finalizing");
         finalizef=1
 
         return
