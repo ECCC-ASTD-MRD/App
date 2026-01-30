@@ -130,7 +130,7 @@ void App_InitEnv() {
             if ((envVarVal = getenv("APP_VERBOSE_NOBOX"))) {
                 App->LogNoBox = TRUE;
             }
-            if ((envVarVal = getenv("APP_VERBOSE_COLOR"))) {
+            if (isatty(1) && (envVarVal = getenv("APP_VERBOSE_COLOR"))) {
                 App->LogColor = TRUE;
             }
             if ((envVarVal = getenv("APP_VERBOSE_TIME"))) {
