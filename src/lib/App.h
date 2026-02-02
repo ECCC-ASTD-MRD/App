@@ -243,6 +243,7 @@ typedef enum {
 }
 #define APP_MPI_IN_PLACE(Fld) (App->RankMPI ? (Fld) : MPI_IN_PLACE)
 
+
 //! MPDP component description
 typedef struct {
     //! ID of this component, corresponds to MPI_APPNUM
@@ -253,11 +254,10 @@ typedef struct {
     MPI_Comm comm;
     //! Number of PEs in this component
     int size;
-    //! Whether this component has been shared to other PEs of this PE's component
-    int shared;
-    //! Global ranks (in the main_comm of the context) of the members of this component
-    int * ranks;
+    //! World to rank of the component's PE0
+    int pe0WorldRank;
 } TComponent;
+
 
 //! A series of components that share a communicator
 typedef struct {

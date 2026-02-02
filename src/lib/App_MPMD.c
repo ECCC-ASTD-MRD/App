@@ -59,7 +59,7 @@ static const TComponentSet defaultSet = {
 
 
 //! Create a new string containing a textual representation of an array of positive integers
-static char * printIntArray(
+static char * intArrayStr(
     //! [in] Number of elements in the array
     const int nbElems,
     //! [in] Array to print
@@ -120,6 +120,10 @@ static TComponent * findUniqueComponents(
     (*nbComponents)++;
     TComponent * const uniqueComponents = (TComponent *)calloc(*nbComponents, sizeof(TComponent));
     for (int compIdx = 0; compIdx < *nbComponents; compIdx++) {
+        // Initialize the component attributes to make debugging easier
+        uniqueComponents[compIdx].comm = MPI_COMM_NULL;
+        uniqueComponents[compIdx].size = -1;
+        uniqueComponents[compIdx].pe0WorldRank = -1;
         for (int i = 0; i < worldSize; i++) {
             if (peComponentIds[i].id == compIdx) {
                 uniqueComponents[compIdx].id = peComponentIds[i].id;
@@ -198,10 +202,8 @@ int App_MPMD_GetComponentPeWRank(
 
     const TApp * const app = App_GetInstance();
 
-    if (componentId >= 0 && componentId < app->NumComponents) {
-        if (localRank >= 0 && localRank < app->AllComponents[componentId].size) {
-            return app->AllComponents[componentId].ranks[localRank];
-        }
+    if (localRank >= 0 && localRank < app->SelfComponent->size) {
+        return app->SelfComponent->pe0WorldRank + localRank;
     }
     return -1;
 }
@@ -232,25 +234,29 @@ static void getCommStr(
 
 
 //! Fill the provided buffer with a string representing the ranks
-static void getRanksStr(
-    //! [in] Number of elements in the ranks array
-    const int nbRanks,
+static char * getRanksStr(
+    //! [in] Component size
+    const int size,
     //! [in] Array of the PE ranks
-    const int ranks[nbRanks],
+    const int pe0WorldRank,
     //! [in] Print the actual ranks if true
-    const int withNumbers,
-    //! [out] Output buffer. Should be at least 8*15 characters long (120?)
-    char * const buffer
+    const int withNumbers
 ) {
-    if (ranks == NULL) {
-        strcpy(buffer, "NULL");
-    } else if (!withNumbers) {
-        strcpy(buffer, "{...}");
+    //! \return Pointer to the string containing the ranks. Caller must free this pointer when no longer needed.
+
+    if (!withNumbers) {
+        char * const rankStr = malloc(6 * sizeof(char));
+        strcpy(rankStr, "{...}");
+        return rankStr;
     } else {
         const int MAX_PRINT = 15;
-        char * const rankStr = printIntArray(nbRanks, ranks, MAX_PRINT);
-        strcpy(buffer, rankStr);
-        free(rankStr);
+        int * const ranks = malloc(size * sizeof(int));
+        for (int i = 0; i < size; i++) {
+            ranks[i] = pe0WorldRank + i;
+        }
+        char * const rankStr = intArrayStr(size, ranks, MAX_PRINT);
+        free(ranks);
+        return rankStr;
     }
 }
 
@@ -280,18 +286,17 @@ static void printComponent(
     const int verbose
 ) {
     char commStr[32];
-    char ranksStr[256];
 
     getCommStr(comp->comm, commStr);
-    getRanksStr(comp->size, comp->ranks, verbose, ranksStr);
+    char * const ranksStr = getRanksStr(comp->size, comp->pe0WorldRank, verbose);
     App_Log(APP_DEBUG,
             "Component %s: \n"
             "  id:              %d\n"
             "  comm:            %s\n"
             "  size:            %d\n"
-            "  shared:          %d\n"
             "  ranks:           %s\n",
-            App_MPMD_ComponentIdToName(comp->id), comp->id, commStr, comp->size, comp->shared, ranksStr);
+            App_MPMD_ComponentIdToName(comp->id), comp->id, commStr, comp->size, ranksStr);
+    free(ranksStr);
 }
 
 
@@ -395,27 +400,23 @@ int App_MPMD_Init() {
         MPI_Comm_rank(app->SelfComponent->comm, &app->ComponentRank);
         MPI_Comm_size(app->SelfComponent->comm, &app->SelfComponent->size);
 
-        // Declare that rank 0 of this component is "active" as a logger
-        if (app->ComponentRank == 0) App_LogRank(app->WorldRank);
-        // App_Log(APP_INFO, "%s: Initializing component %s (ID %d) with %d PEs\n", __func__, app->Name, componentId, app->SelfComponent->size);
+        if (app->ComponentRank == 0) {
+            // Declare that rank 0 of this component is "active" as a logger
+            App_LogRank(app->WorldRank);
+            // App_Log(APP_INFO, "%s: Initializing component %s (ID %d) with %d PEs\n", __func__, app->Name, componentId, app->SelfComponent->size);
+        }
 
         if (app->WorldRank == 0 && app->ComponentRank != 0) {
+            //! \todo Remove this? How would it even be possible?
             App_Log(APP_FATAL, "%s: Global root should also be the root of its own component\n", __func__);
             app->SelfComponent = NULL;
         } else {
             // Create a communicator with the roots of each component
             MPI_Comm rootsComm = MPI_COMM_NULL;
-            int rootRank = -1; // Rank of the root in the rootsComm communicator
-            int rootSize = -1;
             {
                 const int isComponentRoot = app->ComponentRank == 0 ? 0 : MPI_UNDEFINED;
                 // Use component ID as key so that the components are sorted in ascending order
                 MPI_Comm_split(MPI_COMM_WORLD, isComponentRoot, app->WorldRank, &rootsComm);
-                // The PEs that are not to roots get the MPI_COMM_NULL communicator which causes most MPI functions to fail
-                if (rootsComm != MPI_COMM_NULL) {
-                    MPI_Comm_rank(rootsComm, &rootRank);
-                    MPI_Comm_size(rootsComm, &rootSize);
-                }
             }
 
             // Each component root should have a list of the world rank of every other root
@@ -426,52 +427,11 @@ int App_MPMD_Init() {
             }
             // Send the component roots to everyone
             MPI_Bcast(&rootWorldRanks, app->NumComponents, MPI_INT, 0, MPI_COMM_WORLD);
-            MPI_Bcast(&rootRank, 1, MPI_INT, 0, app->SelfComponent->comm);
 
-            // Determine global ranks of the PEs in this component and share with other components
-
-            // Self-component info that is only valid on a PE from this component
-            app->SelfComponent->ranks = malloc(app->SelfComponent->size * sizeof(int));
-
-            // Each component gathers the world ranks of its members
-            MPI_Allgather(&app->WorldRank, 1, MPI_INT, app->SelfComponent->ranks, 1, MPI_INT, app->SelfComponent->comm);
-            app->SelfComponent->shared = 1;
-
-    #ifndef NDEBUG
-            printf("PE %d shared = %d\n", app->WorldRank, app->SelfComponent->shared);
-    #endif
-            // Share the number of PEs in each component
+            // Share the number of PEs in each component and the world rank of each component's PE0
             for (int i = 0; i < app->NumComponents; i++) {
-                // \todo Make sure that rootWorldRanks is in the same order as app->AllComponents
                 MPI_Bcast(&app->AllComponents[i].size, 1, MPI_INT, rootWorldRanks[i], MPI_COMM_WORLD);
-            }
-
-            {
-                char rankStr[1024];
-                char * pos = &rankStr[0];
-                for (int i = 0;  i < app->SelfComponent->size; i++) {
-                    pos = pos + sprintf(pos, "%d", app->SelfComponent->ranks[i]);
-                    if (i < app->SelfComponent->size - 1) {
-                        pos = pos + sprintf(pos, ", ");
-                    }
-                }
-    #ifndef NDEBUG
-                printf("PE %d : %d - %d/%d ranks = %s\n", app->WorldRank, app->SelfComponent->id, app->ComponentRank, app->SelfComponent->size, rankStr);
-    #endif
-            }
-
-            // Every component root (one by one) sends the ranks of its members to every other component root
-            // This way seems easier than to set up everything to be able to use MPI_Allgatherv
-            // We only send the list of all other ranks to the roots (rather than aaalllll PEs) to avoid a bit
-            // of communication and storage
-            if (app->ComponentRank == 0) {
-                for (int i = 0; i < app->NumComponents; i++) {
-                    if (app->AllComponents[i].ranks == NULL) {
-                        app->AllComponents[i].ranks = malloc(app->AllComponents[i].size * sizeof(int));
-                    }
-
-                    MPI_Bcast(app->AllComponents[i].ranks, app->AllComponents[i].size, MPI_INT, i, rootsComm);
-                }
+                app->AllComponents[i].pe0WorldRank = rootWorldRanks[i];
             }
 
             // Print some info about the components, for debugging
@@ -504,19 +464,14 @@ void App_MPMD_Finalize() {
             if (app->Sets != NULL) {
                 for (int i = 0; i < app->NbSets; i++) {
                     free(app->Sets[i].componentIds);
-                    MPI_Comm_free(&(app->Sets[i].comm));
-                    MPI_Group_free(&(app->Sets[i].group));
+                    if (app->Sets[i].comm != MPI_COMM_NULL) MPI_Comm_free(&(app->Sets[i].comm));
+                    if (app->Sets[i].group != MPI_GROUP_EMPTY) MPI_Group_free(&(app->Sets[i].group));
                 }
                 free(app->Sets);
                 app->Sets = NULL;
             }
             app->NbSets = 0;
 
-            for (int i = 0; i < app->NumComponents; i++) {
-                if (app->AllComponents[i].ranks != NULL) {
-                    free(app->AllComponents[i].ranks);
-                }
-            }
             MPI_Comm_free(&(app->SelfComponent->comm));
             free(app->AllComponents);
             app->AllComponents = NULL;
@@ -552,7 +507,7 @@ static void printList(
     const int list[size]
 ) {
     if (App_LogLevel(NULL) >= APP_EXTRA) {
-        char * const str = printIntArray(size, list, 0);
+        char * const str = intArrayStr(size, list, 0);
         App_Log(APP_EXTRA, "List: %s\n", str);
         free(str);
     }
@@ -654,7 +609,7 @@ static TComponentSet * findSet(
 
 #ifndef NDEBUG
     {
-        char * const compStr = printIntArray(nbComponents, components, 0);
+        char * const compStr = intArrayStr(nbComponents, components, 0);
         printf("%02d %s(%p, %s, %d, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, nbPes);
         free(compStr);
     }
@@ -694,6 +649,18 @@ static void initComponentSet(
     //! [in] MPI group that contains all (global) PEs from the given components
     const MPI_Group group
 ) {
+    #ifndef NDEBUG
+    {
+        char * const compStr = intArrayStr(nbComponents, componentIds, 0);
+        printf("%s(%s, %d, %d, %d, %d)\n", __func__, compStr, nbComponents, nbPes, comm, group);
+        free(compStr);
+    }
+    #endif
+
+    // When calling this function for a set containing the PE0s only, not all PEs will be
+    // part of the new set. Therefore, to group for those process will be MPI_GROUP_EMPTY and
+    // the communicator will be MPI_COMM_NULL
+
     set->nbComponents = nbComponents;
     set->componentIds = (int*)malloc(nbComponents * sizeof(int));
     memcpy(set->componentIds, componentIds, nbComponents * sizeof(int));
@@ -716,13 +683,13 @@ static TComponentSet * createSet(
 ) {
     //! This will create a communicator for them.
     //! \return A newly-created set (pointer). NULL on error
-#ifndef NDEBUG
+    #ifndef NDEBUG
     {
-        char * const compStr = printIntArray(nbComponents, components, 0);
+        char * const compStr = intArrayStr(nbComponents, components, 0);
         printf("%02d %s(%p, %s, %d, %d)\n", app->WorldRank, __func__, (void *)app, compStr, nbComponents, pes0Only);
         free(compStr);
     }
-#endif
+    #endif
 
     if (app->Sets == NULL) {
         // Choose (arbitrarily) initial array size to be the total number of components in the context
@@ -746,63 +713,59 @@ static TComponentSet * createSet(
     TComponentSet * const newSet = &app->Sets[app->NbSets];
     *newSet = defaultSet;
 
-    // Share the world ranks of other components among all PEs of this component (if not done already)
-    for (int i = 0; i < nbComponents; i++) {
-        TComponent * const comp = &app->AllComponents[components[i]];
-        if (!comp->shared) {
-            if (comp->ranks == NULL) comp->ranks = (int*)malloc(comp->size * sizeof(int));
-            MPI_Bcast(comp->ranks, comp->size, MPI_INT, 0, app->SelfComponent->comm);
-            comp->shared = 1;
-        }
-    }
-
     // Create the set
     {
-        MPI_Group mainGroup;
-        MPI_Group unionGroup;
-        MPI_Comm  unionComm;
+        MPI_Group mainGroup = MPI_GROUP_EMPTY;
+        MPI_Group unionGroup = MPI_GROUP_EMPTY;
+        MPI_Comm unionComm = MPI_COMM_NULL;
 
         MPI_Comm_group(app->MainComm, &mainGroup);
 
         int newGroupSize = 0;
         if (pes0Only) {
-            newGroupSize = nbComponents;
+            if (app->ComponentRank == 0) {
+                newGroupSize = nbComponents;
 
-            int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
+                int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
 
-            for (int i = 0; i < nbComponents; i++) {
-                newGroupRanks[i] = app->AllComponents[components[i]].ranks[0];
+                for (int i = 0; i < nbComponents; i++) {
+                    newGroupRanks[i] = app->AllComponents[components[i]].pe0WorldRank;
+                }
+                MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
+                free(newGroupRanks);
+
+                // This call is collective among all group members, but not main_comm
+                MPI_Comm_create_group(app->MainComm, unionGroup, 0, &unionComm);
             }
-            MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
-            free(newGroupRanks);
         } else {
             for (int i = 0; i < nbComponents; i++) {
                 newGroupSize += app->AllComponents[components[i]].size;
             }
 
             int * const newGroupRanks = (int*) malloc(newGroupSize * sizeof(int));
+            //! Build the list of the component's world ranks
             int currentPe = 0;
             for (int i = 0; i < nbComponents; i++) {
                 const TComponent * const comp = &(app->AllComponents[components[i]]);
-                memcpy(newGroupRanks + currentPe, comp->ranks, comp->size * sizeof(int));
-                currentPe += comp->size;
+                for (int localRank = 0; localRank < comp->size; localRank++) {
+                    newGroupRanks[currentPe++] = comp->pe0WorldRank + localRank;
+                }
             }
             MPI_Group_incl(mainGroup, newGroupSize, newGroupRanks, &unionGroup);
             free(newGroupRanks);
-        }
 
-        // This call is collective among all group members, but not main_comm
-        MPI_Comm_create_group(app->MainComm, unionGroup, 0, &unionComm);
+            // This call is collective among all group members, but not main_comm
+            MPI_Comm_create_group(app->MainComm, unionGroup, 0, &unionComm);
+        }
 
         // Initialize in place, in the list of sets
         initComponentSet(newSet, nbComponents, components, newGroupSize, unionComm, unionGroup);
         app->NbSets++;
     }
 
-#ifndef NDEBUG
-    MPI_Barrier(newSet->comm);
-    printf("%02d %s : return newSet\n", app->WorldRank, __func__);
-#endif
+    #ifndef NDEBUG
+        printf("%02d %s : return newSet\n", app->WorldRank, __func__);
+    #endif
 
     return newSet;
 }
@@ -825,18 +788,18 @@ MPI_Comm App_MPMD_GetSharedComm(
     // Can do much if the list of component is NULL. This also prevents the warning about CWE-690
     if (components == NULL) return MPI_COMM_NULL;
     TApp * const app = App_GetInstance();
-    char * const compStr = printIntArray(nbComponents, components, 0);
-#ifndef NDEBUG
+    char * const compStr = intArrayStr(nbComponents, components, 0);
+    #ifndef NDEBUG
         printf("%02d %s(%p, %s, %d, %d) from %d(%s)\n", app->WorldRank, __func__,
             (void *)app, compStr, nbComponents, pes0Only, app->SelfComponent->id, app->SelfComponent->name);
-#endif
+    #endif
     MPI_Comm sharedComm = MPI_COMM_NULL;
 
     // Sanitize the list of components
     int nbUniqueComponents = 0;
     int * const uniqueComponents = cleanComponentList(nbComponents, components, &nbUniqueComponents);
 
-    char * const uniqueStr = printIntArray(nbUniqueComponents, uniqueComponents, 0);
+    char * const uniqueStr = intArrayStr(nbUniqueComponents, uniqueComponents, 0);
     App_Log(APP_DEBUG, "%s: Retrieving/creating shared comm for components %s (%s)\n", __func__, compStr, uniqueStr);
 
     // Make sure there are enough components in the list
@@ -855,9 +818,9 @@ MPI_Comm App_MPMD_GetSharedComm(
         }
     }
     if (!found) {
-#ifndef NDEBUG
-        printf("%02d %s : Comp %d(%s) not in %s!\n", app->WorldRank, __func__, app->SelfComponent->id, app->SelfComponent->name, compStr);
-#endif
+        #ifndef NDEBUG
+            printf("%02d %s : Comp %d(%s) not in %s!\n", app->WorldRank, __func__, app->SelfComponent->id, app->SelfComponent->name, compStr);
+        #endif
         App_Log(APP_WARNING, "%s: You must include self component (%d[%s]) in the list of components"
             " when requesting a shared communicator!\n Requested %s\n", __func__, app->SelfComponent->id, app->SelfComponent->name, compStr);
         goto end;
@@ -865,12 +828,23 @@ MPI_Comm App_MPMD_GetSharedComm(
 
     // Check whether a communicator has already been created for this set of components
     {
-        const TComponentSet * set = findSet(app, nbUniqueComponents, uniqueComponents, pes0Only ? nbUniqueComponents : -1);
+        // Compute the total number of PEs in the unique components
+        int nbPe = 0;
+        for (int i = 0; i < nbUniqueComponents; i++) {
+            for (int j = 0; j < app->NumComponents; j++) {
+                if (app->AllComponents[j].id == uniqueComponents[i]) {
+                    nbPe += app->AllComponents[j].size;
+                    break;
+                }
+            }
+        }
+
+        const TComponentSet * set = findSet(app, nbUniqueComponents, uniqueComponents, pes0Only ? nbUniqueComponents : nbPe);
         if (set) {
-#ifndef NDEBUG
-            printf("%02d (PE %02d of comp %s) Found already existing set for %s\n",
-                app->WorldRank, app->ComponentRank, app->SelfComponent->name, compStr);
-#endif
+            #ifndef NDEBUG
+                printf("%02d (PE %02d of comp %s) Found already existing set for %s\n",
+                    app->WorldRank, app->ComponentRank, app->SelfComponent->name, compStr);
+            #endif
             App_Log(APP_DEBUG, "%s: Found already existing set at %p\n", __func__, set);
             sharedComm = set->comm;
             goto end;
@@ -895,9 +869,9 @@ end:
     free(uniqueComponents);
     free(compStr);
     free(uniqueStr);
-#ifndef NDEBUG
-    printf("%02d %s return sharedComm\n", app->WorldRank, __func__);
-#endif
+    #ifndef NDEBUG
+        printf("%02d %s return sharedComm\n", app->WorldRank, __func__);
+    #endif
     return sharedComm;
 }
 
