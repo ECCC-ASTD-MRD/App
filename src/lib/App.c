@@ -698,33 +698,151 @@ void App_Start(void) {
 }
 
 
-//! Log resource usage
-int App_Stats(
+//! Log resource usage (time, memory, page faults)
+int App_LogStats(
     //! Tag to be added to statisitcs line (optional, use NULL otherwise)
     const char * const Tag
 ) {
     //! \return Always TRUE
     struct rusage  usg;
     struct timeval end, dif;
+    struct utsname sysbuf;
+    int64_t rss,pss,uss;
+    int32_t fmin,fmax,tmin,tmax;
+    char tag[256];
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
-        gettimeofday(&end, NULL);
-        timersub(&end, &App->Time, &dif);
-        getrusage(RUSAGE_SELF, &usg);
-
-        if (Tag) {
-            App_Log(APP_STAT, ":%s: Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
-                Tag, dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
-                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
+        if (Tag && strlen(Tag)) {
+           snprintf(tag,255,":%s:",Tag);    
         } else {
-            App_Log(APP_STAT, "Elapsed: %.3f, User: %.3f, System: %.3f, RSS: %d Swap: %d, MinorFLT: %d, MajorFLT: %d\n",
+           tag[0]='\0'; 
+        }
+
+        getrusage(RUSAGE_SELF, &usg);
+        if (!App->LogStat || App->LogStat&APP_STAT_TIME) {
+            gettimeofday(&end, NULL);
+            timersub(&end, &App->Time, &dif);
+            App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n",tag,
                 dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
-                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6, usg.ru_maxrss, usg.ru_nswap, usg.ru_minflt, usg.ru_majflt);
+                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6);
+        }
+        if (!App->LogStat || App->LogStat&APP_STAT_MEM) {
+           App_GetSS(&rss,&pss,&uss);
+           App_Log(APP_STAT, "%sMEM : RSS(kB)=%ld PSS(kB)=%ld USS(kB)=%ld MinorFLT=%d MajorFLT=%d\n",tag,
+               rss, pss, uss, usg.ru_minflt, usg.ru_majflt);
+        }
+        if (!App->LogStat || App->LogStat&APP_STAT_CPU) {
+           uname(&sysbuf);
+           App_GetCPU(&fmin,&fmax,&tmin,&tmax);
+           App_Log(APP_STAT, "%sCPU : Node=%s, Freq(MHz)=%d-%d Temp(°C)=%d-%d\n",tag,
+              sysbuf.nodename,fmin,fmax,tmin,tmax);
         }
     }
     return TRUE;
 }
 
+//! Get memory usage info
+int App_GetSS(
+    //! [out] (RSS) Resident Set Size    : Private memory of the process itself and total shared memory used
+    int64_t *RSS,
+    //! [out] (PSS) Proportional Set Size: Private memory of the process itself and a partitioned size of the shared memory
+    int64_t *PSS,
+    //! [out] (USS) Unique Set Size      : Private memory of a process
+    int64_t *USS
+) {
+
+    FILE *fd=NULL;
+    char *line,buf[1024],field[64];
+    int   len,n=0;
+    
+    *RSS=0,*PSS=0,*USS=0;
+
+    fd=fopen("/proc/self/smaps_rollup","re");
+
+    while ((line=fgets(buf, sizeof(buf), fd))) {
+       // Extract line components
+        if (sscanf(buf, "%63s %n", field, &len) == 1 && *field && field[strlen(field) - 1] == ':') {
+            const char* c = line + len;
+            // Only parse P* and R* lines
+            if (field[0]=='P') {
+                if (strncmp(field, "Pss:", 4) == 0) {
+                    *PSS = strtoull(c, NULL, 10); n++;
+                } else if (strncmp(field, "Private_Clean:", 14) == 0) {
+                    *USS += strtoull(c, NULL, 10); n++;
+                } else if (strncmp(field, "Private_Dirty:", 14) == 0) {
+                    *USS +=strtoull(c, NULL, 10); n++;
+                }
+            } else if (field[0]=='R') {
+                if (strncmp(field, "Rss:", 4) == 0) {
+                    *RSS = strtoull(c, NULL, 10); n++;
+                }
+            }
+        }
+
+        // We only need 4 values
+        if (n==4)
+           break;
+    }      
+
+    fclose(fd);
+
+    return(n);
+}
+
+//! Get CPU Frequency and temperature range
+int App_GetCPU(
+    //! [out] Minimum CPU frequency
+    int32_t *FreqMin,
+    //! [out] Maximum CPU frequency
+    int32_t *FreqMax,
+    //! [out] Minimum CPU temperature
+    int32_t *TempMin,
+    //! [out] Maximum CPU temperature
+    int32_t *TempMax
+) {
+
+    FILE *fd=NULL;
+    char *line,buf[1024];
+    int    n=0;
+    double freq,temp;
+    
+    *FreqMin=1<<30;
+    *FreqMax=0;
+    *TempMin=1<<30;
+    *TempMax=0;
+    
+    // Get CPU frequency range
+    fd=fopen("/proc/cpuinfo","re");
+
+    while ((line=fgets(buf, sizeof(buf), fd))) {
+        // Extract line components
+        if (strstr(line, "cpu MHz")) {
+            // Found the line, parse the frequency
+            sscanf(line, "%*s %*s : %lf", &freq);
+
+            *FreqMin=MIN(*FreqMin,freq);
+            *FreqMax=MAX(*FreqMax,freq);
+        }
+    }      
+
+    fclose(fd);
+
+    // Get CPU temperature range
+    for(n=0;n<256;n++) {
+        snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/temp",n);
+        if ((fd=fopen(buf,"re"))) {
+           fscanf(fd, "%lf", &temp);
+           temp/=1000;
+           *TempMin=MIN(*TempMin,temp);
+           *TempMax=MAX(*TempMax,temp);
+           fclose(fd);
+        } else {
+            break;
+        }
+    }      
+
+    return(n);
+}
 
 //! Finaliser l'execution du modele et afficher le footer
 int App_End(
@@ -859,13 +977,12 @@ int App_End(
     return (App->Signal > 0) ? 128 + App->Signal : Status;
 }
 
-
 //! Trapper les signaux afin de terminer gracieusement
 void App_TrapProcess(
     //! [in] Signal Signal to be trapped
     const int Signal
 ) {
-    App_Log(APP_INFO, "Trapped signal %i\n", Signal);
+    App_Log(APP_WARNING, "Trapped signal %i\n", Signal);
     App->Signal = Signal;
 
     switch(Signal) {
@@ -1209,6 +1326,21 @@ int Lib_LogLevel(
             App->LogLevel[lib] = APP_INFO;
         } else if (strncasecmp(level, "STAT", 4) == 0) {
             App->LogLevel[lib] = APP_STAT;
+            int n=5;
+            while(level[n]!='\0') {
+                if (strncasecmp(&level[n], "TIM", 3) == 0) {
+                    App->LogStat|=APP_STAT_TIME;
+                    n+=5;
+                } else if (strncasecmp(&level[n], "MEM", 3) == 0) {
+                    App->LogStat|=APP_STAT_MEM;
+                    n+=4;
+                } else if (strncasecmp(&level[n], "CPU", 3) == 0) {
+                    App->LogStat|=APP_STAT_CPU;
+                    n+=4;
+                } else {
+                    break;
+                }
+            } 
         } else if (strncasecmp(level, "TRIVIAL", 7) == 0) {
             App->LogLevel[lib] = APP_TRIVIAL;
         } else if (strncasecmp(level, "DEBUG", 5) == 0) {

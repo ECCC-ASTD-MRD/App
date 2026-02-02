@@ -24,6 +24,9 @@
    #define FALSE  0
 #endif
 
+#define APP_PROCESS 0
+#define APP_NODE    1
+
 #define APP_COLOR_BLINK      "\x1b[5m"
 #define APP_COLOR_BLACK      "\x1b[0;30m"
 #define APP_COLOR_RED        "\x1b[0;31m"
@@ -118,6 +121,12 @@ typedef enum {
     //! Quiet \todo Say what quiet actually does
     APP_QUIET = 10
 } TApp_LogLevel;
+
+typedef enum {
+   APP_STAT_TIME = 0x01,
+   APP_STAT_MEM  = 0x02,
+   APP_STAT_CPU  = 0x04
+} TApp_Stats;
 
 //! Log date detail level
 typedef enum {
@@ -303,6 +312,7 @@ typedef struct {
    int            LogError;              ///< Number of errors
    int            LogColor;              ///< Use coloring in the logs
    TApp_LogTime   LogTime;               ///< Display time in the logs
+   TApp_Stats     LogStat;               ///< Statistics to ouput when LogLevel=STAT (default=all)
    TApp_LogLevel  LogLevel[APP_LIBSMAX]; ///< Level of log
    TApp_LogLevel  Tolerance;             ///< Abort level
    TApp_State     State;                 ///< State of application
@@ -374,7 +384,7 @@ void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
 int   App_FinalizeCallback(int32_t (*func)(void));
-int   App_Stats(const char * const Tag);
+int   App_LogStats(const char * const Tag);
 void  Lib_Log(const TApp_Lib lib, const TApp_LogLevel level, const char * const format, ...);
 int   Lib_LogLevel(const TApp_Lib Lib, const char * const Val);
 int   Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val);
@@ -417,6 +427,8 @@ int   App_IsSingleNode(void);
 int   App_IsAloneNode(void);
 int   App_NodeGroup();
 int   App_NodePrint();
+int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
+int   App_GetCPU(int32_t *FreqMin,int32_t *FreqMax,int32_t *TempMin,int32_t *TempMax);
 
 #ifdef HAVE_MPI
 void App_SetMPIComm(MPI_Comm Comm);
