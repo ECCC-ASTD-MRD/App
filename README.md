@@ -26,11 +26,12 @@ This packages manages various standard tasks needed by applications like:
    - Standard and uniform way of displaying messages at various levels
    - Manages dependent libraries if they also use this mecanism (App_Log)
    - Optional time information, time step number and color by message type
-   - When using MPI, messages are prepended by the PE number
+   - When using MPI, you can select the logging PE, or  if logging from multiple PE, messages are prepended by the PE number
    - Shows count of error and warnings at end/close of log
 - Process signal trapping
    - Signal trapping for stopping model on **SIGUSR2**/**SIGTERM**
 - Timing functions
+- Processes and system information / statistics functions
 - Parallel process management OpenMP/MPI
 - Single process and MPI memory usage stats
 - MPMD MPI process group management
@@ -68,6 +69,9 @@ Libraries      :
    vgrid       : 6.9.0
    georef      : 0.1.0
 
+System         : ppp6login-001 (x86_64)
+OS             : Linux 4.18.0-372.9.1.el8.x86_64 (#1 SMP Fri Apr 15 22:12:19 EDT 2022)
+
 Start time     : Thu Jan 12 19:43:45 2023
 OpenMP threads : 4 (Standard: 201611 -- OpenMP >4.5)
 MPI processes  : 13 (Standard: 3.1)
@@ -93,6 +97,12 @@ Application    : iris 0.0.1 (2023-01-12T19:43:07Z)
 
 Finish time    : Thu Jan 12 19:43:45 2023
 Execution time : 0.2989 seconds (0.56 ms logging)
+Resident mem   : 723.2 MB
+   Average     : 120.5 MB
+   Minimum     : 119.3 MB (rank 3)
+   Maximum     : 124.5 MB (rank 0)
+   STD         : 1.9 MB
+   Above 1 STD : 124.5 MB (rank 0)
 Status         : Ok (0 Warnings)
 -------------------------------------------------------------------------------------
 ```
