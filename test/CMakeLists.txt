@@ -77,6 +77,9 @@ if (EC_INIT_DONE LESS 2)
 
             add_library(mpmd_helper EXCLUDE_FROM_ALL mpmd_helper.F90)
             target_link_libraries(mpmd_helper App::App-ompi)
+            add_executable(mpmd_pe0only EXCLUDE_FROM_ALL mpmd_pe0only.c)
+            target_link_libraries(mpmd_pe0only App::App-ompi)
+            add_dependencies(check mpmd_pe0only)
             add_executable(mpmd_1 EXCLUDE_FROM_ALL mpmd_1.F90)
             target_link_libraries(mpmd_1 App::App-ompi mpmd_helper)
             add_dependencies(check mpmd_1)
@@ -103,6 +106,11 @@ if (EC_INIT_DONE LESS 2)
             )
             add_test(NAME set_comm COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 2 $<TARGET_FILE:set_comm>
+            )
+            add_test(NAME mpmd_pe0only COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+                    -n 3 $<TARGET_FILE:mpmd_pe0only> 3 :
+                    -n 5 $<TARGET_FILE:mpmd_pe0only> 5 :
+                    -n 7 $<TARGET_FILE:mpmd_pe0only> 7
             )
             add_test(NAME mpmd1 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 1 $<TARGET_FILE:mpmd_1>

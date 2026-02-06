@@ -252,6 +252,7 @@ typedef enum {
 }
 #define APP_MPI_IN_PLACE(Fld) (App->RankMPI ? (Fld) : MPI_IN_PLACE)
 
+
 //! MPDP component description
 typedef struct {
     //! ID of this component, corresponds to MPI_APPNUM
@@ -262,18 +263,19 @@ typedef struct {
     MPI_Comm comm;
     //! Number of PEs in this component
     int size;
-    //! Whether this component has been shared to other PEs of this PE's component
-    int shared;
-    //! Global ranks (in the main_comm of the context) of the members of this component
-    int * ranks;
+    //! World to rank of the component's PE0
+    int pe0WorldRank;
 } TComponent;
+
 
 //! A series of components that share a communicator
 typedef struct {
     //! How many components are in the set
     int nbComponents;
     //! IDs of the components in this set
-    int* componentIds;
+    int * componentIds;
+    //! Number of PEs in this set (used to distinguish multiple sets with the same components, but the all the same PEs)
+    int nbPes;
     //! Communicator shared by these components
     MPI_Comm comm;
     //! MPI group shared by these component, created for creating the communicator
@@ -369,10 +371,10 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
 //! Alias to the \ref Lib_Log function with \ref APP_MAIN implicitly provided as first argument
 #define App_Log(LEVEL, ...) Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__)
 #define App_LogAllRanks(LEVEL, ...) { \
-   int32_t ___app_rank=App->LogRank; \
-   App->LogRank=-1; \
+   int32_t ___app_rank = App->LogRank; \
+   App->LogRank = -1; \
    Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__) \
-   App->LogRank=___app_rank; \
+   App->LogRank = ___app_rank; \
 }
 
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
