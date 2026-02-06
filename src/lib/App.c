@@ -708,7 +708,7 @@ int App_LogStats(
     struct timeval end, dif;
     struct utsname sysbuf;
     int64_t rss,pss,uss;
-    int32_t fmin,fmax,tmin,tmax;
+    int32_t freq,numa,core,tmin,tmax;
     char tag[256];
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
@@ -733,9 +733,9 @@ int App_LogStats(
         }
         if (!App->LogStat || App->LogStat&APP_STAT_CPU) {
            uname(&sysbuf);
-           App_GetCPU(&fmin,&fmax,&tmin,&tmax);
-           App_Log(APP_STAT, "%sCPU : Node=%s, Freq(MHz)=%d-%d Temp(°C)=%d-%d\n",tag,
-              sysbuf.nodename,fmin,fmax,tmin,tmax);
+           App_GetCPU(&freq,&numa,&core,&tmin,&tmax);
+           App_Log(APP_STAT, "%sCPU : Node=%s, NUMA=%d, Core=%d, Freq(MHz)=%d Temp(°C)=%d-%d\n",tag,
+              sysbuf.nodename,numa,core,freq,tmin,tmax);
         }
     }
     return TRUE;
@@ -791,10 +791,12 @@ int App_GetSS(
 
 //! Get CPU Frequency and temperature range
 int App_GetCPU(
-    //! [out] Minimum CPU frequency
-    int32_t *FreqMin,
-    //! [out] Maximum CPU frequency
-    int32_t *FreqMax,
+    //! [out] Core Frequency
+    int32_t *Freq,
+    //! [out] Node id
+    int32_t *Numa,
+    //! [out] Vore id
+    int32_t *Core,
     //! [out] Minimum CPU temperature
     int32_t *TempMin,
     //! [out] Maximum CPU temperature
@@ -802,33 +804,55 @@ int App_GetCPU(
 ) {
 
     FILE *fd=NULL;
-    char *line,buf[1024];
-    int    n=0;
+    char *line,type[16],buf[1024];
+    int    n=0,c=-1;
     double freq,temp;
     
-    *FreqMin=1<<30;
-    *FreqMax=0;
+    *Freq=0;
     *TempMin=1<<30;
     *TempMax=0;
-    
+
+    // Get current CPU core and NUMA node via system call
+    // Note this has no glibc wrapper so we must call it directly
+    // We could get this only once but if the PE's are not pinned, this will chnage within a run
+    syscall(SYS_getcpu, Core, Numa, NULL);
+
     // Get CPU frequency range
     fd=fopen("/proc/cpuinfo","re");
 
     while ((line=fgets(buf, sizeof(buf), fd))) {
         // Extract line components
-        if (strstr(line, "cpu MHz")) {
+        if (strstr(line, "processor")) {
+             // Get the core
+            sscanf(line, "%*s : %d", &c);
+        }
+
+        if (c==*Core && strstr(line, "cpu MHz")) {
             // Found the line, parse the frequency
             sscanf(line, "%*s %*s : %lf", &freq);
-
-            *FreqMin=MIN(*FreqMin,freq);
-            *FreqMax=MAX(*FreqMax,freq);
-        }
+            *Freq=freq;
+            break;
+       }
     }      
-
     fclose(fd);
 
     // Get CPU temperature range
+    // There might be many thermal zones but not clear if ordering always corresponds to NUMA
     for(n=0;n<256;n++) {
+        // Check for x86 CPU zone
+        snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/type",n);
+        if ((fd=fopen(buf,"re"))) {
+           fscanf(fd, "%15s", type);
+           if (type[0]!='x' || type[1]!='8' || type[2]!='6') {
+              fclose(fd);
+              continue;
+           }
+           fclose(fd);
+        } else {
+           break;
+        }
+
+        // Get temp of zone
         snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/temp",n);
         if ((fd=fopen(buf,"re"))) {
            fscanf(fd, "%lf", &temp);
@@ -836,8 +860,6 @@ int App_GetCPU(
            *TempMin=MIN(*TempMin,temp);
            *TempMax=MAX(*TempMax,temp);
            fclose(fd);
-        } else {
-            break;
         }
     }      
 

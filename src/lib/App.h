@@ -426,7 +426,7 @@ int   App_IsAloneNode(void);
 int   App_NodeGroup();
 int   App_NodePrint();
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
-int   App_GetCPU(int32_t *FreqMin,int32_t *FreqMax,int32_t *TempMin,int32_t *TempMax);
+int   App_GetCPU(int32_t *Freq,int32_t *Numa,int32_t *Core,int32_t *TempMin,int32_t *TempMax);
 
 #ifdef HAVE_MPI
 void App_SetMPIComm(MPI_Comm Comm);
