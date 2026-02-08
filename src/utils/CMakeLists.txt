@@ -4,6 +4,11 @@ IF(DEFINED ENV{INTELCOMP_HOME})
 endif()
 
 add_executable(app app.c)
-target_link_libraries(app App::App-ompi)
+if(WITH_OMPI)
+    target_link_libraries(app App::App-ompi)
+else()
+    target_link_libraries(app App::App)
+endif()
+
 
 install(TARGETS app RUNTIME DESTINATION bin)

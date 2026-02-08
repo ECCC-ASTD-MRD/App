@@ -15,7 +15,7 @@ include(ec_compiler_presets)
 
 set(CMAKE_CXX_STANDARD 11)
 
-link_libraries("-Wl,--disable-new-dtags")
+# link_libraries("-Wl,--disable-new-dtags")
 add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ _GNU_SOURCE)
 
 option(WITH_OMPI "Compile with OpenMP/MPI support" TRUE)
@@ -28,7 +28,9 @@ include(ec_doxygen)
 ec_build_info()
 
 add_subdirectory(src/lib)
-add_subdirectory(src/utils)
+if(WITH_OMPI)
+    add_subdirectory(src/utils)
+endif()
 add_subdirectory(script)
 add_subdirectory(test)
 
