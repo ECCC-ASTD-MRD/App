@@ -7,7 +7,7 @@
 
 #include <sys/resource.h>
 
-#include <immintrin.h>
+// #include <immintrin.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -16,18 +16,24 @@
 #include <time.h>
 
 //! Memory store fence
-static inline void write_fence() {
-    __asm__ volatile("sfence" : : : "memory");
+static inline void write_fence(void) {
+    // App_Atomic.h:20:22: error: unrecognized instruction mnemonic
+    // 20 |     __asm__ volatile("sfence" : : : "memory");
+    //    |                      ^
+    // __asm__ volatile("sfence" : : : "memory");
 }
 
 //! Memory load fence
-static inline void read_fence() {
+static inline void read_fence(void) {
     __asm__ volatile("lfence" : : : "memory");
 }
 
 //! Memory load+store fence
-static inline void full_memory_fence() {
-    __asm__ volatile("mfence" : : : "memory");
+static inline void full_memory_fence(void) {
+    // App_Atomic.h:30:22: error: unrecognized instruction mnemonic
+    // 30 |     __asm__ volatile("mfence" : : : "memory");
+    //    |                      ^
+    // __asm__ volatile("mfence" : : : "memory");
 }
 
 //! Acquire the given lock, with the given ID, *without* a memory fence
