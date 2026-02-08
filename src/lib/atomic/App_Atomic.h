@@ -16,17 +16,17 @@
 #include <time.h>
 
 //! Memory store fence
-static inline void write_fence() {
+static inline void write_fence(void) {
     __asm__ volatile("sfence" : : : "memory");
 }
 
 //! Memory load fence
-static inline void read_fence() {
+static inline void read_fence(void) {
     __asm__ volatile("lfence" : : : "memory");
 }
 
 //! Memory load+store fence
-static inline void full_memory_fence() {
+static inline void full_memory_fence(void) {
     __asm__ volatile("mfence" : : : "memory");
 }
 

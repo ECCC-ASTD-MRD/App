@@ -26,7 +26,7 @@ static const clockid_t APP_CLOCK_ID = CLOCK_MONOTONIC;
 })
 
 //! Get current system time in microseconds, wraps around approximately every year
-static inline uint64_t get_current_time_us() {
+static inline uint64_t get_current_time_us(void) {
 
   struct timespec now;
   clock_gettime(APP_CLOCK_ID, &now);
@@ -42,7 +42,7 @@ static inline void App_TimerInit(TApp_Timer* Timer) {
       *Timer = NULL_TIMER;
 }
 
-static inline TApp_Timer* App_TimerCreate() {
+static inline TApp_Timer* App_TimerCreate(void) {
    TApp_Timer* timer = (TApp_Timer*)malloc(sizeof(TApp_Timer));
    App_TimerInit(timer);
    return(timer);

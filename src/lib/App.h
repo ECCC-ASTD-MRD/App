@@ -425,8 +425,8 @@ int   App_IsMPI(void);
 int   App_IsOMP(void);
 int   App_IsSingleNode(void);
 int   App_IsAloneNode(void);
-int   App_NodeGroup();
-int   App_NodePrint();
+int   App_NodeGroup(void);
+int   App_NodePrint(void);
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
 int   App_GetCPU(int32_t *FreqMin,int32_t *FreqMax,int32_t *TempMin,int32_t *TempMax);
 

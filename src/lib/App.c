@@ -95,7 +95,7 @@ void App_LibRegister(
 
 
 //! Initialiser l'environnement dans la structure App
-void App_InitEnv() {
+void App_InitEnv(void) {
     pthread_mutex_lock(&App_mutex);
     {
         // Only do it if not already initialized
@@ -409,7 +409,7 @@ int App_FinalizeCallback(
 }
 
 //! Initialiser les communicateurs intra-node et inter-nodes
-int App_NodeGroup() {
+int App_NodeGroup(void) {
     //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
     if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
@@ -472,7 +472,7 @@ int App_NodeGroup() {
 }
 
 
-int App_NodePrint() {
+int App_NodePrint(void) {
 #ifdef HAVE_MPI
     if (App_IsMPI()) {
         if (!App->RankMPI) {
@@ -1971,7 +1971,7 @@ int App_ParseCoords(
 
 
 //! Initialize seeds for MPI/OpenMP
-void App_SeedInit() {
+void App_SeedInit(void) {
     // Modify seed value for current processor/thread for parallelization.
     for(int t = 1; t < App->NbThread; t++) {
         App->OMPSeed[t] = App->Seed + 1000000 * (App->RankMPI * App->NbThread + t);
