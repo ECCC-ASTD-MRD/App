@@ -25,7 +25,6 @@
 #include <pthread.h>
 
 #include "App.h"
-#include "App_build_info.h"
 #include "str.h"
 
 static TApp AppInstance;                             ///< Static App instance
