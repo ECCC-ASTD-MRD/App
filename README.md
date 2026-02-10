@@ -28,6 +28,7 @@ This packages manages various standard tasks needed by applications like:
    - Optional time information, time step number and color by message type
    - When using MPI, you can select the logging PE, or  if logging from multiple PE, messages are prepended by the PE number
    - Shows count of error and warnings at end/close of log
+   - Options to output system time, memory, and cpu statistics
 - Process signal trapping
    - Signal trapping for stopping model on **SIGUSR2**/**SIGTERM**
 - Timing functions
