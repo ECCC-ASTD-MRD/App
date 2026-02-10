@@ -123,9 +123,10 @@ typedef enum {
 } TApp_LogLevel;
 
 typedef enum {
-   APP_STAT_TIME = 0x01,
-   APP_STAT_MEM  = 0x02,
-   APP_STAT_CPU  = 0x04
+   APP_STAT_ALLRANKS = 0x01,
+   APP_STAT_TIME     = 0x02,
+   APP_STAT_MEM      = 0x04,
+   APP_STAT_CPU      = 0x08
 } TApp_Stats;
 
 //! Log date detail level
@@ -373,7 +374,7 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
 #define App_LogAllRanks(LEVEL, ...) { \
    int32_t ___app_rank = App->LogRank; \
    App->LogRank = -1; \
-   Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__) \
+   Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__); \
    App->LogRank = ___app_rank; \
 }
 

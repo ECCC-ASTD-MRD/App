@@ -708,7 +708,7 @@ int App_LogStats(
     struct timeval end, dif;
     struct utsname sysbuf;
     int64_t rss,pss,uss;
-    int32_t freq,numa,core,tmin,tmax;
+    int32_t freq,numa,core,tmin,tmax,rank=0;
     char tag[256];
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
@@ -718,24 +718,32 @@ int App_LogStats(
            tag[0]='\0'; 
         }
 
+        if (App->LogStat&APP_STAT_ALLRANKS) {
+           rank=App->LogRank;
+           App->LogRank = -1;
+        }
         getrusage(RUSAGE_SELF, &usg);
-        if (!App->LogStat || App->LogStat&APP_STAT_TIME) {
+        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_TIME) {
             gettimeofday(&end, NULL);
             timersub(&end, &App->Time, &dif);
             App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n",tag,
                 dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
                 usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6);
         }
-        if (!App->LogStat || App->LogStat&APP_STAT_MEM) {
+        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_MEM) {
            App_GetSS(&rss,&pss,&uss);
            App_Log(APP_STAT, "%sMEM : RSS(kB)=%ld PSS(kB)=%ld USS(kB)=%ld MinorFLT=%d MajorFLT=%d\n",tag,
                rss, pss, uss, usg.ru_minflt, usg.ru_majflt);
         }
-        if (!App->LogStat || App->LogStat&APP_STAT_CPU) {
+        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_CPU) {
            uname(&sysbuf);
            App_GetCPU(&freq,&numa,&core,&tmin,&tmax);
            App_Log(APP_STAT, "%sCPU : Node=%s, NUMA=%d, Core=%d, Freq(MHz)=%d Temp(°C)=%d-%d\n",tag,
               sysbuf.nodename,numa,core,freq,tmin,tmax);
+        }
+
+        if (App->LogStat&APP_STAT_ALLRANKS) {
+           App->LogRank = rank;
         }
     }
     return TRUE;
@@ -1359,6 +1367,9 @@ int Lib_LogLevel(
                 } else if (strncasecmp(&level[n], "CPU", 3) == 0) {
                     App->LogStat|=APP_STAT_CPU;
                     n+=4;
+                } else if (strncasecmp(&level[n], "ALL", 3) == 0) {
+                    App->LogStat|=APP_STAT_ALLRANKS;
+                    n+=9;
                 } else {
                     break;
                 }

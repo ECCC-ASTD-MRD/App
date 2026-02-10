@@ -39,10 +39,10 @@ This packages manages various standard tasks needed by applications like:
 ## Environment variables
 - **APP_PARAMS**        : List of parameters for the application (instead of giving on command line)
 - **APP_VERBOSE**      : Define global verbose level (**ERROR, WARNING, INFO, STAT, TRIVIAL, DEBUG, EXTRA, QUIET**) default: **WARNING**
-   - Log level **STAT** can be expanded to include which type of statisics from the **App_LogStat** function you want to be output (**TIME,MEM,CPU**). Default is to output all stats but you can specify which ones as **STAT**:[type]. ex:
+   - Log level **STAT** can be expanded to include which type of statisics from the **App_LogStat** function you want to be output (**TIME,MEM,CPU,ALLRANKS**). Default is to output all stats for the **APP_VERBOSE_RANK** but you can specify which stats as **STAT**:[type] and force logs for all ranks with **ALLRANKS**. ex:
       - **STAT:TIME** : Prints the real, user and system time of the process
       - **STAT:MEM**  : Prints the resident, proportional and unique memory setsize 
-      - **STAT:CPU**  : Prints the CPU frequency and temperature range 
+      - **STAT:CPU:TEMP:ALLRANKS**  : Prints the CPU frequency and temperature range for all PEs
       - **STAT:TIME:MEM**
 - **APP_VERBOSE_[lib]** : Verbose level per library, overrides global (lib=[**RMN, FST, BRP, META, WB, GMM, VGRID, INTERPV, GEOREF, RPNMPI, IRIS, IO, MDLUTIL, DYN, PHY, MIDAS, EER, TDPACK, MACH**])
 - **APP_VERBOSE_NOBOX** : Do not display header and footer
