@@ -32,7 +32,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined(__linux__)
 #include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#endif
 
 
 //! MPMD component identification
