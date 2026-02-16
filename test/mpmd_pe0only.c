@@ -72,6 +72,13 @@ int main(int argc, char * argv[]) {
     MPI_Bcast(&sum, 1, MPI_INT, 0, MPI_COMM_WORLD);
     validate_comm_size(comm_all, sum);
 
+    for (int comp = 0; comp < App_MPMD_NumComponents(); comp++) {
+        for (int localRank = 0; localRank < App_MPMD_GetComponentSize(comp); localRank++) {
+            printf("%02d - componentId = %d, localRank = %d, worldRank = %d\n", worldRank, comp, localRank,
+                App_MPMD_GetComponentPeWRank(comp, localRank));
+        }
+    }
+
     App_End(0);
     App_MPMD_Finalize();
 
