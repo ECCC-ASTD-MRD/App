@@ -202,8 +202,9 @@ int App_MPMD_GetComponentPeWRank(
 
     const TApp * const app = App_GetInstance();
 
-    if (localRank >= 0 && localRank < app->SelfComponent->size) {
-        return app->SelfComponent->pe0WorldRank + localRank;
+    if (componentId >= 0 && componentId < app->NumComponents &&
+        localRank >= 0 && localRank < app->AllComponents[componentId].size) {
+        return app->AllComponents[componentId].pe0WorldRank + localRank;
     }
     return -1;
 }
