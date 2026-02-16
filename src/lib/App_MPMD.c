@@ -904,6 +904,14 @@ int32_t App_MPMD_HasComponent(
 }
 
 
+//! Get the number of components in this MPMD context
+int32_t App_MPMD_NumComponents() {
+    //! \return The number of component in this MPMD context
+    const TApp * const app = App_GetInstance();
+    return app->NumComponents;
+}
+
+
 //! Get the rank of the current process in its component communicator
 int App_MPMD_GetSelfComponentRank() {
     //! \return Rank of the current process in its component communicator
