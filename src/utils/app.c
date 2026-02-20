@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
         // Make a rank fail
         if (fail>=0) {
-            App_LogAllRanks(App->RankMPI==fail?APP_FATAL:APP_ALWAYS+APP_COLLECT,"Fail in rank %i\n",fail);
+            App_LogAllRanks((App->RankMPI==fail?APP_FATAL:APP_INFO)+APP_COLLECT,"Fail in rank %i\n",fail);
         }
     }
 

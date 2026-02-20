@@ -988,7 +988,9 @@ int App_End(
                 }
             }
 
-            if (Status != EXIT_SUCCESS) {
+            if (Status == APP_FATAL) {
+                App_Log(APP_VERBATIM, "Status         : Abort(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
+            } else if (Status != EXIT_SUCCESS) {
                 App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {
                 App_Log(APP_VERBATIM, "Status         : Ok (%i Errors) (%i Warnings)\n", App->LogError, App->LogWarning);
@@ -1093,15 +1095,6 @@ void App_LogClose(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
-int App_LogCollect(int Error) {
-
-#ifdef HAVE_MPI
-   MPI_Reduce(MPI_IN_PLACE, &Error, 1, MPI_INT, MPI_MIN, 0, App->Comm);
-#endif
-
-   return(Error);
-}
-
 //! Add log entry
 void App_Log4Fortran(
     //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
@@ -1170,9 +1163,9 @@ void Lib_Log(
     }
 
     // If in collect mode, we collect the minimal error to 
-    if (Level>APP_COLLECT) {
+    if (Level>=APP_COLLECT) {
         level=Level-APP_COLLECT;
-        level=App_LogCollect(level);
+        MPI_Allreduce(MPI_IN_PLACE, &level, 1, MPI_INT, MPI_MIN, App->Comm);
     }
 #endif
     // If not initialized yet
@@ -1182,6 +1175,7 @@ void Lib_Log(
 
     // Check for once log flag
     int effectiveLevel = level;
+
     if (effectiveLevel > APP_QUIET) {
         // If we logged it at least once
         if (effectiveLevel >> 3 < APP_MAXONCE && App_OnceTable[effectiveLevel >> 3]++) return;
@@ -1203,9 +1197,10 @@ void Lib_Log(
         char prefix[256];
         prefix[0] = '\0';
         if (effectiveLevel >= APP_ALWAYS) {
-            char *color = App->LogColor ? AppLevelColors[effectiveLevel] : AppLevelColors[APP_INFO];
 
+            char *color = App->LogColor ? AppLevelColors[effectiveLevel] : AppLevelColors[APP_INFO];
             char time[32];
+
             if (App->LogTime) {
                 struct timeval now;
                 gettimeofday(&now, NULL);
@@ -1307,6 +1302,7 @@ void Lib_Log(
 
     // Exit application if error above tolerance level
     if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
+fprintf(stderr,"====== %i\n",effectiveLevel);
         exit(App_End(APP_FATAL));
     }
 }
