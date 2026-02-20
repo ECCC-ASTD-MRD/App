@@ -1,10 +1,15 @@
 #include "App_MPMD.h"
 #include "App_build_info.h"
 
+int32_t finalize() {
+
+    MPI_Finalize();
+    return(TRUE);
+}
 
 int main(int argc, char *argv[]) {
 
-    int32_t step=0,ok;
+    int32_t step=0,fail=-1,ok;
     int64_t queued=0;
     char   *title=NULL;
 
@@ -14,6 +19,7 @@ int main(int argc, char *argv[]) {
       { { APP_INT32, &step,    1,             "s", "step",   "Number of step" },
         { APP_INT64, &queued,  1,             "q", "queued", "Queued time" },
         { APP_CHAR,  &title,   1,             "t", "title",  "Title run" },
+        { APP_INT32, &fail,    1,             "f", "fail",   "Force a PE to fail" },
         { APP_NIL } };
 
     if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLOG)) {
@@ -21,6 +27,7 @@ int main(int argc, char *argv[]) {
     }
 
     App_Init(APP_MASTER,title?title:"app",VERSION,PROJECT_DESCRIPTION_STRING,GIT_COMMIT_TIMESTAMP);
+    App_FinalizeCallback(finalize);
     App_Start();
 
     if (queued) {
@@ -31,8 +38,13 @@ int main(int argc, char *argv[]) {
     for(App->Step=1;(!step || App->Step<step);App->Step++) {
         App_Log(APP_INFO,"Step\n");
         if (App_IsDone()) {
-           // Trapped premption signal
-           break; 
+            // Trapped premption signal
+            break; 
+        }
+
+        // Make a rank fail
+        if (fail>=0) {
+            App_LogAllRanks(App->RankMPI==fail?APP_FATAL:APP_ALWAYS+APP_COLLECT,"Fail in rank %i\n",fail);
         }
     }
 

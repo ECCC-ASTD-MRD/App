@@ -34,6 +34,8 @@ This packages manages various standard tasks needed by applications like:
 - Timing functions
 - Processes and system information / statistics functions
 - Parallel process management OpenMP/MPI
+- Finalize callback funtion on process end 
+- Mechanism to exit cleanly upon fatal error from one of the PE
 - Single process and MPI memory usage stats
 - MPMD MPI process group management
 

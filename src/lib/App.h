@@ -119,7 +119,9 @@ typedef enum {
     //! Extra
     APP_EXTRA = 9,
     //! Quiet \todo Say what quiet actually does
-    APP_QUIET = 10
+    APP_QUIET = 10,
+    // ! Fatal error, and collect from all PEs
+    APP_COLLECT = 128
 } TApp_LogLevel;
 
 typedef enum {

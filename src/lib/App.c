@@ -950,7 +950,7 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    if (App->Finalize) {
+    if (Status==APP_FATAL && App->Finalize) {
         App->Finalize();
     }
 #ifdef HAVE_MPI
@@ -1093,6 +1093,14 @@ void App_LogClose(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
+int App_LogCollect(int Error) {
+
+#ifdef HAVE_MPI
+   MPI_Reduce(MPI_IN_PLACE, &Error, 1, MPI_INT, MPI_MIN, 0, App->Comm);
+#endif
+
+   return(Error);
+}
 
 //! Add log entry
 void App_Log4Fortran(
@@ -1135,17 +1143,20 @@ void Lib_Log4Fortran(
 //! Add log entry
 void Lib_Log(
     //! [in] Library id
-    const TApp_Lib lib,
+    const TApp_Lib Lib,
     //! [in] Message level. See \ref TApp_LogLevel
-    const TApp_LogLevel level,
+    const TApp_LogLevel Level,
     //! [in] printf style format string
-    const char * const format,
+    const char * const Format,
     //! [in] Variables referrenced in the format string
     ...
 ) {
     //! \note If level is ERROR, the message will be written on stderr, for all other levels the message will be written to stdout or the log file
+    //! \note If level is APP_FATAL or APP_SYSTEM, and APP_TOLERANCE is set to either of those, the application will exit, optionnally calling the finalize callback if define
+    //! \note If adding APP_COLLECT (ie: APP_FATAL+APP_COLLECT) to the message level, an MPI collective call will be made to get the lowest error level through all PEs (and potentially exit depending on previous point)
 
     pid_t tid=0, pid=0;
+    TApp_LogLevel level=Level;
 
     if (App->LogThread) {
        tid = (pid_t) syscall(SYS_gettid);
@@ -1154,8 +1165,14 @@ void Lib_Log(
     }
 
 #ifdef HAVE_MPI
-    if (App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
+    if (Level<APP_COLLECT && App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
         return;
+    }
+
+    // If in collect mode, we collect the minimal error to 
+    if (Level>APP_COLLECT) {
+        level=Level-APP_COLLECT;
+        level=App_LogCollect(level);
     }
 #endif
     // If not initialized yet
@@ -1179,10 +1196,10 @@ void Lib_Log(
     if (effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) App->LogError++;
 
     // Check if requested level is quiet
-    if (App->LogLevel[lib] == APP_QUIET && effectiveLevel > APP_VERBATIM) return;
+    if (App->LogLevel[Lib] == APP_QUIET && effectiveLevel > APP_VERBATIM) return;
 
     // If this is within the request level
-    if (effectiveLevel <= App->LogLevel[lib]) {
+    if (effectiveLevel <= App->LogLevel[Lib]) {
         char prefix[256];
         prefix[0] = '\0';
         if (effectiveLevel >= APP_ALWAYS) {
@@ -1224,15 +1241,15 @@ void Lib_Log(
             if (App_IsMPI() && App->LogRank == -1 && !App->LogSplit) {
                 if (App->Step) {
                     if (App->LogThread) {
-                        sprintf(prefix, "%s%sP%03dT%03d (%s) #%d %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) #%d %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);
                     } else {
-                        sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                        sprintf(prefix, "%s%sP%03d (%s) #%d %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);
                     }
                 } else {
                     if (App->LogThread) {
-                        sprintf(prefix, "%s%sP%03dT%03d (%s) %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                        sprintf(prefix, "%s%sP%03dT%03d (%s) %s", color, time, App->RankMPI, tid, AppLevelNames[effectiveLevel], AppLibLog[Lib]);
                     } else {
-                        sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                        sprintf(prefix, "%s%sP%03d (%s) %s", color, time, App->RankMPI, AppLevelNames[effectiveLevel], AppLibLog[Lib]);
                     }
                 }
             }
@@ -1240,15 +1257,15 @@ void Lib_Log(
 #endif
             if (App->Step) {
                 if (App->LogThread) {
-                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);                  
+                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);                  
                 } else {
-                   sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[lib]);
+                   sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);
                 }
             } else {
                 if (App->LogThread) {
-                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[lib]); 
+                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[Lib]); 
                 } else {
-                    sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[lib]);
+                    sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[Lib]);
                 }
             }
         }
@@ -1259,8 +1276,8 @@ void Lib_Log(
         {
             fprintf(App->LogStream, "%s", prefix);
 
-            va_start(args, format);
-            vfprintf(App->LogStream, format, args);
+            va_start(args, Format);
+            vfprintf(App->LogStream, Format, args);
             va_end(args);
 
             if (App->LogColor) {
@@ -1276,8 +1293,8 @@ void Lib_Log(
 
         if (effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
-            va_start(args, format);
-            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, format, args);
+            va_start(args, Format);
+            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, Format, args);
             va_end(args);
 
             // On system error
@@ -1290,7 +1307,7 @@ void Lib_Log(
 
     // Exit application if error above tolerance level
     if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
-        exit(App_End(-1));
+        exit(App_End(APP_FATAL));
     }
 }
 
