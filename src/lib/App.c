@@ -887,6 +887,8 @@ int App_End(
     unsigned long * const memt = &mem[App->NbMPI];
     double sum = mem[App->RankMPI] = usg.ru_maxrss;
 
+    App_LogStats("");
+
     // Get a readable size and units
     double factor = 1.0 / 1024;
     char * unit = AppMemUnits[1];

@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
     App_NodePrint();
 
     for(App->Step=1;(!step || App->Step<step);App->Step++) {
-        App_LogStats("test");
         App_Log(APP_INFO,"Step\n");
         if (App_IsDone()) {
            // Trapped premption signal
