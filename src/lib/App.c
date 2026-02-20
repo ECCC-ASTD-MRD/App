@@ -1302,7 +1302,6 @@ void Lib_Log(
 
     // Exit application if error above tolerance level
     if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
-fprintf(stderr,"====== %i\n",effectiveLevel);
         exit(App_End(APP_FATAL));
     }
 }
