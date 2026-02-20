@@ -202,8 +202,9 @@ int App_MPMD_GetComponentPeWRank(
 
     const TApp * const app = App_GetInstance();
 
-    if (localRank >= 0 && localRank < app->SelfComponent->size) {
-        return app->SelfComponent->pe0WorldRank + localRank;
+    if (componentId >= 0 && componentId < app->NumComponents &&
+        localRank >= 0 && localRank < app->AllComponents[componentId].size) {
+        return app->AllComponents[componentId].pe0WorldRank + localRank;
     }
     return -1;
 }
@@ -900,6 +901,14 @@ int32_t App_MPMD_HasComponent(
     App_Log(APP_DEBUG, "%s: Checking for presence of component \"%s\" ...\n", __func__, componentName);
 
     return App_MPMD_GetComponentId(componentName) >= 0;
+}
+
+
+//! Get the number of components in this MPMD context
+int32_t App_MPMD_NumComponents() {
+    //! \return The number of component in this MPMD context
+    const TApp * const app = App_GetInstance();
+    return app->NumComponents;
 }
 
 

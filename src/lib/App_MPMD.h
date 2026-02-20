@@ -19,5 +19,6 @@ int App_MPMD_GetSelfComponentRank();
 int App_MPMD_GetSelfComponentSize();
 int App_MPMD_GetComponentSize(const int componentId);
 int App_MPMD_GetComponentPeWRank(const int componentId, const int localRank);
+int32_t App_MPMD_NumComponents();
 
 #endif // MPMD_H__
