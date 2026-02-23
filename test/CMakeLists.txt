@@ -20,11 +20,8 @@ if (EC_INIT_DONE LESS 2)
         endif()
 
         add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10)
-        add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1)
-        set_tests_properties(app_abort PROPERTIES
-            ENVIRONMENT_MODIFICATION "APP_TOLERANCE=ABORT"
-        )
-        
+        add_test(NAME app_abort COMMAND ${CMAKE_COMMAND} -E env "APP_TOLERANCE=ABORT" ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1)
+
         target_link_libraries(app App::App-ompi)
         add_dependencies(check app)
 

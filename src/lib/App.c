@@ -1008,7 +1008,11 @@ int App_End(
 #ifdef HAVE_MPI
     }
 #endif
-    return (App->Signal > 0) ? 128 + App->Signal : Status;
+    if (Status == APP_FATAL) {
+       exit((App->Signal > 0) ? 128 + App->Signal : Status);
+    } else {
+       return (App->Signal > 0) ? 128 + App->Signal : Status;
+    }
 }
 
 //! Trapper les signaux afin de terminer gracieusement
