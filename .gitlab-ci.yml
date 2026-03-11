@@ -8,6 +8,8 @@ variables:
 .env:
    build:
       - echo "No specific environment"
+   variables:
+      ALLOW_FAILURE_ARCHS: ""
 
 include:
    - project: 'RPN-SI/ci-admin'
