@@ -15,17 +15,14 @@ if (EC_INIT_DONE LESS 2)
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
             if ("x${MPI_IMPLEMENTATION}" STREQUAL "xOpen MPI")
                 set(OVERSUBSCRIBE_FLAG "-oversubscribe")
-                # OpenMPI does not pass the whole environment sometimes
-                set(ENV_FLAG "-x APP_TOLERANCE=FATAL")
             endif()
             # message(WARNING "Oversubscribe flag: ${OVERSUBSCRIBE_FLAG}")
         endif()
 
         add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10)
-        add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1 ${ENV_FLAG})
+        add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1 )
         set_tests_properties(app_abort PROPERTIES
             WILL_FAIL true
-            ENVIRONMENT "APP_TOLERANCE=FATAL"
         )
 
         target_link_libraries(app App::App-ompi)

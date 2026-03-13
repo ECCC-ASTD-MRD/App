@@ -26,13 +26,20 @@ int main(int argc, char *argv[]) {
        exit(EXIT_FAILURE);
     }
 
+
+
     App_Init(APP_MASTER,title?title:"app",VERSION,PROJECT_DESCRIPTION_STRING,GIT_COMMIT_TIMESTAMP);
     App_FinalizeCallback(finalize);
     App_Start();
 
+    // In fail mode test, we need to enable the tolerance level
+    if (fail>=0) {
+        App_ToleranceLevel("FATAL");
+    }
     if (queued) {
        App_Log(APP_VERBATIM, "\nWaiting time   : %li s\n",App->Time.tv_sec-queued);
     }
+
     App_NodePrint();
 
     for(App->Step=1;(!step || App->Step<step);App->Step++) {
