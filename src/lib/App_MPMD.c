@@ -831,7 +831,7 @@ MPI_Comm App_MPMD_GetSharedComm(
     {
         // Compute the total number of PEs in the unique components
         int nbPe = 0;
-        for (int i = 0; i < nbUniqueComponents; i++) {
+         for (int i = 0; i < nbUniqueComponents; i++) {
             for (int j = 0; j < app->NumComponents; j++) {
                 if (app->AllComponents[j].id == uniqueComponents[i]) {
                     nbPe += app->AllComponents[j].size;
@@ -863,8 +863,9 @@ MPI_Comm App_MPMD_GetSharedComm(
     }
 
 end:
-    if (sharedComm == MPI_COMM_NULL) {
-        App_Log(APP_ERROR, "%s: Communicator is NULL for components %s\n", __func__, compStr);
+    if (sharedComm == MPI_COMM_NULL && (!pes0Only || (pes0Only && app->ComponentRank == 0))) {
+        App_Log(APP_ERROR, "%s: PE World Rank %d Local Rank %d - Communicator is NULL for components %s\n",
+            __func__, app->WorldRank, app->ComponentRank, compStr);
     }
 
     free(uniqueComponents);

@@ -641,7 +641,7 @@ void App_Start(void) {
                 App_Log(APP_VERBATIM, "\nSystem         : %s (%s)\nOS             : %s %s (%s)\n",
                 buffer.nodename,buffer.machine,buffer.sysname,buffer.release,buffer.version);
             }
-            
+
             if (App->UTC) {
                 App_Log(APP_VERBATIM, "\nStart time     : (UTC) %s", asctime(gmtime(&App->Time.tv_sec)));
             } else {
