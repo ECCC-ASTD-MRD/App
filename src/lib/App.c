@@ -410,7 +410,7 @@ int App_FinalizeCallback(
 
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
-    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
+    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se superpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
     if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
         // Get the physical node unique name of mpi procs
@@ -472,6 +472,7 @@ int App_NodeGroup() {
 }
 
 
+//! Print the node used
 int App_NodePrint() {
 #ifdef HAVE_MPI
     if (App_IsMPI()) {
@@ -768,7 +769,7 @@ int App_GetSS(
     fd=fopen("/proc/self/smaps_rollup","re");
 
     while ((line=fgets(buf, sizeof(buf), fd))) {
-       // Extract line components
+        // Extract line components
         if (sscanf(buf, "%63s %n", field, &len) == 1 && *field && field[strlen(field) - 1] == ':') {
             const char* c = line + len;
             // Only parse P* and R* lines
