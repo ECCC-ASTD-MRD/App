@@ -23,10 +23,9 @@ int main() {
     MPI_Init(NULL, NULL);
 
     App_Init(APP_MASTER, "mpmd_5", "test", "mpmd context attempt", "now");
-    App_MPMD_Init();
+    int mpmd_5id = -1;
+    App_MPMD_Init(&mpmd_5id);
     App_Start();
-
-    const int mpmd_5id = App_MPMD_GetSelfComponentId();
 
     validate_comm_size(App_MPMD_GetSelfComm(), 5);
 

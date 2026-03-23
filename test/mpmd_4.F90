@@ -13,14 +13,14 @@ program mpmd_4
     app_ptr=app_init(0,"mpmd_4","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    call App_MPMD_Init()
+    mpmd_4id = -1
+    ierror = App_MPMD_Init(mpmd_4id)
     call App_Start()
 
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')
     mpmd_3id = App_MPMD_GetComponentId('mpmd_3')
-    mpmd_4id = App_MPMD_GetSelfComponentId()
     mpmd_5id = App_MPMD_GetComponentId('mpmd_5')
 
     write(str, '(a,i1,a)') '(', mpmd_4id, ')'
@@ -83,5 +83,4 @@ program mpmd_4
     call validate_comm_size(comm_34, NUM_PROCS_TEST3 + NUM_PROCS_TEST4, str)
 
     call mpmd_end_test()
-
 end program mpmd_4

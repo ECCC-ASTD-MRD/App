@@ -339,7 +339,10 @@ static int App_MPMD_PrintComponentMap(
 
 
 //! Initialize a common MPMD context by telling everyone who we are as a process
-int App_MPMD_Init() {
+int App_MPMD_Init(
+    //! [in, out] Component id. If -1, use MPI_APPNUM and return component id in this argument
+    int * const componentId
+) {
     //! This is a collective call. Everyone who participate in it will know who else
     //! is on board and will be able to ask for a communicator in common with any other
     //! participant (or even multiple other participants at once).
@@ -366,14 +369,15 @@ int App_MPMD_Init() {
             peComponentIds = malloc(worldSize * sizeof(TComponentMap));
         }
 
-        int * appNum;
-        {
+        if (*componentId == -1) {
+            int * appnum;
             int flag;
-            MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appNum, &flag);
+            MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appnum, &flag);
+            *componentId = *appnum;
+            App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, *componentId);
         }
-        App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, *appNum);
 
-        TComponentMap peComponentId = {.id = *appNum, .worldRank = app->WorldRank};
+        TComponentMap peComponentId = {.id = *componentId, .worldRank = app->WorldRank};
         {
             int processorNameLen;
             MPI_Get_processor_name(peComponentId.processorName, &processorNameLen);
@@ -393,11 +397,9 @@ int App_MPMD_Init() {
         MPI_Bcast(app->AllComponents, app->NumComponents * sizeof(TComponent), MPI_BYTE, 0, MPI_COMM_WORLD);
         // At this point all processes have the same list of unique component id-names pairs
 
-        const int componentId = *appNum;
-
-        app->SelfComponent = &app->AllComponents[componentId];
-        app->SelfComponent->id = componentId;
-        MPI_Comm_split(MPI_COMM_WORLD, componentId, app->WorldRank, &app->SelfComponent->comm);
+        app->SelfComponent = &app->AllComponents[*componentId];
+        app->SelfComponent->id = *componentId;
+        MPI_Comm_split(MPI_COMM_WORLD, *componentId, app->WorldRank, &app->SelfComponent->comm);
         MPI_Comm_rank(app->SelfComponent->comm, &app->ComponentRank);
         MPI_Comm_size(app->SelfComponent->comm, &app->SelfComponent->size);
 
