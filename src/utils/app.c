@@ -3,7 +3,9 @@
 
 int32_t finalize() {
 
+#ifdef HAVE_MPI
     MPI_Finalize();
+#endif
     return(TRUE);
 }
 
@@ -13,7 +15,9 @@ int main(int argc, char *argv[]) {
     int64_t queued=0;
     char   *title=NULL;
 
+#ifdef HAVE_MPI
     MPI_Init(NULL, NULL);
+#endif
 
     TApp_Arg appargs[]=
       { { APP_INT32, &step,    1,             "s", "step",   "Number of step" },
@@ -25,8 +29,6 @@ int main(int argc, char *argv[]) {
     if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLOG)) {
        exit(EXIT_FAILURE);
     }
-
-
 
     App_Init(APP_MASTER,title?title:"app",VERSION,PROJECT_DESCRIPTION_STRING,GIT_COMMIT_TIMESTAMP);
     App_FinalizeCallback(finalize);
@@ -57,7 +59,9 @@ int main(int argc, char *argv[]) {
 
     ok=App_End(0);
 
+#ifdef HAVE_MPI
     MPI_Finalize();
+#endif
 
     return(ok);
 }

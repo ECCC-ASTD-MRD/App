@@ -19,14 +19,20 @@ if (EC_INIT_DONE LESS 2)
             # message(WARNING "Oversubscribe flag: ${OVERSUBSCRIBE_FLAG}")
         endif()
 
-        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10)
-        add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1 )
+        if (TARGET App::App-ompi)
+           add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10)
+           add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1 )
+
+           target_link_libraries(app App::App-ompi)
+        else()   
+           add_test(NAME app COMMAND $<TARGET_FILE:app> -s 10)
+           add_test(NAME app_abort COMMAND $<TARGET_FILE:app> -s 10 -f 0 )
+           target_link_libraries(app App::App)
+        endif()
+        add_dependencies(check app)
         set_tests_properties(app_abort PROPERTIES
             WILL_FAIL true
         )
-
-        target_link_libraries(app App::App-ompi)
-        add_dependencies(check app)
 
         add_executable(test_app_loglevel_noinit EXCLUDE_FROM_ALL test_app_loglevel_noinit.F90)
         add_test(
