@@ -24,6 +24,17 @@ module app_mpmd
     implicit none
     save
 
+
+    interface
+        function App_MPMD_Init(component_id) result(status) bind(C, name='App_MPMD_Init')
+            import :: C_INT32_T
+            implicit none
+            integer(C_INT32_T), intent(inout) :: component_id
+            integer(C_INT32_T) :: status
+        end function App_MPMD_Init
+    end interface
+
+
     interface
         subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
             implicit none
@@ -31,23 +42,6 @@ module app_mpmd
     end interface
 
 contains
-
-    subroutine App_MPMD_Init()
-        implicit none
-        integer :: status
-
-        interface
-            function App_MPMD_Init_c() result(status) bind(C, name='App_MPMD_Init')
-                import :: C_INT32_T
-                implicit none
-                integer(C_INT32_T) :: status
-            end function App_MPMD_Init_c
-        end interface
-
-        status = App_MPMD_Init_c()
-    end subroutine App_MPMD_Init
-
-
     !> Get the rank of the PE in its component
     !> \return Rank of this PE in its component
     pure function App_MPMD_GetSelfComponentRank() result(component_rank)
