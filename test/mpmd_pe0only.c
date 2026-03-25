@@ -34,8 +34,8 @@ int main(int argc, char * argv[]) {
     const int nbPe = atoi(argv[1]);
     snprintf(componentName, componentNameMaxLen, "mpmd_%03d", nbPe);
     App_Init(APP_MASTER, componentName, "test", "mpmd context attempt", "now");
-    int componentId = -1;
-    App_MPMD_Init(&componentId);
+    int componentId = App_MPMD_Init();
+    if (componentId < 0) return 1;
     App_Start();
 
     const int size = App_MPMD_GetSelfComponentSize();

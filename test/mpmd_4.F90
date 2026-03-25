@@ -10,13 +10,12 @@ program mpmd_4
     character(32) :: str
     integer :: ierror
 
-    app_ptr=app_init(0,"mpmd_4","test", "mpmd context attempt","now")
+    app_ptr = app_init(0,"mpmd_4","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    mpmd_4id = -1
-    ierror = App_MPMD_Init(mpmd_4id)
+    mpmd_4id = App_MPMD_Init()
+    if (mpmd_4id < 0) call abort
     call App_Start()
-
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')
