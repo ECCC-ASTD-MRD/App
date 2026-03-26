@@ -3,12 +3,36 @@
 //! \defgroup MPMD MPMD
 //! MPI Multiple Program Multiple Data (MPMD) helper functions
 //! @{
-//! This MPMD module works with the rest of the App library.
+//! ## Basic concepts
 //!
-//! Each typical MPMD applications will do the following:
+//! This documentation assumes that the reader is familiar with basic MPI terminology.
+//!
+//! In it's most basic form, MPI allows simultaneously executing mutiple instances of
+//! the same program (processes) and provides facilities and mechanisms to exchanges
+//! messages/data between those processes. Typically, a program will split the work
+//! it needs to do by separating the data to compute among the various processes.
+//!
+//! MPMD allows executing multiple programs simultaneously in the same MPI execution
+//! environment. In this helper library, each program of an MPI execution environment
+//! is known as a _component_. This allows implementing various service models in which
+//! multiple programs collaborate to achieve a specific task. As an example, a
+//! client-server service model could be implemented with App_MPMD.
+//!
+//! _Components_ are distinguished by the application name previously given to
+//! `App_Init()` during the call to `App_MPMD_Init()`. _Components_ are manipulated
+//! via their ID. The call to `App_MPMD_Init()` returns the component ID to each process.
+//!  _Component IDs_ are positive integers; and negative number returned by
+//! `App_MPMD_Init()` indicates an error.
+//!
+//! MPI communicators between components can be obtained by providing an array of
+//! component IDs to the `App_MPMD_GetSharedComm()` function. The ID of each of the
+//! _processes_ making that collective call must be included in the array of components.
+//!
+//! ## Typical App_MPMD application structure
+//!
 //! -# Call `MPI_Init()` to initialize MPI.
 //! -# Call \ref App_Init() to initialize the application. The application name will be used as the MPMD component name.
-//! -# Call \ref App_MPMD_Init()
+//! -# Call \ref App_MPMD_Init() This function returns the current component's id which is necessary to create inter-communicators.
 //! -# Call \ref App_Start() to signal the beginning of the execution.
 //! -# Call \ref App_MPMD_HasComponent() to confirm that the MPI execution context includes
 //!     another component with which this application needs to exchange data.
@@ -17,12 +41,6 @@
 //! -# Call \ref App_End()
 //! -# Call \ref App_MPMD_Finalize()
 //! -# Call `MPI_Finalize()`
-//!
-//! To execute the applications in MPMD mode, an appropriate launch command for the MPI implementation must be used.
-//!
-//! Here is an example for OpenMPI:
-//!
-//! `mpirun -n1 mpmd_1 : -n4 mpmd_2`
 //!
 //! See the content of the `test` directory in the source tree for examples of simple MPMD applications.
 
