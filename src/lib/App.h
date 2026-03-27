@@ -379,7 +379,7 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
    Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__); \
    App->LogRank = ___app_rank; \
 }
-
+   
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
 TApp* App_GetInstance(void);
 void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
@@ -428,6 +428,7 @@ int   App_IsMPI(void);
 int   App_IsOMP(void);
 int   App_IsSingleNode(void);
 int   App_IsAloneNode(void);
+int   App_IsLogging(void);
 int   App_NodeGroup();
 int   App_NodePrint();
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);

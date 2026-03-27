@@ -46,13 +46,32 @@ unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 //! Return last error
 char* App_ErrorGet(void)     { return APP_LASTERROR; }
 
+//! Get pointer to App object
 TApp* App_GetInstance(void)  { return &AppInstance; }
+
+//! Check if application should finish. It will return True upon premption signal, if signals are enabled
 int   App_IsDone(void)       { return App->State == APP_DONE; }
+
+//! Check if application uses MPI
 int   App_IsMPI(void)        { return App->NbMPI > 1; }
+
+//! Check if application uses OpenMP
 int   App_IsOMP(void)        { return App->NbThread > 1; }
+
+//! Check if application uses only one node
 int   App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
+
+//! Check if this process (PE) is alone on a node
 int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
+//! Check if current process (PE) is allowed to log
+int   App_IsLogging(void)    { 
+#ifdef HAVE_MPI
+    return App->Tolerance && (App->LogRank==-1 || App->LogRank == App->RankMPI || App->LogRank == App->ComponentRank)
+#else
+    return App->Tolerance; 
+#endif
+}
 
 #ifdef HAVE_MPI
 int App_MPIProcCmp(const void *a, const void *b) {
@@ -1123,7 +1142,6 @@ void App_LogAllRanks4Fortran(
    App->LogRank=___app_rank;
 }
 
-
 void Lib_Log4Fortran(
     //! [in] Identificateur de la librairie
     TApp_Lib Lib,
@@ -1171,6 +1189,10 @@ void Lib_Log(
     if (Level>=APP_COLLECT) {
         level=Level-APP_COLLECT;
         MPI_Allreduce(MPI_IN_PLACE, &level, 1, MPI_INT, MPI_MIN, App->Comm);
+
+        if (level==APP_QUIET)
+           return;
+        }
     }
 #endif
     // If not initialized yet
