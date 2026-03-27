@@ -26,11 +26,12 @@ module app_mpmd
 
 
     interface
-        function App_MPMD_Init(component_id) result(status) bind(C, name='App_MPMD_Init')
+        !> Initialize App's MPMD functionalities
+        !> \return Id of this component
+        function App_MPMD_Init() result(component_id) bind(C, name='App_MPMD_Init')
             import :: C_INT32_T
             implicit none
-            integer(C_INT32_T), intent(inout) :: component_id
-            integer(C_INT32_T) :: status
+            integer(C_INT32_T) :: component_id
         end function App_MPMD_Init
     end interface
 

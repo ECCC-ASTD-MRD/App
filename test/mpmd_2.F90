@@ -12,8 +12,8 @@ program mpmd_2
     app_ptr = App_Init(0,"mpmd_2","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    mpmd_2id = -1
-    ierror = App_MPMD_Init(mpmd_2id)
+    mpmd_2id = App_MPMD_Init()
+    if (mpmd_2id < 0) call abort
     call App_Start()
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')

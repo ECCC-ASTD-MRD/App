@@ -4,8 +4,8 @@
 int main() { 
     MPI_Init(NULL, NULL);
     App_Init(APP_MASTER, "init2", "test", "mpmd context attempt", "now");
-    int componentId = -1;
-    App_MPMD_Init(&componentId);
+    const int componentId = App_MPMD_Init();
+    if (componentId < 0) return 1;
     App_Start();
 
     App_End(0);
