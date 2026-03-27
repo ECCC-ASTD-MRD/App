@@ -67,7 +67,7 @@ int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 //! Check if current process (PE) is allowed to log
 int   App_IsLogging(void)    { 
 #ifdef HAVE_MPI
-    return App->Tolerance && (App->LogRank==-1 || App->LogRank == App->RankMPI || App->LogRank == App->ComponentRank)
+    return (App->Tolerance && (App->LogRank==-1 || App->LogRank == App->RankMPI || App->LogRank == App->ComponentRank));
 #else
     return App->Tolerance; 
 #endif
@@ -1190,9 +1190,7 @@ void Lib_Log(
         level=Level-APP_COLLECT;
         MPI_Allreduce(MPI_IN_PLACE, &level, 1, MPI_INT, MPI_MIN, App->Comm);
 
-        if (level==APP_QUIET)
-           return;
-        }
+        if (level==APP_QUIET) return;
     }
 #endif
     // If not initialized yet
