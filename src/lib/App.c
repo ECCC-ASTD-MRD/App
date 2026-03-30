@@ -970,7 +970,7 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    if (Status==APP_FATAL && App->Finalize) {
+    if (Status>=APP_EXIT && App->Finalize) {
         App->Finalize();
     }
 #ifdef HAVE_MPI
@@ -1008,8 +1008,8 @@ int App_End(
                 }
             }
 
-            if (Status == APP_FATAL) {
-                App_Log(APP_VERBATIM, "Status         : Abort(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
+            if (Status >= APP_EXIT) {
+                App_Log(APP_VERBATIM, "Status         : Abort(%s) (%i Errors) (%i Warnings)\n", AppLevelNames[Status-APP_EXIT], App->LogError, App->LogWarning);
             } else if (Status != EXIT_SUCCESS) {
                 App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {
@@ -1028,7 +1028,7 @@ int App_End(
 #ifdef HAVE_MPI
     }
 #endif
-    if (Status == APP_FATAL) {
+    if (Status >= APP_EXIT) {
        exit((App->Signal > 0) ? 128 + App->Signal : Status);
     } else {
        return (App->Signal > 0) ? 128 + App->Signal : Status;
@@ -1326,8 +1326,8 @@ void Lib_Log(
     App_TimerStop(App->TimerLog);
 
     // Exit application if error above tolerance level
-    if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
-        exit(App_End(APP_FATAL));
+    if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM || effectiveLevel == APP_ERROR)) {
+        App_End(APP_EXIT+effectiveLevel);
     }
 }
 
