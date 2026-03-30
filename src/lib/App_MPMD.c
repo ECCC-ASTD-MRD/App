@@ -8,7 +8,7 @@
 //! This documentation assumes that the reader is familiar with basic MPI terminology.
 //!
 //! In it's most basic form, MPI allows simultaneously executing mutiple instances of
-//! the same program (processes) and provides facilities and mechanisms to exchanges
+//! the same program (processes) and provides facilities and mechanisms to exchange
 //! messages/data between those processes. Typically, a program will split the work
 //! it needs to do by separating the data to compute among the various processes.
 //!
