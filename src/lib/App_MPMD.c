@@ -3,12 +3,36 @@
 //! \defgroup MPMD MPMD
 //! MPI Multiple Program Multiple Data (MPMD) helper functions
 //! @{
-//! This MPMD module works with the rest of the App library.
+//! ## Basic concepts
 //!
-//! Each typical MPMD applications will do the following:
+//! This documentation assumes that the reader is familiar with basic MPI terminology.
+//!
+//! In it's most basic form, MPI allows simultaneously executing mutiple instances of
+//! the same program (processes) and provides facilities and mechanisms to exchange
+//! messages/data between those processes. Typically, a program will split the work
+//! it needs to do by separating the data to compute among the various processes.
+//!
+//! MPMD allows executing multiple programs simultaneously in the same MPI execution
+//! environment. In this helper library, each program of an MPI execution environment
+//! is known as a _component_. This allows implementing various service models in which
+//! multiple programs collaborate to achieve a specific task. As an example, a
+//! client-server service model could be implemented with App_MPMD.
+//!
+//! _Components_ are distinguished by the application name previously given to
+//! `App_Init()` during the call to `App_MPMD_Init()`. _Components_ are manipulated
+//! via their ID. The call to `App_MPMD_Init()` returns the component ID to each process.
+//!  _Component IDs_ are positive integers; and negative number returned by
+//! `App_MPMD_Init()` indicates an error.
+//!
+//! MPI communicators between components can be obtained by providing an array of
+//! component IDs to the `App_MPMD_GetSharedComm()` function. The ID of each of the
+//! _processes_ making that collective call must be included in the array of components.
+//!
+//! ## Typical App_MPMD application structure
+//!
 //! -# Call `MPI_Init()` to initialize MPI.
 //! -# Call \ref App_Init() to initialize the application. The application name will be used as the MPMD component name.
-//! -# Call \ref App_MPMD_Init()
+//! -# Call \ref App_MPMD_Init() This function returns the current component's id which is necessary to create inter-communicators.
 //! -# Call \ref App_Start() to signal the beginning of the execution.
 //! -# Call \ref App_MPMD_HasComponent() to confirm that the MPI execution context includes
 //!     another component with which this application needs to exchange data.
@@ -17,12 +41,6 @@
 //! -# Call \ref App_End()
 //! -# Call \ref App_MPMD_Finalize()
 //! -# Call `MPI_Finalize()`
-//!
-//! To execute the applications in MPMD mode, an appropriate launch command for the MPI implementation must be used.
-//!
-//! Here is an example for OpenMPI:
-//!
-//! `mpirun -n1 mpmd_1 : -n4 mpmd_2`
 //!
 //! See the content of the `test` directory in the source tree for examples of simple MPMD applications.
 
@@ -37,10 +55,10 @@
 
 //! MPMD component identification
 typedef struct {
-    //! ID of this component
-    int id;
     //! Name of the component
     char name[APP_MAX_COMPONENT_NAME_LEN];
+    //! Hash of the component's name
+    unsigned long hash;
     //! Process rank in MPI_COMM_WORLD
     int worldRank;
     //! Processor Name (host name)
@@ -97,6 +115,25 @@ static char * intArrayStr(
 }
 
 
+//! Gets string hash
+static unsigned long hash(
+    //! [in] String to hash
+    const char * const str
+) {
+    // Reference: http://www.cse.yorku.ca/~oz/hash.html
+
+    unsigned long hash = 5381;
+    const unsigned char * strp = (const unsigned char *) str;
+    int c;
+    while ( (c = *strp++) ) {
+        // hash * 33 + c
+        hash = ((hash << 5) + hash) + c;
+    }
+
+    return hash;
+}
+
+
 //! Find unique components
 static TComponent * findUniqueComponents(
     //! [in] Number of PE in MPI_COMM_WORLD
@@ -110,45 +147,39 @@ static TComponent * findUniqueComponents(
     //! The index of the array corresponds to the component id/MPI_APPNUM and can therefore be addressed directly.
     //! The caller must free when no longer needed.
 
+    int nbAlloc = 16;
+    TComponent * uniqueComponents = (TComponent *)calloc(nbAlloc, sizeof(TComponent));
     *nbComponents = 0;
     for (int i = 0; i < worldSize; i++) {
-        if (peComponentIds[i].id > *nbComponents) {
-            *nbComponents = peComponentIds[i].id;
-        }
-    }
-    // The number of components is equal to the highest id + 1
-    (*nbComponents)++;
-    TComponent * const uniqueComponents = (TComponent *)calloc(*nbComponents, sizeof(TComponent));
-    for (int compIdx = 0; compIdx < *nbComponents; compIdx++) {
-        // Initialize the component attributes to make debugging easier
-        uniqueComponents[compIdx].comm = MPI_COMM_NULL;
-        uniqueComponents[compIdx].size = -1;
-        uniqueComponents[compIdx].pe0WorldRank = -1;
-        for (int i = 0; i < worldSize; i++) {
-            if (peComponentIds[i].id == compIdx) {
-                uniqueComponents[compIdx].id = peComponentIds[i].id;
-                strncpy(uniqueComponents[compIdx].name, peComponentIds[i].name, APP_MAX_COMPONENT_NAME_LEN);
+        char found = 0;
+        for (int uidx = 0; uidx < *nbComponents; uidx++) {
+            // Check if the component already exists
+            if (uniqueComponents[uidx].hash == peComponentIds[i].hash) {
+                found = 1;
+                uniqueComponents[uidx].size++;
                 break;
             }
         }
+        if (!found) {
+            if (*nbComponents + 1 >= nbAlloc) {
+                nbAlloc = nbAlloc * 2;
+                uniqueComponents = reallocarray(uniqueComponents, nbAlloc, sizeof(TComponent));
+            }
+            uniqueComponents[*nbComponents].id = *nbComponents;
+            uniqueComponents[*nbComponents].comm = MPI_COMM_NULL;
+            uniqueComponents[*nbComponents].pe0WorldRank = -1;
+            uniqueComponents[*nbComponents].size = 1;
+            uniqueComponents[*nbComponents].hash = peComponentIds[i].hash;
+            strncpy(uniqueComponents[*nbComponents].name, peComponentIds[i].name, APP_MAX_COMPONENT_NAME_LEN - 1);
+            (*nbComponents)++;
+        }
     }
+
+    // Allocate only the memory needed for the actual number of unique components
+    uniqueComponents = reallocarray(uniqueComponents, *nbComponents, sizeof(TComponent));
 
     for (int compIdx = 0; compIdx < *nbComponents; compIdx++) {
-        App_Log(APP_DEBUG, "%s: compIdx = %d, id = %d, name = %s\n", __func__, compIdx, uniqueComponents[compIdx].id, uniqueComponents[compIdx].name);
-    }
-
-    // Verify that we don't have duplicate names
-    for (int i = 0; i < *nbComponents; i++) {
-        for (int j = 0; j < *nbComponents; j++) {
-            // It's not duplicated if it's the component itself
-            if (i != j) {
-                if (strncmp(uniqueComponents[i].name, uniqueComponents[j].name, APP_MAX_COMPONENT_NAME_LEN) == 0) {
-                    App_Log(APP_FATAL, "%s: Duplicate component name detected (%s)!\n", __func__, uniqueComponents[j].name);
-                    return(NULL);
-                }
-            }
-
-        }
+        App_Log(APP_DEBUG, "%s: compIdx = %d, name = %s\n", __func__, compIdx, uniqueComponents[compIdx].name);
     }
 
     App_Log(APP_DEBUG, "%s: *nbComponents = %d\n", __func__, *nbComponents);
@@ -156,18 +187,17 @@ static TComponent * findUniqueComponents(
 }
 
 
-//! Get the component id corresponding to the provided name
-int App_MPMD_GetComponentId(
-    //! [in] Component name
-    const char * const componentName
+//! Get the component id corresponding to the provided hash
+static int32_t App_MPMD_GetComponentIdByHash(
+    //! [in] Component name hash
+    const unsigned long nameHash
 ) {
-    //! \note Ids correspond to the MPI_APPNUM
     //! \return Component id if found, -1 otherwise
 
     const TApp * const app = App_GetInstance();
 
     for (int i = 0; i < app->NumComponents; i++) {
-        if (strncmp(app->AllComponents[i].name, componentName, APP_MAX_COMPONENT_NAME_LEN) == 0) {
+        if (app->AllComponents[i].hash == nameHash) {
             return app->AllComponents[i].id;
         }
     }
@@ -175,8 +205,19 @@ int App_MPMD_GetComponentId(
 }
 
 
+//! Get the component id corresponding to the provided name
+int32_t App_MPMD_GetComponentId(
+    //! [in] Component name
+    const char * const componentName
+) {
+    //! \return Component id if found, -1 otherwise
+
+    return App_MPMD_GetComponentIdByHash(hash(componentName));
+}
+
+
 //! Get component size (number of processes)
-int App_MPMD_GetComponentSize(
+int32_t App_MPMD_GetComponentSize(
     //! [in] Component id
     const int componentId
 ) {
@@ -314,14 +355,14 @@ static int App_MPMD_PrintComponentMap(
     //! If NULL is provided instead of a file path, the map is written to the application log with the log level APP_INFO.
 
     //! \return 1 on success, 0 otherwise
-    const char header[] = "Process Rank, MPI_APPNUM, Component Name, Hostname\n";
+    const char header[] = "World Rank, Component Id, Component Name, Hostname\n";
 
     if (filePath) {
         FILE * fd = fopen(filePath, "w");
         if (fd) {
             fprintf(fd, header);
             for (int i = 0; i < size; i++) {
-                fprintf(fd, "%06d, %1d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].id, map[i].name, map[i].processorName);
+                fprintf(fd, "%06d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].name, map[i].processorName);
             }
             fclose(fd);
         } else {
@@ -331,7 +372,7 @@ static int App_MPMD_PrintComponentMap(
     } else {
         App_Log(APP_INFO, header);
         for (int i = 0; i < size; i++) {
-            App_Log(APP_INFO, "%06d, %1d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].id, map[i].name, map[i].processorName);
+            App_Log(APP_INFO, "%06d, \"%s\", \"%s\"\n", map[i].worldRank, map[i].name, map[i].processorName);
         }
     }
     return 1;
@@ -339,12 +380,12 @@ static int App_MPMD_PrintComponentMap(
 
 
 //! Initialize a common MPMD context by telling everyone who we are as a process
-int App_MPMD_Init() {
+int32_t App_MPMD_Init() {
     //! This is a collective call. Everyone who participate in it will know who else
     //! is on board and will be able to ask for a communicator in common with any other
     //! participant (or even multiple other participants at once).
 
-    //! \return 1 on success, 0 otherwise
+    //! \return Component ID on success, negative otherwise
 
     TApp * const app = App_GetInstance();
 
@@ -366,20 +407,17 @@ int App_MPMD_Init() {
             peComponentIds = malloc(worldSize * sizeof(TComponentMap));
         }
 
-        int * appNum;
-        {
-            int flag;
-            MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appNum, &flag);
-        }
-        App_Log(APP_DEBUG, "%s: %06d/%06d, component \"%s\" MPI_APPNUM = %d\n", __func__, app->WorldRank, worldSize, app->Name, *appNum);
-
-        TComponentMap peComponentId = {.id = *appNum, .worldRank = app->WorldRank};
+        TComponentMap peComponentId = {.worldRank = app->WorldRank};
         {
             int processorNameLen;
             MPI_Get_processor_name(peComponentId.processorName, &processorNameLen);
         }
-        strncpy(peComponentId.name, app->Name, APP_MAX_COMPONENT_NAME_LEN);
+        strncpy(peComponentId.name, app->Name, APP_MAX_COMPONENT_NAME_LEN - 1);
+        const unsigned long nameHash = peComponentId.hash = hash(peComponentId.name);
+        App_Log(APP_DEBUG, "%s: peComponentId{.worldRank = %06d, .name = \"%s\", .hash = 0x%x}\n", __func__,
+            peComponentId.worldRank, peComponentId.name, peComponentId.hash);
         MPI_Gather(&peComponentId, sizeof(TComponentMap), MPI_BYTE, peComponentIds, sizeof(TComponentMap), MPI_BYTE, 0, MPI_COMM_WORLD);
+
         if (app->WorldRank == 0) {
             app->AllComponents = findUniqueComponents(worldSize, peComponentIds, &(app->NumComponents));
             App_Log(APP_DEBUG, "%s: app->NumComponents = %d\n", __func__, app->NumComponents);
@@ -393,18 +431,21 @@ int App_MPMD_Init() {
         MPI_Bcast(app->AllComponents, app->NumComponents * sizeof(TComponent), MPI_BYTE, 0, MPI_COMM_WORLD);
         // At this point all processes have the same list of unique component id-names pairs
 
-        const int componentId = *appNum;
-
+        const int componentId = App_MPMD_GetComponentIdByHash(nameHash);
+        App_Log(APP_DEBUG, "%s: worldRank = %06d, name = \"%s\", id = %02d hash = 0x%x}\n", __func__,
+            app->WorldRank, app->Name, componentId, nameHash);
         app->SelfComponent = &app->AllComponents[componentId];
         app->SelfComponent->id = componentId;
         MPI_Comm_split(MPI_COMM_WORLD, componentId, app->WorldRank, &app->SelfComponent->comm);
         MPI_Comm_rank(app->SelfComponent->comm, &app->ComponentRank);
         MPI_Comm_size(app->SelfComponent->comm, &app->SelfComponent->size);
 
+        App_Log(APP_DEBUG, "%s: PE %06d app->SelfComponent->comm != MPI_COMM_NULL = %d\n", __func__,
+            app->WorldRank, app->SelfComponent->comm != MPI_COMM_NULL);
+
         if (app->ComponentRank == 0) {
             // Declare that rank 0 of this component is "active" as a logger
             App_LogRank(app->WorldRank);
-            // App_Log(APP_INFO, "%s: Initializing component %s (ID %d) with %d PEs\n", __func__, app->Name, componentId, app->SelfComponent->size);
         }
 
         if (app->WorldRank == 0 && app->ComponentRank != 0) {
@@ -437,7 +478,6 @@ int App_MPMD_Init() {
 
             // Print some info about the components, for debugging
             if (app->WorldRank == 0) {
-                App_Log(APP_DEBUG, "%s: Num components = %d\n", __func__, app->NumComponents);
                 for (int i = 0; i < app->NumComponents; i++) {
                     printComponent(&app->AllComponents[i], 1);
                 }
@@ -448,8 +488,7 @@ int App_MPMD_Init() {
         if (app->State == APP_STOP && app->SelfComponent) app->Comm = app->SelfComponent->comm;
 
     } // omp single
-
-    return app->SelfComponent != NULL;
+    return (app->SelfComponent != NULL) ? app->SelfComponent->id : -1;
 }
 
 
@@ -831,7 +870,7 @@ MPI_Comm App_MPMD_GetSharedComm(
     {
         // Compute the total number of PEs in the unique components
         int nbPe = 0;
-        for (int i = 0; i < nbUniqueComponents; i++) {
+         for (int i = 0; i < nbUniqueComponents; i++) {
             for (int j = 0; j < app->NumComponents; j++) {
                 if (app->AllComponents[j].id == uniqueComponents[i]) {
                     nbPe += app->AllComponents[j].size;
@@ -863,8 +902,9 @@ MPI_Comm App_MPMD_GetSharedComm(
     }
 
 end:
-    if (sharedComm == MPI_COMM_NULL) {
-        App_Log(APP_ERROR, "%s: Communicator is NULL for components %s\n", __func__, compStr);
+    if (sharedComm == MPI_COMM_NULL && (!pes0Only || (pes0Only && app->ComponentRank == 0))) {
+        App_Log(APP_ERROR, "%s: PE World Rank %d Local Rank %d - Communicator is NULL for components %s\n",
+            __func__, app->WorldRank, app->ComponentRank, compStr);
     }
 
     free(uniqueComponents);

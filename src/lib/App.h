@@ -120,8 +120,10 @@ typedef enum {
     APP_EXTRA = 9,
     //! Quiet \todo Say what quiet actually does
     APP_QUIET = 10,
-    // ! Fatal error, and collect from all PEs
-    APP_COLLECT = 128
+    // ! Collect from all PEs
+    APP_COLLECT = 128,
+    // ! Exit on tolerance check
+    APP_EXIT = 256
 } TApp_LogLevel;
 
 typedef enum {
@@ -258,10 +260,12 @@ typedef enum {
 
 //! MPDP component description
 typedef struct {
-    //! ID of this component, corresponds to MPI_APPNUM
+    //! ID of this component
     int id;
     //! Name of the component
     char name[APP_MAX_COMPONENT_NAME_LEN];
+    //! Hash of the component's name
+    unsigned long hash;
     //! Communicator for the PEs of this component
     MPI_Comm comm;
     //! Number of PEs in this component
@@ -350,10 +354,10 @@ typedef struct {
    int            ComponentRank;         ///< Local rank of this PE (within its component)
    TComponent *   SelfComponent;         ///< This PE's component
    int            NumComponents;         ///< How many components are part of the MPMD context
-   TComponent *   AllComponents;         ///< List of components in this context
+   TComponent *   AllComponents;         ///< Array of components in this context
    int            NbSets;                ///< How many sets of components are stored in this context
    int            SizeSets;              ///< Size of the array that stores sets of components
-   TComponentSet* Sets;                  ///< List of sets that are already stored in this context
+   TComponentSet* Sets;                  ///< Array of sets that are already stored in this context
 #endif //HAVE_MPI
 
    TApp_Timer     *TimerLog;             ///< Time spent on log printing
@@ -379,7 +383,7 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
    Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__); \
    App->LogRank = ___app_rank; \
 }
-
+   
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
 TApp* App_GetInstance(void);
 void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
@@ -428,6 +432,7 @@ int   App_IsMPI(void);
 int   App_IsOMP(void);
 int   App_IsSingleNode(void);
 int   App_IsAloneNode(void);
+int   App_IsLogging(void);
 int   App_NodeGroup();
 int   App_NodePrint();
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);

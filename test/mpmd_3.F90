@@ -10,18 +10,15 @@ program mpmd_3
     character(32) :: str
     integer :: ierror
 
-    app_ptr=app_init(0,"mpmd_3","test", "mpmd context attempt","now")
+    app_ptr = app_init(0,"mpmd_3","test", "mpmd context attempt","now")
 
     call MPI_INIT(ierror)
-    call App_MPMD_Init()
+    mpmd_3id = App_MPMD_Init()
+    if (mpmd_3id < 0) call abort
     call App_Start()
-
-    ! call mpmd_end_mpmd_()
-    ! stop
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')
-    mpmd_3id = App_MPMD_GetSelfComponentId()
     mpmd_4id = App_MPMD_GetComponentId('mpmd_4')
 
     write(str, '(a,i1,a)') '(', mpmd_3id, ')'
@@ -62,6 +59,5 @@ program mpmd_3
     end if
 
     call mpmd_end_test()
-
 end program mpmd_3
 

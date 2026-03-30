@@ -256,6 +256,11 @@ module app
         use, intrinsic :: iso_c_binding
     end FUNCTION
 
+    !  int App_IsLogging();
+    logical(C_BOOL) FUNCTION app_islogging() BIND(C, name = "App_IsLogging")
+        use, intrinsic :: iso_c_binding
+    end FUNCTION
+
 #ifdef HAVE_MPI
     ! int App_SameHost(MPI_Comm comm);
     logical(C_BOOL) FUNCTION app_samehost(comm) BIND(C, name = "App_SameHost_F")

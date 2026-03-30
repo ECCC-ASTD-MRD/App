@@ -34,10 +34,10 @@ int main(int argc, char * argv[]) {
     const int nbPe = atoi(argv[1]);
     snprintf(componentName, componentNameMaxLen, "mpmd_%03d", nbPe);
     App_Init(APP_MASTER, componentName, "test", "mpmd context attempt", "now");
-    App_MPMD_Init();
+    int componentId = App_MPMD_Init();
+    if (componentId < 0) return 1;
     App_Start();
 
-    const int componentId = App_MPMD_GetSelfComponentId();
     const int size = App_MPMD_GetSelfComponentSize();
     if (size != nbPe) {
         printf("Component size (%d) does not match expected size (%d)!\n", size, nbPe);

@@ -30,9 +30,6 @@ if (EC_INIT_DONE LESS 2)
         #     ENVIRONMENT "APP_TOLERANCE=FATAL"
         # )
 
-        target_link_libraries(app App::App-ompi)
-        add_dependencies(check app)
-
         add_executable(test_app_loglevel_noinit EXCLUDE_FROM_ALL test_app_loglevel_noinit.F90)
         add_test(
             NAME test_app_loglevel_noinit

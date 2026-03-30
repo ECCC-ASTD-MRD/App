@@ -92,7 +92,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
     )
     target_include_directories(App-ompi-static INTERFACE 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi>
         $<INSTALL_INTERFACE:include/fmod-ompi>)
     target_compile_definitions(App-ompi-static PUBLIC HAVE_MPI HAVE_OPENMP)
@@ -105,7 +105,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shared_memory>
     )
     target_include_directories(App-ompi-shared INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/ompi>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi>
         $<INSTALL_INTERFACE:include/fmod-ompi>)
     target_compile_definitions(App-ompi-shared PUBLIC HAVE_MPI HAVE_OPENMP)
