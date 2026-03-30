@@ -33,7 +33,6 @@ int strmatch(
     const char * const regex
 );
 
-
 //! Get the shortest of the actual string length or maximum length
 static inline size_t strlen_up_to(
     //! [in] String for which to measure the length
@@ -41,7 +40,24 @@ static inline size_t strlen_up_to(
     //! [in] Maximum length
     const size_t maxLength
 ) {
-    return MIN(strlen(string), MAX(maxLength, 0));
+    size_t string_len = 0;
+    while (string_len < maxLength && string[string_len] != '\0') { string_len++; }
+    return string_len;
+}
+
+//! Copy at most `num_char` characters of string `src` into `dest` buffer, and append the NULL character if dest buffer
+//! has enough space (num_char < dest_size).
+//! WHen calling C-implemented functions from Fortran, there might not be an extra byte in `dest` to put a terminating
+//! NULL character.
+static inline void strncpy_safe(
+    char* const dest,       //!< [out] Where we want to copy the input string
+    const size_t dest_size, //!< [in]  Size of the destination buffer
+    const char* const src,  //!< [in]  The string we want to copy
+    const size_t num_char   //!< [in]  Maximum number of characters of the input string we want to copy
+) {
+    const size_t src_len = strlen_up_to(src, MIN(num_char, dest_size - 1));
+    memcpy(dest, src, src_len);
+    if (src_len < dest_size) dest[src_len] = '\0';
 }
 
 
