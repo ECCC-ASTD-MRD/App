@@ -8,7 +8,7 @@
 int32_t App_MPMD_Init();
 void App_MPMD_Finalize();
 MPI_Comm App_MPMD_GetInterComm(const int remoteComponentId, const int tag);
-MPI_Comm App_MPMD_GetInterComm_F(const int remoteComponentId, const int tag);
+MPI_Fint App_MPMD_GetInterComm_F(const int remoteComponentId, const int tag);
 MPI_Comm App_MPMD_GetSharedComm(const int32_t nbComponents, const int32_t components[nbComponents], const int32_t pes0Only);
 MPI_Fint App_MPMD_GetSharedComm_F(const int32_t nbComponents, const int32_t components[nbComponents], const int32_t pes0Only);
 MPI_Comm App_MPMD_GetSelfComm();

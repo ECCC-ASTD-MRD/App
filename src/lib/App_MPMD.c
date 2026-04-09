@@ -939,7 +939,7 @@ end:
 
 
 //! Get a Fortran intercommunicator between Self and another component
-MPI_Comm App_MPMD_GetInterComm_F(
+MPI_Fint App_MPMD_GetInterComm_F(
     //! [in] Component ID of the remote component
     const int remoteComponentId,
     //! [in] Tag used to match with corresponding call in the remote component
