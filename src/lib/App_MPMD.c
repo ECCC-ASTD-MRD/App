@@ -811,7 +811,28 @@ static TComponentSet * createSet(
 }
 
 
-//! Get a communicator that encompasses all PEs or only the PE0 of the components in the given list
+//! Get an intercommunicator between Self and another component
+MPI_Comm App_MPMD_GetInterComm(
+    //! [in] Component ID of the remote component
+    const int remoteComponentId,
+    //! [in] Tag used to match with corresponding call in the remote component
+    const int tag
+) {
+    int remoteLeaderWorldRank = App_MPMD_GetComponentPeWRank(remoteComponentId, 0);
+    MPI_Comm intercomm;
+    MPI_Intercomm_create(
+        App_MPMD_GetSelfComm(),
+        0,
+        MPI_COMM_WORLD,
+        remoteLeaderWorldRank,
+        tag,
+        &intercomm
+    );
+    return intercomm;
+}
+
+
+//! Get a intracommunicator that encompasses all PEs or only the PE0 of the components in the given list
 MPI_Comm App_MPMD_GetSharedComm(
     //! [in] Number of components in the list
     const int32_t nbComponents,
@@ -917,7 +938,18 @@ end:
 }
 
 
-//! Get shared Fortran communicator
+//! Get a Fortran intercommunicator between Self and another component
+MPI_Comm App_MPMD_GetInterComm_F(
+    //! [in] Component ID of the remote component
+    const int remoteComponentId,
+    //! [in] Tag used to match with corresponding call in the remote component
+    const int tag
+) {
+    return MPI_Comm_c2f(App_MPMD_GetInterComm(remoteComponentId, tag));
+}
+
+
+//! Get shared Fortran intracommunicator
 MPI_Fint App_MPMD_GetSharedComm_F(
     //! [in] Number of components
     const int32_t nbComponents,

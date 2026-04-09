@@ -35,6 +35,14 @@ module app_mpmd
         end function App_MPMD_Init
     end interface
 
+    interface
+        function App_MPMD_GetInterComm(remoteComponentId, tag) bind(C, name="App_MPMD_GetInterComm_F")
+            import :: C_INT32_T
+            integer(C_INT32_T), value :: remoteComponentId
+            integer(C_INT32_T), value :: tag
+            integer(C_INT32_T) :: App_MPMD_GetInterComm
+        end function App_MPMD_GetInterComm
+    end interface
 
     interface
         subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
