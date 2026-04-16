@@ -45,6 +45,12 @@ module app_mpmd
     end interface
 
     interface
+        subroutine App_MPMD_PrintSummary() bind(C, name = 'App_MPMD_PrintSummary')
+            implicit none
+        end subroutine
+    end interface
+
+    interface
         subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
             implicit none
         end subroutine App_MPMD_Finalize

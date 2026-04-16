@@ -28,6 +28,19 @@
 //! component IDs to the `App_MPMD_GetSharedComm()` function. The ID of each of the
 //! _processes_ making that collective call must be included in the array of components.
 //!
+//!
+//! ## Restrictions
+//!
+//! All the processes of a given component must be contiguous inside the MPI execution
+//! environment; in other words they must have consecutive world ranks.
+//!
+//! For example, there are 2 components name A, B with for processes each.
+//! It's valid if the world ranks of the processes of each components are as follows:
+//! A {4, 5, 6, 7} and B {0, 1, 2, 3}
+//! However, the following mapping would be invalid:
+//! A {1, 3, 5, 7} and B {0, 2, 4, 6}
+//!
+//!
 //! ## Typical App_MPMD application structure
 //!
 //! -# Call `MPI_Init()` to initialize MPI.
@@ -320,8 +333,22 @@ const char * App_MPMD_ComponentIdToName(
 }
 
 
-//! Print a text representation of the provided component to the application log
-static void printComponent(
+//! Print a summary of the components to the application log
+void App_MPMD_PrintSummary(void) {
+    //! Each component is summarized on a single line
+
+    const TApp * const app = App_GetInstance();
+
+    for (int compId = 0; compId < app->NumComponents; compId++) {
+        const TComponent * const comp = &(app->AllComponents[compId]);
+        App_Log(APP_VERBATIM, "Component id = %d, name = \"%s\", size = %d, ranks = [%d, %d]\n",
+            compId, comp->name, comp->size, comp->pe0WorldRank, comp->pe0WorldRank + comp->size - 1);
+    }
+}
+
+
+//! Print a text representation of the provided component to the application log for debugging purposes
+static void debugPrintComponent(
     //! [in] The component whose info we want to print
     const TComponent * const comp,
     //! [in] Whether to print the global rank of every PE in the component
@@ -479,7 +506,7 @@ int32_t App_MPMD_Init() {
             // Print some info about the components, for debugging
             if (app->WorldRank == 0) {
                 for (int i = 0; i < app->NumComponents; i++) {
-                    printComponent(&app->AllComponents[i], 1);
+                    debugPrintComponent(&app->AllComponents[i], 1);
                 }
             }
         }
@@ -499,7 +526,7 @@ void App_MPMD_Finalize() {
     {
         TApp * const app = App_GetInstance();
         if (app->MainComm != MPI_COMM_NULL) {
-            printComponent(app->SelfComponent, 1);
+            debugPrintComponent(app->SelfComponent, 1);
 
             if (app->Sets != NULL) {
                 for (int i = 0; i < app->NbSets; i++) {

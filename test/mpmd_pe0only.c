@@ -52,6 +52,8 @@ int main(int argc, char * argv[]) {
         exit(3);
     }
 
+    if (worldRank == 0) App_MPMD_PrintSummary();
+
     const int mpmd_3id = App_MPMD_GetComponentId("mpmd_003");
     const int mpmd_5id = App_MPMD_GetComponentId("mpmd_005");
     const int mpmd_7id = App_MPMD_GetComponentId("mpmd_007");
@@ -79,7 +81,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    App_End(0);
+    App_End(-1);
     App_MPMD_Finalize();
 
     MPI_Finalize();
