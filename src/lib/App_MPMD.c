@@ -873,9 +873,15 @@ MPI_Comm App_MPMD_GetSharedComm(
     //!  If the communicator does not already exist, it will be created.
     //! \note This function call is collective if and only if the communicator gets created.
 
-    // Can do much if the list of component is NULL. This also prevents the warning about CWE-690
-    if (components == NULL) return MPI_COMM_NULL;
     TApp * const app = App_GetInstance();
+
+    // Can't do much if the list of components is NULL. This also prevents the warning about CWE-690
+    if (components == NULL) {
+        App_Log(APP_ERROR, "%s: PE World Rank %d Local Rank %d - Component array is NULL!\n",
+            __func__, app->WorldRank, app->ComponentRank);
+        return MPI_COMM_NULL;
+    }
+
     char * const compStr = intArrayStr(nbComponents, components, 0);
     #ifndef NDEBUG
         printf("%02d %s(%p, %s, %d, %d) from %d(%s)\n", app->WorldRank, __func__,
@@ -892,17 +898,29 @@ MPI_Comm App_MPMD_GetSharedComm(
 
     // Make sure there are enough components in the list
     if (nbUniqueComponents < 2) {
-        App_Log(APP_ERROR, "%s: There need to be at least 2 components (including this one) to share a communicator\n",
+        App_Log(APP_ERROR, "%s: There must be at least 2 components (including this one) to create shared a communicator!\n",
                 __func__);
-        goto end;
+        free(compStr);
+        free(uniqueComponents);
+        free(uniqueStr);
+        return MPI_COMM_NULL;
     }
 
-    // Make sure this component is included in the list
+    // Sanity checks on the component list to make sure that:
+    // - all the component ids are valid
+    // - this component is included in the list
     int found = 0;
     for (int i = 0; i < nbUniqueComponents; i++) {
+        if (uniqueComponents[i] < 0 || uniqueComponents[i] >= app->NumComponents) {
+            App_Log(APP_ERROR, "%s: PE World Rank %d Local Rank %d - One of the IDs in the component array is invalid!\n",
+                __func__, app->WorldRank, app->ComponentRank);
+            free(compStr);
+            free(uniqueComponents);
+            free(uniqueStr);
+            return MPI_COMM_NULL;
+        }
         if (uniqueComponents[i] == app->SelfComponent->id) {
             found = 1;
-            break;
         }
     }
     if (!found) {

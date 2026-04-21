@@ -60,6 +60,17 @@ int main(int argc, char * argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    const MPI_Comm comm_invalid1 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, -1}, 1);
+    if (comm_invalid1 != MPI_COMM_NULL) {
+        printf("A valid communicator was returned when one of the ids was -1!\n");
+        exit(4);
+    }
+    const MPI_Comm comm_invalid2 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, 3}, 1);
+    if (comm_invalid2 != MPI_COMM_NULL) {
+        printf("A valid communicator was returned when one of the ids was greater or equal to number of components!\n");
+        exit(5);
+    }
+
     const MPI_Comm comm_pe0 = App_MPMD_GetSharedComm(3, (int[]){mpmd_3id, mpmd_5id, mpmd_7id}, 1);
     // Only the PE0 of each component will add a non-null communicator
     if (componentRank == 0) {
