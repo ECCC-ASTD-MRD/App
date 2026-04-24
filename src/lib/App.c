@@ -46,13 +46,32 @@ unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
 //! Return last error
 char* App_ErrorGet(void)     { return APP_LASTERROR; }
 
+//! Get pointer to App object
 TApp* App_GetInstance(void)  { return &AppInstance; }
+
+//! Check if application should finish. It will return True upon premption signal, if signals are enabled
 int   App_IsDone(void)       { return App->State == APP_DONE; }
+
+//! Check if application uses MPI
 int   App_IsMPI(void)        { return App->NbMPI > 1; }
+
+//! Check if application uses OpenMP
 int   App_IsOMP(void)        { return App->NbThread > 1; }
+
+//! Check if application uses only one node
 int   App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
+
+//! Check if this process (PE) is alone on a node
 int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
+//! Check if current process (PE) is allowed to log
+int   App_IsLogging(void)    { 
+#ifdef HAVE_MPI
+    return (App->Tolerance && (App->LogRank==-1 || App->LogRank == App->RankMPI || App->LogRank == App->ComponentRank));
+#else
+    return App->Tolerance; 
+#endif
+}
 
 #ifdef HAVE_MPI
 int App_MPIProcCmp(const void *a, const void *b) {
@@ -410,7 +429,7 @@ int App_FinalizeCallback(
 
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
-    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
+    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se superpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
     if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
         // Get the physical node unique name of mpi procs
@@ -472,6 +491,7 @@ int App_NodeGroup() {
 }
 
 
+//! Print the node used
 int App_NodePrint() {
 #ifdef HAVE_MPI
     if (App_IsMPI()) {
@@ -641,7 +661,7 @@ void App_Start(void) {
                 App_Log(APP_VERBATIM, "\nSystem         : %s (%s)\nOS             : %s %s (%s)\n",
                 buffer.nodename,buffer.machine,buffer.sysname,buffer.release,buffer.version);
             }
-            
+
             if (App->UTC) {
                 App_Log(APP_VERBATIM, "\nStart time     : (UTC) %s", asctime(gmtime(&App->Time.tv_sec)));
             } else {
@@ -768,7 +788,7 @@ int App_GetSS(
     fd=fopen("/proc/self/smaps_rollup","re");
 
     while ((line=fgets(buf, sizeof(buf), fd))) {
-       // Extract line components
+        // Extract line components
         if (sscanf(buf, "%63s %n", field, &len) == 1 && *field && field[strlen(field) - 1] == ':') {
             const char* c = line + len;
             // Only parse P* and R* lines
@@ -950,7 +970,7 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    if (Status==APP_FATAL && App->Finalize) {
+    if (Status>=APP_EXIT && App->Finalize) {
         App->Finalize();
     }
 #ifdef HAVE_MPI
@@ -988,8 +1008,8 @@ int App_End(
                 }
             }
 
-            if (Status == APP_FATAL) {
-                App_Log(APP_VERBATIM, "Status         : Abort(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
+            if (Status >= APP_EXIT) {
+                App_Log(APP_VERBATIM, "Status         : Abort(%s) (%i Errors) (%i Warnings)\n", AppLevelNames[Status-APP_EXIT], App->LogError, App->LogWarning);
             } else if (Status != EXIT_SUCCESS) {
                 App_Log(APP_VERBATIM, "Status         : Error(code=%i) (%i Errors) (%i Warnings)\n", Status, App->LogError, App->LogWarning);
             } else if (App->LogError) {
@@ -1008,7 +1028,7 @@ int App_End(
 #ifdef HAVE_MPI
     }
 #endif
-    if (Status == APP_FATAL) {
+    if (Status >= APP_EXIT) {
        exit((App->Signal > 0) ? 128 + App->Signal : Status);
     } else {
        return (App->Signal > 0) ? 128 + App->Signal : Status;
@@ -1122,7 +1142,6 @@ void App_LogAllRanks4Fortran(
    App->LogRank=___app_rank;
 }
 
-
 void Lib_Log4Fortran(
     //! [in] Identificateur de la librairie
     TApp_Lib Lib,
@@ -1170,6 +1189,8 @@ void Lib_Log(
     if (Level>=APP_COLLECT) {
         level=Level-APP_COLLECT;
         MPI_Allreduce(MPI_IN_PLACE, &level, 1, MPI_INT, MPI_MIN, App->Comm);
+
+        if (level==APP_QUIET) return;
     }
 #endif
     // If not initialized yet
@@ -1305,8 +1326,8 @@ void Lib_Log(
     App_TimerStop(App->TimerLog);
 
     // Exit application if error above tolerance level
-    if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM)) {
-        exit(App_End(APP_FATAL));
+    if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM || effectiveLevel == APP_ERROR)) {
+        App_End(APP_EXIT+effectiveLevel);
     }
 }
 

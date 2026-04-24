@@ -4,7 +4,9 @@
 
 int32_t finalize() {
 
+#ifdef HAVE_MPI
     MPI_Finalize();
+#endif
     return(TRUE);
 }
 
@@ -14,7 +16,9 @@ int main(int argc, char *argv[]) {
     int64_t queued=0;
     char   *title=NULL;
 
+#ifdef HAVE_MPI
     MPI_Init(NULL, NULL);
+#endif
 
     TApp_Arg appargs[]=
       { { APP_INT32, &step,    1,             "s", "step",   "Number of step" },
@@ -53,13 +57,15 @@ int main(int argc, char *argv[]) {
 
         // Make a rank fail
         if (fail>=0) {
-            App_LogAllRanks((App->RankMPI==fail?APP_FATAL:APP_INFO)+APP_COLLECT,"Fail in rank %i\n",fail);
+            App_LogAllRanks((App->RankMPI==fail?APP_FATAL:APP_QUIET)+APP_COLLECT,"Fail in rank %i\n",fail);
         }
     }
 
     ok=App_End(0);
 
+#ifdef HAVE_MPI
     MPI_Finalize();
+#endif
 
     return(ok);
 }

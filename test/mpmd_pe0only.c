@@ -34,10 +34,10 @@ int main(int argc, char * argv[]) {
     const int nbPe = atoi(argv[1]);
     snprintf(componentName, componentNameMaxLen, "mpmd_%03d", nbPe);
     App_Init(APP_MASTER, componentName, "test", "mpmd context attempt", "now");
-    App_MPMD_Init();
+    int componentId = App_MPMD_Init();
+    if (componentId < 0) return 1;
     App_Start();
 
-    const int componentId = App_MPMD_GetSelfComponentId();
     const int size = App_MPMD_GetSelfComponentSize();
     if (size != nbPe) {
         printf("Component size (%d) does not match expected size (%d)!\n", size, nbPe);
@@ -52,11 +52,24 @@ int main(int argc, char * argv[]) {
         exit(3);
     }
 
+    if (worldRank == 0) App_MPMD_PrintSummary();
+
     const int mpmd_3id = App_MPMD_GetComponentId("mpmd_003");
     const int mpmd_5id = App_MPMD_GetComponentId("mpmd_005");
     const int mpmd_7id = App_MPMD_GetComponentId("mpmd_007");
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    const MPI_Comm comm_invalid1 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, -1}, 1);
+    if (comm_invalid1 != MPI_COMM_NULL) {
+        printf("A valid communicator was returned when one of the ids was -1!\n");
+        exit(4);
+    }
+    const MPI_Comm comm_invalid2 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, 3}, 1);
+    if (comm_invalid2 != MPI_COMM_NULL) {
+        printf("A valid communicator was returned when one of the ids was greater or equal to number of components!\n");
+        exit(5);
+    }
 
     const MPI_Comm comm_pe0 = App_MPMD_GetSharedComm(3, (int[]){mpmd_3id, mpmd_5id, mpmd_7id}, 1);
     // Only the PE0 of each component will add a non-null communicator
@@ -79,7 +92,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    App_End(0);
+    App_End(-1);
     App_MPMD_Finalize();
 
     MPI_Finalize();

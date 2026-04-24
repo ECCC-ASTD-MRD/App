@@ -24,6 +24,32 @@ module app_mpmd
     implicit none
     save
 
+
+    interface
+        !> Initialize App's MPMD functionalities
+        !> \return Id of this component
+        function App_MPMD_Init() result(component_id) bind(C, name='App_MPMD_Init')
+            import :: C_INT32_T
+            implicit none
+            integer(C_INT32_T) :: component_id
+        end function App_MPMD_Init
+    end interface
+
+    interface
+        function App_MPMD_GetInterComm(remoteComponentId, tag) bind(C, name="App_MPMD_GetInterComm_F")
+            import :: C_INT32_T
+            integer(C_INT32_T), value :: remoteComponentId
+            integer(C_INT32_T), value :: tag
+            integer(C_INT32_T) :: App_MPMD_GetInterComm
+        end function App_MPMD_GetInterComm
+    end interface
+
+    interface
+        subroutine App_MPMD_PrintSummary() bind(C, name = 'App_MPMD_PrintSummary')
+            implicit none
+        end subroutine
+    end interface
+
     interface
         subroutine App_MPMD_Finalize() bind(C, name = 'App_MPMD_Finalize')
             implicit none
@@ -31,23 +57,6 @@ module app_mpmd
     end interface
 
 contains
-
-    subroutine App_MPMD_Init()
-        implicit none
-        integer :: status
-
-        interface
-            function App_MPMD_Init_c() result(status) bind(C, name='App_MPMD_Init')
-                import :: C_INT32_T
-                implicit none
-                integer(C_INT32_T) :: status
-            end function App_MPMD_Init_c
-        end interface
-
-        status = App_MPMD_Init_c()
-    end subroutine App_MPMD_Init
-
-
     !> Get the rank of the PE in its component
     !> \return Rank of this PE in its component
     pure function App_MPMD_GetSelfComponentRank() result(component_rank)

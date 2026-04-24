@@ -5,15 +5,18 @@
 
 #include "App.h"
 
-int App_MPMD_Init();
+int32_t App_MPMD_Init();
 void App_MPMD_Finalize();
+void App_MPMD_PrintSummary(void);
+MPI_Comm App_MPMD_GetInterComm(const int remoteComponentId, const int tag);
+MPI_Fint App_MPMD_GetInterComm_F(const int remoteComponentId, const int tag);
 MPI_Comm App_MPMD_GetSharedComm(const int32_t nbComponents, const int32_t components[nbComponents], const int32_t pes0Only);
 MPI_Fint App_MPMD_GetSharedComm_F(const int32_t nbComponents, const int32_t components[nbComponents], const int32_t pes0Only);
 MPI_Comm App_MPMD_GetSelfComm();
 MPI_Fint App_MPMD_GetSelfComm_F();
 int32_t App_MPMD_HasComponent(const char * const componentName);
-int App_MPMD_GetComponentId(const char * const componentName);
-int App_MPMD_GetSelfComponentId();
+int32_t App_MPMD_GetComponentId(const char * const componentName);
+int32_t App_MPMD_GetSelfComponentId();
 const char * App_MPMD_ComponentIdToName(const int componentId);
 int App_MPMD_GetSelfComponentRank();
 int App_MPMD_GetSelfComponentSize();
