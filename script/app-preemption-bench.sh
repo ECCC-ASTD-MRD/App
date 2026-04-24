@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+#\rm *.sh.e* *.sh.o*; cp ../script/app-preemption-bench.sh .; cp ./src/utils/app .;./app-preemption-bench.sh -n 3 -c 128  -m 400 -b 1 -B 0 -S 3 -s 1 -p 1 -P
 
 script=$(basename "${BASH_SOURCE[0]}")
 path=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
-short="n:c:m:f:s:b:p:S:B:P:h"
-long="nbnodes:nbcores:mempercores:small:big:preemptive:nbsmall:nbbig:nbpremptive:help"
+short="n:c:m:f:s:b:p:S:B:P:th"
+long="nbnodes:nbcores:mempercores:small:big:preemptive:nbsmall:nbbig:nbpremptive:test:help"
 opts=$(getopt -o $short --long $long --name "$script" -- "$@")
 usage="\nTest preemption capability and dalays\n
 Usage : ${script}\n
@@ -11,6 +12,7 @@ Usage : ${script}\n
    -c : number of cores per nodes
    -m : size of memory per mpi core (MB)
    -f : fraction of nodes for large and preemptive jobs (%)
+   -t : test mode, does not launch the jobs
 
    -s : small job configuration [optional]
    -b : big job configuration [optional]
@@ -27,13 +29,14 @@ while :; do
         -n | --nbnodes      ) NB_NODES=$2;             shift 2 ;;
         -c | --nbcores      ) NB_CORES=$2;             shift 2 ;;
         -m | --mempercores  ) MEM=$2;                  shift 2 ;;
-        -f | --pccores      ) PC_CORES=$2;             shift 2 ;;
+        -f | --pccores      ) PC_NODES=$2;             shift 2 ;;
 
         -s | --small        ) CONFIG_SMALL=$2;         shift 2 ;;
         -b | --big          ) CONFIG_BIG=$2;           shift 2 ;;
         -p | --preemptive   ) CONFIG_PREEMPTIVE=$2;    shift 2 ;;
         -S | --nbsmall      ) NB_SMALL=$2;             shift 2 ;;
         -B | --nbbig        ) NB_BIG=$2;               shift 2 ;;
+        -t | --test         ) TEST=1;                  shift 1 ;;
         -P | --nbpreemptive ) NB_PREEMPTIVE=$2;        shift 2 ;;
         -h | --help         ) echo -e "${usage}" 1>&2; exit ;;
         --                  ) shift;                   break ;;
@@ -45,7 +48,7 @@ done
 QSystem=PBS                                                  # Queuing system
 Queue=development                                            # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-Delay=5                                                      # Delay for all regular jobs to start running
+Delay=1                                                      # Delay for all regular jobs to start running
 
 # Define specific MPI environment
 MPI_ENV="
@@ -57,8 +60,9 @@ export PATH=${path}:\$PATH
 
 NB_NODES=${NB_NODES:-4}                                      # Number of nodes on cluster
 NB_CORES=${NB_CORES:-80}                                     # Number of cores per node
-MEM=20                                                       # Memory per mpi core
+MEM=${MEM:-20}                                               # Memory per mpi core
 PC_NODES=${PC_NODES:-10}                                     # % of cluster for big jobs
+TEST=${TEST:-0}                                              # Test mode
 
 eval pcnodes=\`perl -e \'print int\(${NB_NODES}*${PC_NODES}/100.0+0.99\)\'\`
 
@@ -75,7 +79,9 @@ prepjob() {
 
    local nbnode=${1}
    local id=${2}
+   local step=${3}
    local sz=$((${nbnode} * ${NB_CORES}))
+#   local nbnode=1
 
    # Qeueing system specific params
    case ${QSystem} in
@@ -109,6 +115,8 @@ EOT
    # Job per se
    cat <<EOT >> job${id}.sh
 
+trap '' SIGTERM SIGUSR2 SIGUSR1
+
 # Script creation time
 secs0=$(date +%s)
 
@@ -116,7 +124,7 @@ secs0=$(date +%s)
 ${MPI_ENV}
 
 # Start MPI
-mpirun -n ${sz} app -t ${id} -q \${secs0}
+mpirun -n ${sz} app -t ${id} -q \${secs0} -s ${step} -d 2 -v INFO
 EOT
 }
 
@@ -124,30 +132,29 @@ jids=()
 
 # Launch big jobs
 echo "(INFO) Launching $NB_BIG big config (MPI=$((${CONFIG_BIG}*${NB_CORES})))"
-prepjob ${CONFIG_BIG} Big
-
+prepjob ${CONFIG_BIG} Big 100
 for n in $(seq $NB_BIG); do
-   jid=`${command}${Queue} jobBig.sh` 
+[[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobBig.sh` 
    jids+=(${jid})
 done
 
 # Launch small jobs
 echo "(INFO) Launching $NB_SMALL small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
-prepjob ${CONFIG_SMALL} Small
+prepjob ${CONFIG_SMALL} Small 100
 
 for n in $(seq $NB_SMALL); do
-   jid=`${command}${Queue} jobSmall.sh` 
+[[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobSmall.sh` 
    jids+=(${jid})
 done
 
 # Queue 10 more
 echo "(INFO) Queuing 10 more small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
 for n in $(seq 10); do
-   jid=`${command}${Queue} jobSmall.sh` 
+#TODO [[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobSmall.sh` 
    jids+=(${jid})
 done
 
-sleep ${Delay}
+[[ ${TEST} -eq 0 ]] && sleep ${Delay}
 
 #----- PROVIDER SPECIFIC DEFINITIONS (Preemption method)
 # Preempt jobs (SIGTERM method test)
@@ -156,8 +163,8 @@ sleep ${Delay}
 
 # Launch preemptive jobs
 echo "(INFO) Launching $NB_PREEMPTIVE preemptive config (MPI=$((${CONFIG_PREEMPTIVE}*${NB_CORES})))"
-prepjob ${CONFIG_PREEMPTIVE} Preemptive
+prepjob ${CONFIG_PREEMPTIVE} Preemptive 100
 
 for n in $(seq $NB_PREEMPTIVE); do
-   jid=`${command}${QueuePremptive} jobPreemptive.sh`
+   [[ ${TEST} -eq 0 ]] && jid=`${command}${QueuePremptive} jobPreemptive.sh`
 done
