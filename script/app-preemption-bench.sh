@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-#\rm *.sh.e* *.sh.o*; cp ../script/app-preemption-bench.sh .; cp ./src/utils/app .;./app-preemption-bench.sh -n 3 -c 128  -m 400 -b 1 -B 0 -S 3 -s 1 -p 1 -P
+#\rm *.sh.e* *.sh.o*; cp ../script/app-preemption-bench.sh .; cp ./src/utils/app .;./app-preemption-bench.sh -n 3 -c 128 -m 400 -b 1 -B 0 -S 3 -s 1 -p 1 -P 2 -i 30
 
 script=$(basename "${BASH_SOURCE[0]}")
 path=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
-short="n:c:m:f:s:b:p:S:B:P:th"
-long="nbnodes:nbcores:mempercores:small:big:preemptive:nbsmall:nbbig:nbpremptive:test:help"
+short="n:c:m:i:f:a:s:b:p:S:B:P:th"
+long="nbnodes:nbcores:mempercores:nbiterations:fraction:trap:small:big:preemptive:nbsmall:nbbig:nbpremptive:test:help"
 opts=$(getopt -o $short --long $long --name "$script" -- "$@")
 usage="\nTest preemption capability and dalays\n
 Usage : ${script}\n
    -n : number of nodes in the cluster
    -c : number of cores per nodes
    -m : size of memory per mpi core (MB)
+   -i : Number of simulated iteration seconds (default: 100)
    -f : fraction of nodes for large and preemptive jobs (%)
    -t : test mode, does not launch the jobs
+   -a : trap delay(s) before answering a signal (default:1, 0=no answering)
 
    -s : small job configuration [optional]
    -b : big job configuration [optional]
@@ -30,6 +32,7 @@ while :; do
         -c | --nbcores      ) NB_CORES=$2;             shift 2 ;;
         -m | --mempercores  ) MEM=$2;                  shift 2 ;;
         -f | --pccores      ) PC_NODES=$2;             shift 2 ;;
+        -i | --nbiterations ) NB_ITER=$2;              shift 2 ;;
 
         -s | --small        ) CONFIG_SMALL=$2;         shift 2 ;;
         -b | --big          ) CONFIG_BIG=$2;           shift 2 ;;
@@ -48,7 +51,7 @@ done
 QSystem=PBS                                                  # Queuing system
 Queue=development                                            # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-Delay=1                                                      # Delay for all regular jobs to start running
+Delay=10                                                     # Delay before launching preemptive jobs
 
 # Define specific MPI environment
 MPI_ENV="
@@ -60,9 +63,11 @@ export PATH=${path}:\$PATH
 
 NB_NODES=${NB_NODES:-4}                                      # Number of nodes on cluster
 NB_CORES=${NB_CORES:-80}                                     # Number of cores per node
+NB_ITER=${NB_ITER:-100}                                      # Number of iterations
 MEM=${MEM:-20}                                               # Memory per mpi core
 PC_NODES=${PC_NODES:-10}                                     # % of cluster for big jobs
 TEST=${TEST:-0}                                              # Test mode
+TRAP_DELAY=${TRAP_DELAY:-1}                                  # Delay before answering a signal
 
 eval pcnodes=\`perl -e \'print int\(${NB_NODES}*${PC_NODES}/100.0+0.99\)\'\`
 
@@ -80,8 +85,8 @@ prepjob() {
    local nbnode=${1}
    local id=${2}
    local step=${3}
+   local trapd=${4}
    local sz=$((${nbnode} * ${NB_CORES}))
-#   local nbnode=1
 
    # Qeueing system specific params
    case ${QSystem} in
@@ -91,6 +96,9 @@ prepjob() {
 #!/bin/bash
 #PBS -l select=${nbnode}:ncpus=${sz}:mpiprocs=${sz}:ompthreads=1:mem=${MEM}G
 #PBS -l walltime=0:30:0
+
+# Sequence number of job
+seq=\${PBS_JOBID}
 EOT
          ;;
       "SLURM")
@@ -103,6 +111,9 @@ EOT
 #SBATCH --mem-per-cpu=${MEM}G
 #SBATCH --time=0:30:0
 #SBATCH --account=eccc_mrd 
+
+# Sequence number of job
+seq=\${$SLURM_JOB_ID}
 EOT
          ;;
 
@@ -114,17 +125,27 @@ EOT
 
    # Job per se
    cat <<EOT >> job${id}.sh
+cd $path
 
-trap '' SIGTERM SIGUSR2 SIGUSR1
+export APP_VERBOSE_TIME=SECOND
 
-# Script creation time
+signal_mpi() {
+   echo "Caught signal, signaling MPI process \$mpi_pid"
+   kill -SIGUSR2 \$mpi_pid
+}
+#trap 'signal_mpi' SIGTERM SIGUSR2 SIGUSR1 SIGURG
+trap '' SIGTERM SIGUSR2 SIGUSR1 SIGURG
+
+# Script launch time
 secs0=$(date +%s)
 
 # Define specific MPI environment
 ${MPI_ENV}
 
 # Start MPI
-mpirun -n ${sz} app -t ${id} -q \${secs0} -s ${step} -d 2 -v INFO
+mpirun -n ${sz} app -t ${id}-\${seq} -q \${secs0} -s ${step} -d 1 -v INFO -a ${trapd} -l ${id}-\${seq}.\$\$.out
+#mpi_pid=\$!
+#wait \$mpi_pid
 EOT
 }
 
@@ -132,27 +153,27 @@ jids=()
 
 # Launch big jobs
 echo "(INFO) Launching $NB_BIG big config (MPI=$((${CONFIG_BIG}*${NB_CORES})))"
-prepjob ${CONFIG_BIG} Big 100
+prepjob ${CONFIG_BIG} Big ${NB_ITER} ${TRAP_DELAY}
 for n in $(seq $NB_BIG); do
-[[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobBig.sh` 
+   [[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobBig.sh` 
    jids+=(${jid})
 done
 
 # Launch small jobs
 echo "(INFO) Launching $NB_SMALL small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
-prepjob ${CONFIG_SMALL} Small 100
+prepjob ${CONFIG_SMALL} Small ${NB_ITER} ${TRAP_DELAY}
 
 for n in $(seq $NB_SMALL); do
-[[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobSmall.sh` 
+   [[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} -r y jobSmall.sh` 
    jids+=(${jid})
 done
 
 # Queue 10 more
-echo "(INFO) Queuing 10 more small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
-for n in $(seq 10); do
+#echo "(INFO) Queuing 10 more small config (MPI=$((${CONFIG_SMALL}*${NB_CORES})))"
+#for n in $(seq 10); do
 #TODO [[ ${TEST} -eq 0 ]] && jid=`${command}${Queue} jobSmall.sh` 
-   jids+=(${jid})
-done
+#   jids+=(${jid})
+#done
 
 [[ ${TEST} -eq 0 ]] && sleep ${Delay}
 
@@ -163,7 +184,7 @@ done
 
 # Launch preemptive jobs
 echo "(INFO) Launching $NB_PREEMPTIVE preemptive config (MPI=$((${CONFIG_PREEMPTIVE}*${NB_CORES})))"
-prepjob ${CONFIG_PREEMPTIVE} Preemptive 100
+prepjob ${CONFIG_PREEMPTIVE} Preemptive ${NB_ITER} 0
 
 for n in $(seq $NB_PREEMPTIVE); do
    [[ ${TEST} -eq 0 ]] && jid=`${command}${QueuePremptive} jobPreemptive.sh`
