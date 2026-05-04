@@ -274,7 +274,7 @@ TApp * App_Init(
         App->Version = Version ? strdup(Version) : strdup("");
         App->Desc = Desc ? strdup(Desc) : strdup("");
         App->TimeStamp = Stamp ? strdup(Stamp) : strdup("");
-        App->LogFile = strdup("stderr");
+        App->LogFile = App->LogFile ? App->LogFile : strdup("stderr");
         App->LogStream = (FILE*)NULL;
         App->Tag = NULL;
         App->State = APP_STOP;
@@ -315,7 +315,6 @@ TApp * App_Init(
         
         // Trap signals if enabled (preemption)
         if (App->Signal == 0) {
-            App_Trap(SIGUSR2);
             App_Trap(SIGTERM);
         }
     } else {
@@ -1044,6 +1043,8 @@ void App_TrapProcess(
     App->Signal = Signal;
 
     switch(Signal) {
+        case SIGURG:
+        case SIGUSR1:
         case SIGUSR2:
         case SIGTERM: App->State = APP_DONE;
     }
