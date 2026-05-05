@@ -724,6 +724,8 @@ int App_LogStats(
     const char * const Tag
 ) {
     //! \return Always TRUE
+    static __thread double stime0=0.0,utime0=0.0,rtime0=0.0;
+    double stime=0.0,utime=0.0,rtime=0.0;
     struct rusage  usg;
     struct timeval end, dif;
     struct utsname sysbuf;
@@ -732,10 +734,12 @@ int App_LogStats(
     char tag[256];
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
+        tag[0]='\0'; 
         if (Tag && strlen(Tag)) {
-           snprintf(tag,255,":%s:",Tag);    
-        } else {
-           tag[0]='\0'; 
+            snprintf(tag,255,"%s:",Tag);    
+        }
+        if (strncmp(Tag,"TOTAL",5)==0) {
+            stime0=utime0=rtime0=0.0;
         }
 
         if (App->LogStat&APP_STAT_ALLRANKS) {
@@ -746,9 +750,16 @@ int App_LogStats(
         if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_TIME) {
             gettimeofday(&end, NULL);
             timersub(&end, &App->Time, &dif);
-            App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n",tag,
-                dif.tv_sec + dif.tv_usec/1e6, usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6,
-                usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6);
+            stime=(usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6);
+            utime=(usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6);
+            rtime=(dif.tv_sec + dif.tv_usec/1e6);
+            App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n",tag, rtime-rtime0, utime-utime0, stime-stime0);
+            stime0=stime;
+            utime0=utime;
+            rtime0=rtime;
+        }
+        if (strncmp(Tag,"TOTAL",5)==0) {
+           tag[0]='\0'; 
         }
         if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_MEM) {
            App_GetSS(&rss,&pss,&uss);
@@ -907,7 +918,7 @@ int App_End(
     unsigned long * const memt = &mem[App->NbMPI];
     double sum = mem[App->RankMPI] = usg.ru_maxrss;
 
-    App_LogStats("");
+    App_LogStats("TOTAL");
 
     // Get a readable size and units
     double factor = 1.0 / 1024;
@@ -1080,10 +1091,12 @@ uint App_Alarm(
     return(alarm(Secs));
 }
 
-void App_LogStream(const char * const Stream) {
+//! Define the log stream / file
+void App_LogStream(
+    const char * const Stream  //! [in] Log stream to use (default:stderr,stdout,filepath)
+) {
       App->LogFile = strdup(Stream);
 }
-
 
 //! Open log file
 void App_LogOpen(void) {
@@ -1117,7 +1130,6 @@ void App_LogOpen(void) {
     } // end OMP critical
     pthread_mutex_unlock(&App_mutex);
 }
-
 
 //! Close logfile
 void App_LogClose(void) {
