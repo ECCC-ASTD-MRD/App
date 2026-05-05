@@ -231,6 +231,12 @@ module app
         integer(C_INT), value :: signal
     end SUBROUTINE
 
+    !   void  App_Trap(int Signal);
+    integer(C_INT) FUNCTION app_alarm(secs) BIND(C, name = "App_Alarm")
+        use, intrinsic :: iso_c_binding
+        integer(C_INT), value :: secs
+    end FUNCTION
+
     !   int   App_IsDone(void);
     logical(C_BOOL) FUNCTION app_isdone() BIND(C, name = "App_IsDone")
         use, intrinsic :: iso_c_binding

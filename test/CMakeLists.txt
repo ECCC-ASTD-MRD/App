@@ -54,6 +54,17 @@ if (EC_INIT_DONE LESS 2)
         target_link_libraries(finalize_f App::App)
         add_dependencies(check finalize_f)
 
+        add_executable(app_alarm_f EXCLUDE_FROM_ALL app_alarm.F90)
+        add_test(
+            NAME app_alarm_f
+            COMMAND $<TARGET_FILE:app_alarm_f>
+        )
+        target_link_libraries(app_alarm_f App::App)
+        add_dependencies(check app_alarm_f)
+        set_tests_properties(app_alarm_f PROPERTIES
+            WILL_FAIL true
+        )
+
         if (TARGET App::App-ompi)
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general

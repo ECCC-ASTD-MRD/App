@@ -341,6 +341,7 @@ typedef struct {
    int            RankMPI;               ///< Rank of MPI process in the App->Comm communicator
    int            NbThread;              ///< Number of OpenMP threads
    int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
+   int            Alarm;                 ///< Alarm timeout (0: No alarm defined)
    TApp_Affinity  Affinity;              ///< Thread placement affinity
    int            NbNodeMPI;
    int            NodeRankMPI;           ///< Number of MPI process on the current node
@@ -427,6 +428,7 @@ void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
 void  App_Trap(const int Signal);
+uint  App_Alarm(const uint Secs);
 int   App_IsDone(void); 
 int   App_IsMPI(void);
 int   App_IsOMP(void);

@@ -316,6 +316,7 @@ TApp * App_Init(
         // Trap signals if enabled (preemption)
         if (App->Signal == 0) {
             App_Trap(SIGTERM);
+            App_Trap(SIGALRM);
         }
     } else {
         // This can only happen in thread mode so reassgin global instance for log message and revert to NULL
@@ -917,7 +918,7 @@ int App_End(
 #ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
-    if (App->NbMPI > 1 && Status != INT_MIN) {
+    if (Status<APP_EXIT && App->NbMPI > 1 && Status != INT_MIN) {
         // Get largest error code
         //MPI_Reduce(MPI_IN_PLACE, &Status, 1, MPI_INT, MPI_MIN, 0, App->Comm);
 
@@ -1039,14 +1040,19 @@ void App_TrapProcess(
     //! [in] Signal Signal to be trapped
     const int Signal
 ) {
-    App_Log(APP_WARNING, "Trapped signal %i\n", Signal);
     App->Signal = Signal;
 
     switch(Signal) {
+        case SIGALRM: 
+           App_Log(APP_WARNING, "Trapped signal %i, application stuck for more than %ds, exiting\n", Signal, App->Alarm); 
+           App_End(APP_EXIT);
+           break;
         case SIGURG:
         case SIGUSR1:
         case SIGUSR2:
-        case SIGTERM: App->State = APP_DONE;
+        case SIGTERM: 
+           App_Log(APP_WARNING, "Trapped signal %i\n", Signal);
+           App->State = APP_DONE;
     }
 }
 
@@ -1067,6 +1073,10 @@ void App_Trap(const int Signal) {
     // signal(Signal, App_TrapProcess);
 }
 
+uint App_Alarm(const uint Secs) {
+    App->Alarm=Secs;
+    return(alarm(Secs));
+}
 
 void App_LogStream(const char * const Stream) {
       App->LogFile = strdup(Stream);
