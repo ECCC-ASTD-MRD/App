@@ -1045,7 +1045,7 @@ void App_TrapProcess(
     switch(Signal) {
         case SIGALRM: 
            App_Log(APP_WARNING, "Trapped signal %i, application stuck for more than %ds, exiting\n", Signal, App->Alarm); 
-           App_End(APP_EXIT);
+           App_End(APP_EXIT+APP_ERROR);
            break;
         case SIGURG:
         case SIGUSR1:
