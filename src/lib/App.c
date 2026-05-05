@@ -1037,7 +1037,7 @@ int App_End(
 
 //! Trapper les signaux afin de terminer gracieusement
 void App_TrapProcess(
-    //! [in] Signal Signal to be trapped
+    //! [in] Signal to be trapped
     const int Signal
 ) {
     App->Signal = Signal;
@@ -1056,7 +1056,6 @@ void App_TrapProcess(
     }
 }
 
-
 void App_Trap(const int Signal) {
     struct sigaction new;
     new.sa_sigaction = NULL;
@@ -1073,7 +1072,10 @@ void App_Trap(const int Signal) {
     // signal(Signal, App_TrapProcess);
 }
 
-uint App_Alarm(const uint Secs) {
+//! Install an alarm that will trigger a SIGALRM signal, allowing for exit of stuck processing
+uint App_Alarm(
+    const uint Secs    //! [in] Time to wait in seconds before trigerring an alarm (0:no alarm)
+) {
     App->Alarm=Secs;
     return(alarm(Secs));
 }

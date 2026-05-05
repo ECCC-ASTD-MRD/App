@@ -30,7 +30,8 @@ This packages manages various standard tasks needed by applications like:
    - Shows count of error and warnings at end/close of log
    - Options to output system time, memory, and cpu statistics
 - Process signal trapping
-   - Signal trapping for stopping model on **SIGUSR2**/**SIGTERM**
+   - Signal trapping for stopping model on **SIGTERM** (other signals can be user added)
+   - Alarm function to exit when in a stuck processing
 - Timing functions
 - Processes and system information / statistics functions
 - Parallel process management OpenMP/MPI
