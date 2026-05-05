@@ -34,18 +34,18 @@ int Restart_Read(const char *Id) {
     if (!Id) return(TRUE);
 
     if (stat(Id, &attr) == 0) {
-       App_Log(APP_VERBATIM, "\nRead restart (%.24s)\n", ctime(&attr.st_mtime));
+       App_Log(APP_VERBATIM, "Found restart (%.24s)\n", ctime(&attr.st_mtime));
+        if (!(file=fopen(Id, "r"))) {
+            App_Log(APP_ERROR, "\nUnable to read restart %s\n",Id);
+            return(FALSE);
+        } else {
+        fscanf(file, "%d\n", &step);
+        fclose(file);
+        }
     } else {
        App_Log(APP_VERBATIM, "\nNo restart found\n",);
     }
 
-    if (!(file=fopen(Id, "r"))) {
-        App_Log(APP_ERROR, "\nUnable to read restart %s\n",Id);
-        return(FALSE);
-    } else {
-       fscanf(file, "%d\n", &step);
-       fclose(file);
-    }
 
     return(step);
 }

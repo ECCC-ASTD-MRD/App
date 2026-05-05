@@ -33,6 +33,7 @@ while :; do
         -m | --mempercores  ) MEM=$2;                  shift 2 ;;
         -f | --pccores      ) PC_NODES=$2;             shift 2 ;;
         -i | --nbiterations ) NB_ITER=$2;              shift 2 ;;
+        -a | --trap         ) TRAP_DELAY=$2;           shift 2 ;;
 
         -s | --small        ) CONFIG_SMALL=$2;         shift 2 ;;
         -b | --big          ) CONFIG_BIG=$2;           shift 2 ;;
@@ -49,7 +50,7 @@ done
 
 #----- BEGIN PROVIDER SPECIFIC DEFINITIONS
 QSystem=PBS                                                  # Queuing system
-Queue=development                                            # Regular queue
+Queue="development"                                          # Regular queue
 QueuePremptive=production                                    # Preemptive queue
 Delay=10                                                     # Delay before launching preemptive jobs
 
