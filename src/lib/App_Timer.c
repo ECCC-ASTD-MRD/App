@@ -1,3 +1,7 @@
+//! \file
+//! Implementation of timer functions
+//! \defgroup Timer Timer
+
 #include "App_Timer.h"
 
 void App_TimerInit_f(TApp_Timer* Timer) { App_TimerInit(Timer); }

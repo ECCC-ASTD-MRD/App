@@ -1,5 +1,6 @@
 //! \file
 //! Implementation of the App library
+//! \defgroup App App
 
 #define APP_BUILD
 
@@ -265,6 +266,7 @@ TApp * App_Init(
     //! [in] TimeStamp
     const char * const Stamp
 ) {
+
     // In coprocess threaded mode, we need a different App object than the master thread
     App = (Type == APP_THREAD) ? (TApp*)calloc(1, sizeof(TApp)) : &AppInstance;
 
@@ -319,7 +321,7 @@ TApp * App_Init(
             App_Trap(SIGALRM);
         }
     } else {
-        // This can only happen in thread mode so reassgin global instance for log message and revert to NULL
+        // This can only happen in thread mode so reassign global instance for log message and revert to NULL
         App = &AppInstance;
         App_Log(APP_FATAL, "%s: Unable to allocate App internal structure\n", __func__);
         App = NULL;
@@ -718,7 +720,7 @@ void App_Start(void) {
 }
 
 
-//! Log resource usage (time, memory, page faults)
+//! Log resource usage (time, memory, cpu)
 int App_LogStats(
     //! Tag to be added to statisitcs line (optional, use NULL otherwise)
     const char * const Tag

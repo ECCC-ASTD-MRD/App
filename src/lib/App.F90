@@ -1,3 +1,6 @@
+!> \file
+!> Fortran interface for App's functionalities
+
 module app
     use, intrinsic :: iso_c_binding
     use App_Atomic_Module

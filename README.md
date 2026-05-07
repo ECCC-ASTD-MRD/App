@@ -2,10 +2,10 @@
 
 # Table of Contents
 1. [Usage](#usage)
-2. [Environment variables](#environment_variables)
-3. [Example output log](#example_output_log)
-4. [Code Example](#code_example)
-5. [Building package](#building_package)
+2. [Environment variables](#environment-variables)
+3. [Example output log](#example-output-log)
+4. [Code Example](#code-example)
+5. [Building package](#building-package)
 
 ## Usage
 This packages manages various standard tasks needed by applications like:
