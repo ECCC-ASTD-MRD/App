@@ -883,7 +883,13 @@ int App_GetCPU(
         // Check for x86 CPU zone
         snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/type",n);
         if ((fd=fopen(buf,"re"))) {
-           fscanf(fd, "%15s", type);
+
+           int nbMatch = fscanf(fd, "%15s", type);
+           if(nbMatch != 1){
+              fclose(fd);
+              continue;
+           }
+
            if (type[0]!='x' || type[1]!='8' || type[2]!='6') {
               fclose(fd);
               continue;
@@ -896,7 +902,12 @@ int App_GetCPU(
         // Get temp of zone
         snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/temp",n);
         if ((fd=fopen(buf,"re"))) {
-           fscanf(fd, "%lf", &temp);
+           int nbMatch = fscanf(fd, "%lf", &temp);
+           if(nbMatch != 1){
+               fclose(fd);
+               continue;
+           }
+
            temp/=1000;
            *TempMin=MIN(*TempMin,temp);
            *TempMax=MAX(*TempMax,temp);
