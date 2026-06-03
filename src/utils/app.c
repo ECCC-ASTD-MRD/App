@@ -43,7 +43,7 @@ int Restart_Read(const char *Id) {
         fclose(file);
         }
     } else {
-       App_Log(APP_VERBATIM, "\nNo restart found\n",);
+       App_Log(APP_VERBATIM, "\nNo restart found\n");
     }
 
 
