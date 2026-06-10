@@ -1,6 +1,8 @@
 if (EC_INIT_DONE LESS 2)
     include(CTest)
     add_custom_target(check COMMAND CTEST_OUTPUT_ON_FAILURE=true ${CMAKE_CTEST_COMMAND})
+    add_custom_target(test_execs)
+    add_dependencies(check test_execs)
 
     if(BUILD_TESTING)
         # Check MPI implementation to be able to give the proper flags when running tests
@@ -36,7 +38,7 @@ if (EC_INIT_DONE LESS 2)
             COMMAND $<TARGET_FILE:test_app_loglevel_noinit>
         )
         target_link_libraries(test_app_loglevel_noinit App::App)
-        add_dependencies(check test_app_loglevel_noinit)
+        add_dependencies(test_execs test_app_loglevel_noinit)
 
         add_executable(finalize_c EXCLUDE_FROM_ALL finalize.c)
         add_test(
@@ -44,7 +46,7 @@ if (EC_INIT_DONE LESS 2)
             COMMAND $<TARGET_FILE:finalize_c>
         )
         target_link_libraries(finalize_c App::App)
-        add_dependencies(check finalize_c)
+        add_dependencies(test_execs finalize_c)
 
         add_executable(finalize_f EXCLUDE_FROM_ALL finalize.F90)
         add_test(
@@ -52,59 +54,59 @@ if (EC_INIT_DONE LESS 2)
             COMMAND $<TARGET_FILE:finalize_f>
         )
         target_link_libraries(finalize_f App::App)
-        add_dependencies(check finalize_f)
+        add_dependencies(test_execs finalize_f)
 
         if (TARGET App::App-ompi)
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general
             add_test(NAME atomic COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 12 $<TARGET_FILE:atomic>)
-            add_dependencies(check atomic)
+            add_dependencies(test_execs atomic)
 
             add_executable(mutex EXCLUDE_FROM_ALL mutex.F90)
             target_link_libraries(mutex App::App-ompi) # The test uses MPI, even if it is not necessary for app_mutex in general
             add_test(NAME mutex COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 6 $<TARGET_FILE:mutex>)
-            add_dependencies(check mutex)
+            add_dependencies(test_execs mutex)
 
             add_executable(multithread_noinit0 EXCLUDE_FROM_ALL multithread_noinit0.c)
             target_link_libraries(multithread_noinit0 App::App-ompi)
             add_test(NAME multithread_noinit0 COMMAND $<TARGET_FILE:multithread_noinit0>)
-            add_dependencies(check multithread_noinit0)
+            add_dependencies(test_execs multithread_noinit0)
 
             add_executable(init1 EXCLUDE_FROM_ALL init1.c)
             target_link_libraries(init1 App::App-ompi)
-            add_dependencies(check init1)
+            add_dependencies(test_execs init1)
             add_executable(init2 EXCLUDE_FROM_ALL init2.c)
             target_link_libraries(init2 App::App-ompi)
-            add_dependencies(check init2)
+            add_dependencies(test_execs init2)
 
             add_executable(set_comm EXCLUDE_FROM_ALL set_comm.F90)
             target_link_libraries(set_comm App::App-ompi)
-            add_dependencies(check set_comm)
+            add_dependencies(test_execs set_comm)
 
             add_library(mpmd_helper EXCLUDE_FROM_ALL mpmd_helper.F90)
             target_link_libraries(mpmd_helper App::App-ompi)
             add_executable(mpmd_pe0only EXCLUDE_FROM_ALL mpmd_pe0only.c)
             target_link_libraries(mpmd_pe0only App::App-ompi)
-            add_dependencies(check mpmd_pe0only)
+            add_dependencies(test_execs mpmd_pe0only)
             add_executable(mpmd_1 EXCLUDE_FROM_ALL mpmd_1.F90)
             target_link_libraries(mpmd_1 App::App-ompi mpmd_helper)
-            add_dependencies(check mpmd_1)
+            add_dependencies(test_execs mpmd_1)
             add_executable(mpmd_2 EXCLUDE_FROM_ALL mpmd_2.F90)
             target_link_libraries(mpmd_2 App::App-ompi mpmd_helper)
-            add_dependencies(check mpmd_2)
+            add_dependencies(test_execs mpmd_2)
             add_executable(mpmd_3 EXCLUDE_FROM_ALL mpmd_3.F90)
             target_link_libraries(mpmd_3 App::App-ompi mpmd_helper)
-            add_dependencies(check mpmd_3)
+            add_dependencies(test_execs mpmd_3)
             add_executable(mpmd_4 EXCLUDE_FROM_ALL mpmd_4.F90)
             target_link_libraries(mpmd_4 App::App-ompi mpmd_helper)
-            add_dependencies(check mpmd_4)
+            add_dependencies(test_execs mpmd_4)
             add_executable(mpmd_5 EXCLUDE_FROM_ALL mpmd_5.c)
             target_link_libraries(mpmd_5 App::App-ompi)
-            add_dependencies(check mpmd_5)
+            add_dependencies(test_execs mpmd_5)
 
             add_executable(same_host EXCLUDE_FROM_ALL same_host.F90)
             target_link_libraries(same_host App::App-ompi)
-            add_dependencies(check same_host)
+            add_dependencies(test_execs same_host)
 
             add_test(NAME App_MPMD_Init COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
                 -n 2 $<TARGET_FILE:init1> :
