@@ -406,7 +406,7 @@ void  App_LogClose(void);
 int   App_LogTime(const char * const Val);
 int   App_LogRank(const int NewRank);
 void  App_Progress(const float Percent, const char * const Format, ...);
-int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
+int   App_ParseArgs(TApp_Arg * const AArgs, const int argc, char * argv[], const int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
 int   App_ParseDate(char *Param, char *Value, time_t *Var);

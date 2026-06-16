@@ -66,11 +66,11 @@ int   App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
 int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
 
 //! Check if current process (PE) is allowed to log
-int   App_IsLogging(void)    { 
+int   App_IsLogging(void)    {
 #ifdef HAVE_MPI
     return (App->Tolerance && (App->LogRank==-1 || App->LogRank == App->RankMPI || App->LogRank == App->ComponentRank));
 #else
-    return App->Tolerance; 
+    return App->Tolerance;
 #endif
 }
 
@@ -95,6 +95,7 @@ void App_SetMPIComm(MPI_Comm Comm) {
         App->DisplsMPI = (int*)realloc(App->DisplsMPI, (App->NbMPI + 1) * sizeof(int));
     }
 }
+
 
 void App_SetMPIComm_F(MPI_Fint Comm) {
     App_SetMPIComm(MPI_Comm_f2c(Comm));
@@ -266,7 +267,6 @@ TApp * App_Init(
     //! [in] TimeStamp
     const char * const Stamp
 ) {
-
     // In coprocess threaded mode, we need a different App object than the master thread
     App = (Type == APP_THREAD) ? (TApp*)calloc(1, sizeof(TApp)) : &AppInstance;
 
@@ -314,7 +314,7 @@ TApp * App_Init(
 #endif
 
         App_InitEnv();
-        
+
         // Trap signals if enabled (preemption)
         if (App->Signal == 0) {
             App_Trap(SIGTERM);
@@ -435,17 +435,17 @@ int App_NodeGroup() {
     if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
         // Get the physical node unique name of mpi procs
-        char *names;
+        char * names;
         APP_MEM_ASRT(names, calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*names)));
 
-        char *n = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
+        char * n = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
         int nameLen;
         APP_MPI_ASRT( MPI_Get_processor_name(n, &nameLen) );
         APP_MPI_ASRT( MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, names, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, App->Comm) );
 
         // Go through the names and check how many different nodes we have before our node
         int color;
-        char *cptr;
+        char * cptr;
         int i;
         for (i = 0, color = -1, cptr = names; i <= App->RankMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
             ++color;
@@ -457,7 +457,7 @@ int App_NodeGroup() {
         // Check if we have more than one group
         int mult = color;
         for (cptr = names; !mult && i < App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
-            if( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
+            if ( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
                 mult = 1;
             }
         }
@@ -498,7 +498,7 @@ int App_NodePrint() {
 #ifdef HAVE_MPI
     if (App_IsMPI()) {
         if (!App->RankMPI) {
-            char *nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
+            char * nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
             if ( nodes ) {
                 // Get the physical node unique name of mpi procs
                 int nameLen = 0;
@@ -510,7 +510,7 @@ int App_NodePrint() {
 
                 // Print the node names with a count of MPI per nodes
                 App_Log(APP_VERBATIM, "MPI nodes      :");
-                char *n;
+                char * n;
                 int cnt;
                 int i;
                 for (i = 1, cnt = 1, n = nodes; i < App->NbMPI; ++i, n += MPI_MAX_PROCESSOR_NAME) {
@@ -661,7 +661,7 @@ void App_Start(void) {
             struct utsname buffer;
             if (uname(&buffer) ==0) {
                 App_Log(APP_VERBATIM, "\nSystem         : %s (%s)\nOS             : %s %s (%s)\n",
-                buffer.nodename,buffer.machine,buffer.sysname,buffer.release,buffer.version);
+                buffer.nodename, buffer.machine, buffer.sysname, buffer.release, buffer.version);
             }
 
             if (App->UTC) {
@@ -726,132 +726,128 @@ int App_LogStats(
     const char * const Tag
 ) {
     //! \return Always TRUE
-    static __thread double stime0=0.0,utime0=0.0,rtime0=0.0;
-    double stime=0.0,utime=0.0,rtime=0.0;
-    struct rusage  usg;
-    struct timeval end, dif;
-    struct utsname sysbuf;
-    int64_t rss,pss,uss;
-    int32_t freq,numa,core,tmin,tmax,rank=0;
-    char tag[256];
 
     if (App->LogLevel[APP_MAIN] >= APP_STAT) {
-        tag[0]='\0'; 
+        char tag[256] = "";
         if (Tag && strlen(Tag)) {
-            snprintf(tag,255,"%s:",Tag);    
+            snprintf(tag, 255, "%s:", Tag);
         }
-        if (strncmp(Tag,"TOTAL",5)==0) {
-            stime0=utime0=rtime0=0.0;
+        static __thread double stime0 = 0.0, utime0 = 0.0, rtime0 = 0.0;
+        if (strncmp(Tag, "TOTAL", 5) == 0) {
+            stime0 = utime0 = rtime0 = 0.0;
         }
 
-        if (App->LogStat&APP_STAT_ALLRANKS) {
-           rank=App->LogRank;
+        int32_t rank = 0;
+        if (App->LogStat & APP_STAT_ALLRANKS) {
+           rank = App->LogRank;
            App->LogRank = -1;
         }
+        struct rusage  usg;
         getrusage(RUSAGE_SELF, &usg);
-        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_TIME) {
+        if (App->LogStat < APP_STAT_TIME || App->LogStat & APP_STAT_TIME) {
+            struct timeval end, dif;
             gettimeofday(&end, NULL);
             timersub(&end, &App->Time, &dif);
-            stime=(usg.ru_stime.tv_sec + usg.ru_stime.tv_usec/1e6);
-            utime=(usg.ru_utime.tv_sec + usg.ru_utime.tv_usec/1e6);
-            rtime=(dif.tv_sec + dif.tv_usec/1e6);
-            App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n",tag, rtime-rtime0, utime-utime0, stime-stime0);
-            stime0=stime;
-            utime0=utime;
-            rtime0=rtime;
+            const double stime = (usg.ru_stime.tv_sec + usg.ru_stime.tv_usec / 1e6);
+            const double utime = (usg.ru_utime.tv_sec + usg.ru_utime.tv_usec / 1e6);
+            const double rtime = (dif.tv_sec + dif.tv_usec / 1e6);
+            App_Log(APP_STAT, "%sTIME: Real(s)=%.3f User(s)=%.3f System(s)=%.3f\n", tag,
+                rtime - rtime0, utime - utime0, stime - stime0);
+            stime0 = stime;
+            utime0 = utime;
+            rtime0 = rtime;
         }
-        if (strncmp(Tag,"TOTAL",5)==0) {
-           tag[0]='\0'; 
+        if (strncmp(Tag, "TOTAL", 5) == 0) {
+            tag[0] = '\0';
         }
-        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_MEM) {
-           App_GetSS(&rss,&pss,&uss);
-           App_Log(APP_STAT, "%sMEM : RSS(kB)=%ld PSS(kB)=%ld USS(kB)=%ld MinorFLT=%d MajorFLT=%d\n",tag,
-               rss, pss, uss, usg.ru_minflt, usg.ru_majflt);
+        if (App->LogStat < APP_STAT_TIME || App->LogStat & APP_STAT_MEM) {
+            int64_t rss, pss, uss;
+            App_GetSS(&rss, &pss, &uss);
+            App_Log(APP_STAT, "%sMEM : RSS(kB)=%ld PSS(kB)=%ld USS(kB)=%ld MinorFLT=%d MajorFLT=%d\n", tag,
+                rss, pss, uss, usg.ru_minflt, usg.ru_majflt);
         }
-        if (App->LogStat<APP_STAT_TIME || App->LogStat&APP_STAT_CPU) {
-           uname(&sysbuf);
-           App_GetCPU(&freq,&numa,&core,&tmin,&tmax);
-           App_Log(APP_STAT, "%sCPU : Node=%s, NUMA=%d, Core=%d, Freq(MHz)=%d Temp(°C)=%d-%d\n",tag,
-              sysbuf.nodename,numa,core,freq,tmin,tmax);
+        if (App->LogStat<APP_STAT_TIME || App->LogStat & APP_STAT_CPU) {
+            struct utsname sysbuf;
+            uname(&sysbuf);
+            int32_t freq, numa, core, tmin, tmax;
+            App_GetCPU(&freq, &numa, &core, &tmin, &tmax);
+            App_Log(APP_STAT, "%sCPU : Node=%s, NUMA=%d, Core=%d, Freq(MHz)=%d Temp(°C)=%d-%d\n", tag,
+                sysbuf.nodename, numa, core, freq, tmin, tmax);
         }
 
-        if (App->LogStat&APP_STAT_ALLRANKS) {
-           App->LogRank = rank;
+        if (App->LogStat & APP_STAT_ALLRANKS) {
+            App->LogRank = rank;
         }
     }
     return TRUE;
 }
 
+
 //! Get memory usage info
 int App_GetSS(
-    //! [out] (RSS) Resident Set Size    : Private memory of the process itself and total shared memory used
-    int64_t *RSS,
+    //! [out] (RSS) Resident Set Size: Private memory of the process itself and total shared memory used
+    int64_t * const RSS,
     //! [out] (PSS) Proportional Set Size: Private memory of the process itself and a partitioned size of the shared memory
-    int64_t *PSS,
-    //! [out] (USS) Unique Set Size      : Private memory of a process
-    int64_t *USS
+    int64_t * const PSS,
+    //! [out] (USS) Unique Set Size: Private memory of a process
+    int64_t * const USS
 ) {
+    int n = 0;
 
-    FILE *fd=NULL;
-    char *line,buf[1024],field[64];
-    int   len,n=0;
-    
-    *RSS=0,*PSS=0,*USS=0;
+    *RSS = 0;
+    *PSS = 0;
+    *USS = 0;
 
-    fd=fopen("/proc/self/smaps_rollup","re");
+    FILE * fd = fopen("/proc/self/smaps_rollup", "re");
 
-    while ((line=fgets(buf, sizeof(buf), fd))) {
+    char * line, buf[1024], field[64];
+    // We only need 4 values
+    while ((line = fgets(buf, sizeof(buf), fd)) && n < 4) {
         // Extract line components
+        int len;
         if (sscanf(buf, "%63s %n", field, &len) == 1 && *field && field[strlen(field) - 1] == ':') {
-            const char* c = line + len;
+            const char * c = line + len;
             // Only parse P* and R* lines
-            if (field[0]=='P') {
+            if (field[0] == 'P') {
                 if (strncmp(field, "Pss:", 4) == 0) {
                     *PSS = strtoull(c, NULL, 10); n++;
                 } else if (strncmp(field, "Private_Clean:", 14) == 0) {
                     *USS += strtoull(c, NULL, 10); n++;
                 } else if (strncmp(field, "Private_Dirty:", 14) == 0) {
-                    *USS +=strtoull(c, NULL, 10); n++;
+                    *USS += strtoull(c, NULL, 10); n++;
                 }
-            } else if (field[0]=='R') {
+            } else if (field[0] == 'R') {
                 if (strncmp(field, "Rss:", 4) == 0) {
                     *RSS = strtoull(c, NULL, 10); n++;
                 }
             }
         }
-
-        // We only need 4 values
-        if (n==4)
-           break;
-    }      
+    }
 
     fclose(fd);
 
-    return(n);
+    return n;
 }
+
 
 //! Get CPU Frequency and temperature range
 int App_GetCPU(
     //! [out] Core Frequency
-    int32_t *Freq,
+    int32_t * const Freq,
     //! [out] Node id
-    int32_t *Numa,
+    int32_t * const Numa,
     //! [out] Vore id
-    int32_t *Core,
+    int32_t * const Core,
     //! [out] Minimum CPU temperature
-    int32_t *TempMin,
+    int32_t * const TempMin,
     //! [out] Maximum CPU temperature
-    int32_t *TempMax
+    int32_t * const TempMax
 ) {
+    //! \return Number of thermal zones
 
-    FILE *fd=NULL;
-    char *line,type[16],buf[1024];
-    int    n=0,c=-1;
-    double freq,temp;
-    
-    *Freq=0;
-    *TempMin=1<<30;
-    *TempMax=0;
+    *Freq = 0;
+    *TempMin = 1 << 30;
+    *TempMax = 0;
 
     // Get current CPU core and NUMA node via system call
     // Note this has no glibc wrapper so we must call it directly
@@ -859,64 +855,70 @@ int App_GetCPU(
     syscall(SYS_getcpu, Core, Numa, NULL);
 
     // Get CPU frequency range
-    fd=fopen("/proc/cpuinfo","re");
+    FILE * fd = fopen("/proc/cpuinfo", "re");
 
-    while ((line=fgets(buf, sizeof(buf), fd))) {
+    char * line, buf[1024];
+    while ((line = fgets(buf, sizeof(buf), fd))) {
         // Extract line components
+        int c = -1;
         if (strstr(line, "processor")) {
-             // Get the core
+            // Get the core
             sscanf(line, "%*s : %d", &c);
         }
 
-        if (c==*Core && strstr(line, "cpu MHz")) {
+        if (c == *Core && strstr(line, "cpu MHz")) {
             // Found the line, parse the frequency
+            double freq;
             sscanf(line, "%*s %*s : %lf", &freq);
-            *Freq=freq;
+            *Freq = freq;
             break;
        }
-    }      
+    }
     fclose(fd);
 
     // Get CPU temperature range
     // There might be many thermal zones but not clear if ordering always corresponds to NUMA
-    for(n=0;n<256;n++) {
+    int nbZones = 0;
+    for(; nbZones < 256; nbZones++) {
         // Check for x86 CPU zone
-        snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/type",n);
-        if ((fd=fopen(buf,"re"))) {
+        snprintf(buf, 1024, "/sys/class/thermal/thermal_zone%i/type", nbZones);
+        if ((fd = fopen(buf, "re"))) {
+            char type[16];
+            int nbMatch = fscanf(fd, "%15s", type);
+            if(nbMatch != 1){
+                fclose(fd);
+                continue;
+            }
 
-           int nbMatch = fscanf(fd, "%15s", type);
-           if(nbMatch != 1){
-              fclose(fd);
-              continue;
-           }
-
-           if (type[0]!='x' || type[1]!='8' || type[2]!='6') {
-              fclose(fd);
-              continue;
-           }
-           fclose(fd);
+            if (type[0] != 'x' || type[1] != '8' || type[2] != '6') {
+                fclose(fd);
+                continue;
+            }
+            fclose(fd);
         } else {
-           break;
+            break;
         }
 
         // Get temp of zone
-        snprintf(buf,1024,"/sys/class/thermal/thermal_zone%i/temp",n);
-        if ((fd=fopen(buf,"re"))) {
-           int nbMatch = fscanf(fd, "%lf", &temp);
-           if(nbMatch != 1){
-               fclose(fd);
-               continue;
-           }
+        snprintf(buf, 1024, "/sys/class/thermal/thermal_zone%i/temp", nbZones);
+        if ((fd = fopen(buf, "re"))) {
+            double temp;
+            int nbMatch = fscanf(fd, "%lf", &temp);
+            if (nbMatch != 1){
+                fclose(fd);
+                continue;
+            }
 
-           temp/=1000;
-           *TempMin=MIN(*TempMin,temp);
-           *TempMax=MAX(*TempMax,temp);
-           fclose(fd);
+            temp /= 1000;
+            *TempMin = MIN(*TempMin, temp);
+            *TempMax = MAX(*TempMax, temp);
+            fclose(fd);
         }
-    }      
+    }
 
-    return(n);
+    return nbZones;
 }
+
 
 //! Finaliser l'execution du modele et afficher le footer
 int App_End(
@@ -942,7 +944,7 @@ int App_End(
 #ifdef HAVE_MPI
     // The Status = INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck
     // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
-    if (Status<APP_EXIT && App->NbMPI > 1 && Status != INT_MIN) {
+    if (Status < APP_EXIT && App->NbMPI > 1 && Status != INT_MIN) {
         // Get largest error code
         //MPI_Reduce(MPI_IN_PLACE, &Status, 1, MPI_INT, MPI_MIN, 0, App->Comm);
 
@@ -994,7 +996,7 @@ int App_End(
         Status = App->LogError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    if (Status>=APP_EXIT && App->Finalize) {
+    if (Status >= APP_EXIT && App->Finalize) {
         App->Finalize();
     }
 #ifdef HAVE_MPI
@@ -1008,7 +1010,7 @@ int App_End(
 
             App_Log(APP_VERBATIM, "\n-------------------------------------------------------------------------------------\n");
             App_Log(APP_VERBATIM, "Application    : %s %s (%s)\n\n", App->Name, App->Version, App->TimeStamp);
-            if (App->Signal>0) {
+            if (App->Signal > 0) {
                 App_Log(APP_VERBATIM, "Trapped signal : %i\n", App->Signal);
             }
             if (App->UTC) {
@@ -1016,17 +1018,18 @@ int App_End(
             } else {
                 App_Log(APP_VERBATIM, "Finish time    : %s", ctime(&end.tv_sec));
             }
-            App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n", (float)dif.tv_sec+dif.tv_usec/1000000.0, App_TimerTotalTime_ms(App->TimerLog));
-            App_Log(APP_VERBATIM, "Resident mem   : %.1f %s\n", sum*factor, unit);
+            App_Log(APP_VERBATIM, "Execution time : %.4f seconds (%.2f ms logging)\n",
+                (float)dif.tv_sec + dif.tv_usec / 1000000.0, App_TimerTotalTime_ms(App->TimerLog));
+            App_Log(APP_VERBATIM, "Resident mem   : %.1f %s\n", sum * factor, unit);
 
-            if (App->NbMPI>1) {
+            if (App->NbMPI > 1) {
                 App_Log(APP_VERBATIM, "   Average     : %.1f %s\n", avg * factor, unit);
                 App_Log(APP_VERBATIM, "   Minimum     : %.1f %s (rank %u)\n", mind * factor, unit, imin);
                 App_Log(APP_VERBATIM, "   Maximum     : %.1f %s (rank %u)\n", maxd * factor, unit, imax);
                 App_Log(APP_VERBATIM, "   STD         : %.1f %s\n", var*factor, unit);
 
                 for(int i = 0; i < App->NbMPI; i++) {
-                    fijk  = memt[i];
+                    fijk = memt[i];
                     if (fijk > (avg + var))
                        App_Log(APP_VERBATIM, "   Above 1 STD : %.1f %s (rank %u)\n", fijk * factor, unit, i);
                 }
@@ -1059,6 +1062,7 @@ int App_End(
     }
 }
 
+
 //! Trapper les signaux afin de terminer gracieusement
 void App_TrapProcess(
     //! [in] Signal to be trapped
@@ -1067,18 +1071,19 @@ void App_TrapProcess(
     App->Signal = Signal;
 
     switch(Signal) {
-        case SIGALRM: 
-           App_Log(APP_WARNING, "Trapped signal %i, application stuck for more than %ds, exiting\n", Signal, App->Alarm); 
+        case SIGALRM:
+           App_Log(APP_WARNING, "Trapped signal %i, application stuck for more than %ds, exiting\n", Signal, App->Alarm);
            App_End(APP_EXIT+APP_ERROR);
            break;
         case SIGURG:
         case SIGUSR1:
         case SIGUSR2:
-        case SIGTERM: 
+        case SIGTERM:
            App_Log(APP_WARNING, "Trapped signal %i\n", Signal);
            App->State = APP_DONE;
     }
 }
+
 
 void App_Trap(const int Signal) {
     struct sigaction new;
@@ -1096,20 +1101,25 @@ void App_Trap(const int Signal) {
     // signal(Signal, App_TrapProcess);
 }
 
+
 //! Install an alarm that will trigger a SIGALRM signal, allowing for exit of stuck processing
 uint App_Alarm(
-    const uint Secs    //! [in] Time to wait in seconds before trigerring an alarm (0:no alarm)
+    //! [in] Time to wait in seconds before trigerring an alarm (0:no alarm)
+    const uint Secs
 ) {
-    App->Alarm=Secs;
-    return(alarm(Secs));
+    App->Alarm = Secs;
+    return alarm(Secs);
 }
+
 
 //! Define the log stream / file
 void App_LogStream(
-    const char * const Stream  //! [in] Log stream to use (default:stderr,stdout,filepath)
+    //! [in] Log stream to use (default:stderr, stdout, filepath)
+    const char * const Stream
 ) {
-      App->LogFile = strdup(Stream);
+    App->LogFile = strdup(Stream);
 }
+
 
 //! Open log file
 void App_LogOpen(void) {
@@ -1144,6 +1154,7 @@ void App_LogOpen(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
+
 //! Close logfile
 void App_LogClose(void) {
     pthread_mutex_lock(&App_mutex);
@@ -1157,6 +1168,7 @@ void App_LogClose(void) {
     pthread_mutex_unlock(&App_mutex);
 }
 
+
 //! Add log entry
 void App_Log4Fortran(
     //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
@@ -1167,18 +1179,20 @@ void App_Log4Fortran(
     Lib_Log(APP_MAIN, Level, "%s\n", Message);
 }
 
+
 //! Add log entry from all ranks
 void App_LogAllRanks4Fortran(
     //! [in] Niveau d'importance du message (MUST, ALWAYS, FATAL, SYSTEM, ERROR, WARNING, INFO, DEBUG, EXTRA)
     TApp_LogLevel Level,
     //! [in] Message à jouter au journal
-    const char *Message
+    const char * const Message
 ) {
-   int32_t ___app_rank=App->LogRank;
-   App->LogRank=-1;
+   int32_t ___app_rank = App->LogRank;
+   App->LogRank = -1;
    Lib_Log(APP_MAIN, Level, "%s\n", Message);
-   App->LogRank=___app_rank;
+   App->LogRank = ___app_rank;
 }
+
 
 void Lib_Log4Fortran(
     //! [in] Identificateur de la librairie
@@ -1193,6 +1207,7 @@ void Lib_Log4Fortran(
     (void)len;
     Lib_Log(Lib, Level, "%s\n", Message);
 }
+
 
 //! Add log entry
 void Lib_Log(
@@ -1219,16 +1234,16 @@ void Lib_Log(
     }
 
 #ifdef HAVE_MPI
-    if (Level<APP_COLLECT && App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
+    if (Level < APP_COLLECT && App->LogRank != -1 && (App->LogRank != App->RankMPI && App->LogRank != App->ComponentRank)) {
         return;
     }
 
-    // If in collect mode, we collect the minimal error to 
-    if (Level>=APP_COLLECT) {
-        level=Level-APP_COLLECT;
+    // If in collect mode, we collect the minimal error to
+    if (Level >= APP_COLLECT) {
+        level = Level - APP_COLLECT;
         MPI_Allreduce(MPI_IN_PLACE, &level, 1, MPI_INT, MPI_MIN, App->Comm);
 
-        if (level==APP_QUIET) return;
+        if (level == APP_QUIET) return;
     }
 #endif
     // If not initialized yet
@@ -1315,13 +1330,13 @@ void Lib_Log(
 #endif
             if (App->Step) {
                 if (App->LogThread) {
-                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);                  
+                   sprintf(prefix, "%s%sT%03d (%s) #%d %s", color, time, tid, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);
                 } else {
                    sprintf(prefix, "%s%s(%s) #%d %s", color, time, AppLevelNames[effectiveLevel], App->Step, AppLibLog[Lib]);
                 }
             } else {
                 if (App->LogThread) {
-                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[Lib]); 
+                    sprintf(prefix, "%s%sT%03d (%s) %s", color, time, tid, AppLevelNames[effectiveLevel], AppLibLog[Lib]);
                 } else {
                     sprintf(prefix, "%s%s(%s) %s", color, time, AppLevelNames[effectiveLevel], AppLibLog[Lib]);
                 }
@@ -1450,7 +1465,7 @@ int Lib_LogLevel(
                 } else {
                     break;
                 }
-            } 
+            }
         } else if (strncasecmp(level, "TRIVIAL", 7) == 0) {
             App->LogLevel[lib] = APP_TRIVIAL;
         } else if (strncasecmp(level, "DEBUG", 5) == 0) {
@@ -1600,7 +1615,7 @@ void App_PrintArgs(
     //! [in] Invalid token if any, NULL otherwise
     const char * const Token,
     //! [in] Configuration flags
-    int Flags
+    const int Flags
 ) {
     printf("%s (%s):\n\t%s\n\n", App->Name, App->Version, App->Desc);
 
@@ -1642,12 +1657,12 @@ void App_PrintArgs(
 
 //! Extract argument value
 static inline int App_GetArgs(
-    //! [in, out] Argument definition
+    //! [in, out] Argument definition with its value
     TApp_Arg * const AArg,
-    //! [in] Value to extract
+    //! [in] Value to, potentially, parse and assign to the argument
     char * const Value
 ) {
-    char *endptr = NULL;
+    char * endptr = NULL;
 
     if (Value) {
         if ((--AArg->Multi) < 0) {
@@ -1678,14 +1693,14 @@ static inline int App_GetArgs(
 
 //! Parse default arguments
 int App_ParseArgs(
-    //! [in] Argument definition
-    TApp_Arg *AArgs,
+    //! [in, out] Argument definition with their value
+    TApp_Arg * const AArgs,
     //! [in] Number of argument
-    int argc,
+    const int argc,
     //! [in] Arguments
-    char *argv[],
+    char * argv[],
     //! [in] Configuration flags
-    int Flags
+    const int Flags
 ) {
     //! \return 1 or 0 if failed
 
@@ -1701,7 +1716,6 @@ int App_ParseArgs(
         ok = FALSE;
     } else {
         // Parse parameters either on command line or through environment variable
-        TApp_Arg *aarg = NULL;
         char *tok, *ptok = NULL, *endptr = NULL, *tmp;
         int i = 1;
         while((i < argc && (tok = argv[i])) || (env && (tok = strtok(str, " ")))) {
@@ -1714,6 +1728,7 @@ int App_ParseArgs(
             }
 
             // Process default argument
+            TApp_Arg * aarg = NULL;
             if ((Flags & APP_ARGSLANG) && (!strcasecmp(tok, "-a") || !strcasecmp(tok, "--language"))) {  // language (en, fr)
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
@@ -1744,19 +1759,19 @@ int App_ParseArgs(
             } else if ((Flags & APP_ARGSTHREAD) && !strcasecmp(tok, "--affinity")) { // Threads
                 i++;
                 if ((ner = ok = (i < argc && argv[i][0] != '-'))) {
-                tmp = env ? strtok(str, " ") : argv[i];
-                if (!strcasecmp(tmp, "NONE")) {
-                    App->Affinity = APP_AFFINITY_NONE;
-                } else if (!strcasecmp(tmp, "COMPACT")) {
-                    App->Affinity = APP_AFFINITY_COMPACT;
-                } else if (!strcasecmp(tmp, "SCATTER")) {
-                    App->Affinity = APP_AFFINITY_SCATTER;
-                } else if (!strcasecmp(tmp, "SOCKET")) {
-                    App->Affinity = APP_AFFINITY_SOCKET;
-                } else {
-                    printf("Invalid value for thread affinity, NONE, COMPACT, SCATTER or SOCKET\n");
-                    exit(EXIT_FAILURE);
-                }
+                    tmp = env ? strtok(str, " ") : argv[i];
+                    if (!strcasecmp(tmp, "NONE")) {
+                        App->Affinity = APP_AFFINITY_NONE;
+                    } else if (!strcasecmp(tmp, "COMPACT")) {
+                        App->Affinity = APP_AFFINITY_COMPACT;
+                    } else if (!strcasecmp(tmp, "SCATTER")) {
+                        App->Affinity = APP_AFFINITY_SCATTER;
+                    } else if (!strcasecmp(tmp, "SOCKET")) {
+                        App->Affinity = APP_AFFINITY_SOCKET;
+                    } else {
+                        printf("Invalid value for thread affinity, NONE, COMPACT, SCATTER or SOCKET\n");
+                        exit(EXIT_FAILURE);
+                    }
                 }
             // } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok, "--tmpdir"))) { // Use tmpdir if available
             //    i++;
@@ -1819,7 +1834,7 @@ int App_ParseArgs(
                 break;
             }
 
-            ++i;
+            i++;
         }
     }
 
