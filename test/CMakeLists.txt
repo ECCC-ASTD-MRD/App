@@ -68,7 +68,7 @@ if (EC_INIT_DONE LESS 2)
             COMMAND $<TARGET_FILE:app_alarm_f>
         )
         target_link_libraries(app_alarm_f App::App)
-        add_dependencies(check app_alarm_f)
+        add_dependencies(test_execs app_alarm_f)
         set_tests_properties(app_alarm_f PROPERTIES
             WILL_FAIL true
         )
