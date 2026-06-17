@@ -730,6 +730,10 @@ void App_Start(void) {
 #if defined MPI_VERSION && defined MPI_SUBVERSION
                 // MPI specification version
                 App_Log(APP_VERBATIM, "MPI processes  : %i (Standard: %d.%d)\n", App->NbMPI, MPI_VERSION, MPI_SUBVERSION);
+                char mpi_lib_ver[MPI_MAX_LIBRARY_VERSION_STRING];
+                int mpi_lib_ver_len = 0;
+                MPI_Get_library_version(mpi_lib_ver, &mpi_lib_ver_len);
+                App_Log(APP_VERBATIM, "MPI library    : %s\n", mpi_lib_ver);
 #else
                 App_Log(APP_VERBATIM, "MPI processes  : %i\n", App->NbMPI);
 #endif
