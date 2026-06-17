@@ -544,7 +544,7 @@ int App_NodePrint() {
                 APP_MPI_CHK( MPI_Gather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, nodes, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, App->Comm) );
 
                 // Sort the names
-                qsort(nodes, App->NbMPI, MPI_MAX_PROCESSOR_NAME, App_MPIProcCmp);
+                qsort(nodes, App->NbMPI, MPI_MAX_PROCESSOR_NAME, App_MPIProcNameCmp);
 
                 // Print the node names with a count of MPI per nodes
                 App_Log(APP_VERBATIM, "MPI nodes      :");
