@@ -29,10 +29,10 @@
 #include "App_build_info.h"
 #include "str.h"
 
-static TApp AppInstance;                             ///< Static App instance
-__thread TApp *App = &AppInstance;                   ///< Per thread App pointer
-__thread char App_Buf[32];                           ///< Per thread char buffer
-static __thread char APP_LASTERROR[APP_ERRORSIZE];   ///< Last error is accessible through this
+static TApp AppInstance;                             //!< Static App instance
+__thread TApp  *App = &AppInstance;                  //!< Per thread App pointer
+__thread char App_Buf[32];                           //!< Per thread char buffer
+static __thread char App_LastError[APP_ERRORSIZE];   //!< Last error is accessible through this
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -42,28 +42,54 @@ static char* AppLibLog[]      = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VG
 static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA" };
 static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", APP_COLOR_BLUE, "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
 
-unsigned int App_OnceTable[APP_MAXONCE];         ///< Log once table
+unsigned int App_OnceTable[APP_MAXONCE];         //!< Log once table
 
-//! Return last error
-char* App_ErrorGet(void)     { return APP_LASTERROR; }
+
+//! Get last error
+char * App_ErrorGet(void) {
+    //! \return Last error string
+    return App_LastError;
+}
+
 
 //! Get pointer to App object
-TApp* App_GetInstance(void)  { return &AppInstance; }
+TApp * App_GetInstance(void) {
+    //! \return Application instance pointer
+    return &AppInstance;
+}
 
-//! Check if application should finish. It will return True upon premption signal, if signals are enabled
-int   App_IsDone(void)       { return App->State == APP_DONE; }
 
-//! Check if application uses MPI
-int   App_IsMPI(void)        { return App->NbMPI > 1; }
+//! Check if application should finish.
+int App_IsDone(void) {
+    //! \bug Function name does not match description: "App_IsDone" vs "Check if application should finish"
+    //! \return 1 upon premption signal, if signals are enabled
+    return App->State == APP_DONE;
+}
 
-//! Check if application uses OpenMP
-int   App_IsOMP(void)        { return App->NbThread > 1; }
+
+//! Predicate to test if the application uses MPI
+int App_IsMPI(void) {
+    //! \return 1 if the application uses MPI, 0 otherwise
+    return App->NbMPI > 1;
+}
+
+//! Predicate to test if the application uses OpenMP
+int App_IsOMP(void) {
+    //! \return 1 if the application uses OpenMP, 0 otherwise
+    return App->NbThread > 1;
+}
+
 
 //! Check if application uses only one node
-int   App_IsSingleNode(void) { return App->NbNodeMPI == App->NbMPI; }
+int App_IsSingleNode(void) {
+    //! \return 1 if all of the application's processes are on the same node, 0 otherwise
+    return App->NbNodeMPI == App->NbMPI;
+}
 
 //! Check if this process (PE) is alone on a node
-int   App_IsAloneNode(void)  { return App->NbNodeMPI == 1; }
+int App_IsAloneNode(void) {
+    return App->NbNodeMPI == 1;
+}
 
 //! Check if current process (PE) is allowed to log
 int   App_IsLogging(void)    {
@@ -75,12 +101,20 @@ int   App_IsLogging(void)    {
 }
 
 #ifdef HAVE_MPI
-int App_MPIProcCmp(const void *a, const void *b) {
+//! Compare 2 MPI processor names to sort them
+static int App_MPIProcNameCmp(const void *a, const void *b) {
+    //! \note This function is meant to be used with qsort()
+    //! \return Less than, equal to, or greater than zero if the first argument is
+    //! considered to be respectively less than, equal to, or greater than the second
     return strncmp((const char*)a, (const char*)b, MPI_MAX_PROCESSOR_NAME);
 }
 
 
-void App_SetMPIComm(MPI_Comm Comm) {
+//! Set the application communicator and retrieve size and rank
+void App_SetMPIComm(
+    //! [in] Application's main MPI communicator
+    MPI_Comm Comm
+) {
     App->Comm = Comm;
 
     // Initialize MPI.
@@ -96,7 +130,7 @@ void App_SetMPIComm(MPI_Comm Comm) {
     }
 }
 
-
+//! \copydoc App_SetMPIComm
 void App_SetMPIComm_F(MPI_Fint Comm) {
     App_SetMPIComm(MPI_Comm_f2c(Comm));
 }
@@ -115,7 +149,7 @@ void App_LibRegister(
 }
 
 
-//! Initialiser l'environnement dans la structure App
+//! Initialize App settings from environment
 void App_InitEnv() {
     pthread_mutex_lock(&App_mutex);
     {
@@ -419,37 +453,41 @@ int App_SameHost_F(
 }
 #endif
 
+
 //! Register a function callback for process finalization when calling App_End(). Usefull in case of out of flow exit
 int App_FinalizeCallback(
     //! [in] Pointer to callback function
     int32_t (*func)(void)
 ) {
 
-   App->Finalize=func;
-   return(TRUE);
+   App->Finalize = func;
+   return TRUE;
 }
+
 
 //! Initialiser les communicateurs intra-node et inter-nodes
 int App_NodeGroup() {
-    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se superpose sur un meme CPU pour plusieurs job MPI sur un meme "socket"
+    //! \note On fait ca ici car quand on combine MPI et OpenMP, les threads se superposent
+    //! sur un meme CPU pour plusieurs job MPI sur un meme "socket"
     if ( App_IsMPI() ) {
 #ifdef HAVE_MPI
         // Get the physical node unique name of mpi procs
         char * names;
         APP_MEM_ASRT(names, calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*names)));
 
-        char * n = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
+        char * processorName = names + App->RankMPI * MPI_MAX_PROCESSOR_NAME;
         int nameLen;
-        APP_MPI_ASRT( MPI_Get_processor_name(n, &nameLen) );
+        APP_MPI_ASRT( MPI_Get_processor_name(processorName, &nameLen) );
         APP_MPI_ASRT( MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, names, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, App->Comm) );
 
         // Go through the names and check how many different nodes we have before our node
+        //! \bug This assumes that the processes were placed in consecutive order on one node before moving on to the next!
         int color;
         char * cptr;
         int i;
-        for (i = 0, color = -1, cptr = names; i <= App->RankMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
-            ++color;
-            if ( !strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
+        for (i = 0, color = -1, cptr = names; i <= App->RankMPI; i++, cptr += MPI_MAX_PROCESSOR_NAME) {
+            color++;
+            if ( !strncmp(processorName, cptr, MPI_MAX_PROCESSOR_NAME) ) {
                 break;
             }
         }
@@ -457,7 +495,7 @@ int App_NodeGroup() {
         // Check if we have more than one group
         int mult = color;
         for (cptr = names; !mult && i < App->NbMPI; ++i, cptr += MPI_MAX_PROCESSOR_NAME) {
-            if ( strncmp(n, cptr, MPI_MAX_PROCESSOR_NAME) ) {
+            if ( strncmp(processorName, cptr, MPI_MAX_PROCESSOR_NAME) ) {
                 mult = 1;
             }
         }
@@ -498,7 +536,7 @@ int App_NodePrint() {
 #ifdef HAVE_MPI
     if (App_IsMPI()) {
         if (!App->RankMPI) {
-            char * nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(*nodes));
+            char * const nodes = calloc(MPI_MAX_PROCESSOR_NAME * App->NbMPI, sizeof(char));
             if ( nodes ) {
                 // Get the physical node unique name of mpi procs
                 int nameLen = 0;
@@ -707,11 +745,11 @@ void App_Start(void) {
 #ifdef HAVE_MPI
     // Make sure the header is printed before any other messages from other MPI tasks
 
-    //! GEM with the IO-server (MPDP) uses App, but not App's MPDP laucher. Therefore,
+    //! Some GEM versions with the IO-server (MPMD) use App, but not App's MPMD laucher. Therefore,
     //! `MPI_Barrier(App->Comm)` will in definitely hang since not all PEs will execute
     //! it and since `App_MPMD_Init()` isn't called, App->Comm is still MPI_COMM_WORLD
 
-    //! \todo Enable this only once GEM with the IO-server uses the App_MPMD launcher
+    //! \todo Enable this only once all GEM versions with the IO-server uses the App_MPMD launcher
 
     // if (App->NbMPI > 1 && mpiIsInit) {
     //     MPI_Barrier(App->Comm);
@@ -1367,12 +1405,12 @@ void Lib_Log(
         if (effectiveLevel == APP_ERROR || effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM) {
             // On errors, save for extenal to use (ex: Tcl)
             va_start(args, Format);
-            vsnprintf(APP_LASTERROR, APP_ERRORSIZE, Format, args);
+            vsnprintf(App_LastError, APP_ERRORSIZE, Format, args);
             va_end(args);
 
             // On system error
             if (effectiveLevel == APP_SYSTEM) {
-                perror(APP_LASTERROR);
+                perror(App_LastError);
             }
         }
     }
@@ -1380,7 +1418,7 @@ void Lib_Log(
 
     // Exit application if error above tolerance level
     if (App->Tolerance <= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM || effectiveLevel == APP_ERROR)) {
-        App_End(APP_EXIT+effectiveLevel);
+        App_End(APP_EXIT + effectiveLevel);
     }
 }
 
