@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
     MPI_Init(NULL, NULL);
 
     if (argc != 2) {
-        printf("Usage: mpirun -n 3 ./mpmd_pe0only 3 : -n 5 ./mpmd_pe0only 5 : -n 7 ./mpmd_pe0only 7\n");
+        App_Log(APP_ERROR, "Usage: mpirun -n 3 ./mpmd_pe0only 3 : -n 5 ./mpmd_pe0only 5 : -n 7 ./mpmd_pe0only 7\n");
         exit(3);
     }
 
@@ -40,7 +40,7 @@ int main(int argc, char * argv[]) {
 
     const int size = App_MPMD_GetSelfComponentSize();
     if (size != nbPe) {
-        printf("Component size (%d) does not match expected size (%d)!\n", size, nbPe);
+        App_Log(APP_ERROR, "Component size (%d) does not match expected size (%d)!\n", size, nbPe);
         exit(2);
     }
     const int componentRank = App_MPMD_GetSelfComponentRank();
@@ -48,7 +48,7 @@ int main(int argc, char * argv[]) {
     int worldRank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
     if (worldRank != mpmdWorldRank) {
-        printf("worldRank = %03d, mpmdWorldRank = %03d\n", worldRank, mpmdWorldRank);
+        App_Log(APP_ERROR, "worldRank = %03d, mpmdWorldRank = %03d\n", worldRank, mpmdWorldRank);
         exit(3);
     }
 
@@ -62,12 +62,12 @@ int main(int argc, char * argv[]) {
 
     const MPI_Comm comm_invalid1 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, -1}, 1);
     if (comm_invalid1 != MPI_COMM_NULL) {
-        printf("A valid communicator was returned when one of the ids was -1!\n");
+        App_Log(APP_ERROR, "A valid communicator was returned when one of the ids was -1!\n");
         exit(4);
     }
     const MPI_Comm comm_invalid2 = App_MPMD_GetSharedComm(2, (int[]){mpmd_3id, 3}, 1);
     if (comm_invalid2 != MPI_COMM_NULL) {
-        printf("A valid communicator was returned when one of the ids was greater or equal to number of components!\n");
+        App_Log(APP_ERROR, "A valid communicator was returned when one of the ids was greater or equal to number of components!\n");
         exit(5);
     }
 
@@ -87,7 +87,7 @@ int main(int argc, char * argv[]) {
 
     for (int comp = 0; comp < App_MPMD_NumComponents(); comp++) {
         for (int localRank = 0; localRank < App_MPMD_GetComponentSize(comp); localRank++) {
-            printf("%02d - componentId = %d, localRank = %d, worldRank = %d\n", worldRank, comp, localRank,
+            App_Log(APP_INFO, "%02d - componentId = %d, localRank = %d, worldRank = %d\n", worldRank, comp, localRank,
                 App_MPMD_GetComponentPeWRank(comp, localRank));
         }
     }
