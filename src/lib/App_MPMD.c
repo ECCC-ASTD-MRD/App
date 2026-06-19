@@ -51,7 +51,8 @@
 //!     another component with which this application needs to exchange data.
 //! -# Call \ref App_MPMD_GetSharedComm() to get a shared communicator between at least two components.
 //! -# Do actual work with the shared communicator.
-//! -# Call \ref App_End()
+//! -# Call \ref App_End() NB: This function must be called before App_MPMD_Finalize() since the production
+//!    of execution statistics for MPI applications can use communicators and data structures created by App_MPMD
 //! -# Call \ref App_MPMD_Finalize()
 //! -# Call `MPI_Finalize()`
 //!
