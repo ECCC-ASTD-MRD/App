@@ -79,6 +79,11 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         shared_memory/App_Shared_Memory.inc
     )
 
+    set_property(TARGET App-static PROPERTY INTERFACE_WITH_OMPI OFF)
+    set_property(TARGET App-shared PROPERTY INTERFACE_WITH_OMPI OFF)
+    set_property(TARGET App-static APPEND PROPERTY COMPATIBLE_INTERFACE_BOOL WITH_OMPI)
+    set_property(TARGET App-shared APPEND PROPERTY COMPATIBLE_INTERFACE_BOOL WITH_OMPI)
+
     #----- ompi version
     list(APPEND targets App-ompi-static App-ompi-shared)
     list(APPEND shared_targets App-ompi-shared)
@@ -118,6 +123,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
         Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/fmod-ompi
         OUTPUT_NAME App-ompi
         POSITION_INDEPENDENT_CODE ON
+        INTERFACE_WITH_OMPI ON
     )
 
     #----- Needed when used as sbumodule/subtree
