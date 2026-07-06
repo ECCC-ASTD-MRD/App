@@ -428,7 +428,7 @@ void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
 void  App_Trap(const int Signal);
-uint  App_Alarm(const uint Secs);
+uint32_t  App_Alarm(const uint32_t Secs);
 int   App_IsDone(void);
 int   App_IsMPI(void);
 int   App_IsOMP(void);
