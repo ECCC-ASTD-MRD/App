@@ -378,6 +378,8 @@ void App_Free(void) {
             free(App->Desc);
             free(App->LogFile);
             free(App->TimeStamp);
+            
+            App_TimerDelete(App->TimerLog);
 
             APP_FREE(App->Tag);
 
