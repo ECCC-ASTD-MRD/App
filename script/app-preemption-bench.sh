@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#\rm *.sh.e* *.sh.o*; cp ../script/app-preemption-bench.sh .; cp ./src/utils/app .;./app-preemption-bench.sh -n 3 -c 128 -m 400 -b 1 -B 0 -S 3 -s 1 -p 1 -P 2 -i 30
+#\rm *.sh.e* *.sh.o* *.out; cp ../script/app-preemption-bench.sh .; cp ./src/utils/app .;./app-preemption-bench.sh -n 3 -c 128 -m 400 -b 1 -B 0 -S 3 -s 1 -p 1 -P 2 -i 30
 
 script=$(basename "${BASH_SOURCE[0]}")
 path=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
@@ -52,7 +52,7 @@ done
 QSystem=PBS                                                  # Queuing system
 Queue="development"                                          # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-Delay=10                                                     # Delay before launching preemptive jobs
+Delay=5                                                      # Delay before launching preemptive jobs
 
 # Define specific MPI environment
 MPI_ENV="
@@ -89,7 +89,7 @@ prepjob() {
    local trapd=${4}
    local sz=$((${nbnode} * ${NB_CORES}))
 
-   # Qeueing system specific params
+   # Queueing system specific params
    case ${QSystem} in
       "PBS")
          command="qsub -q "
@@ -97,6 +97,10 @@ prepjob() {
 #!/bin/bash
 #PBS -l select=${nbnode}:ncpus=${sz}:mpiprocs=${sz}:ompthreads=1:mem=${MEM}G
 #PBS -l walltime=0:30:0
+
+#export I_MPI_HYDRA_BOOTSTRAP=rsh
+#export I_MPI_HYDRA_BOOTSTRAP_EXEC=/opt/pbs/bin/pbs_tmrsh
+#export I_MPI_JOB_SIGNAL_PROPAGATION=1
 
 # Sequence number of job
 seq=\${PBS_JOBID}
@@ -132,10 +136,11 @@ export APP_VERBOSE_TIME=SECOND
 
 signal_mpi() {
    echo "Caught signal, signaling MPI process \$mpi_pid"
-   kill -SIGUSR2 \$mpi_pid
+#   kill -SIGUSR2 \$mpi_pid
+   pbsdsh -- kill -s SIGUSR2 \$mpi_pid
 }
-#trap 'signal_mpi' SIGTERM SIGUSR2 SIGUSR1 SIGURG
-trap '' SIGTERM SIGUSR2 SIGUSR1 SIGURG
+trap signal_mpi SIGTERM SIGUSR2 SIGUSR1 SIGURG
+#trap '' SIGTERM SIGUSR2 SIGUSR1 SIGURG
 
 # Script launch time
 secs0=$(date +%s)
@@ -144,9 +149,11 @@ secs0=$(date +%s)
 ${MPI_ENV}
 
 # Start MPI
-mpirun -n ${sz} app -t ${id}-\${seq} -q \${secs0} -s ${step} -d 1 -v INFO -a ${trapd} -l ${id}-\${seq}.\$\$.out
-#mpi_pid=\$!
-#wait \$mpi_pid
+export APP_LOG_FLUSH=TRUE
+mpirun -n ${sz} app -t ${id}-\${seq} -q \${secs0} -s ${step} -d 1 -v INFO -a ${trapd} -l ${id}-\${seq}.\$\$.out &
+mpi_pid=\$!
+echo "Waiting for \$mpi_pid"
+wait \$mpi_pid
 EOT
 }
 
@@ -176,7 +183,7 @@ done
 #   jids+=(${jid})
 #done
 
-[[ ${TEST} -eq 0 ]] && sleep ${Delay}
+[[ ${TEST} -eq 0 ]] && echo "(INFO) Sleeping ${Delay}s for jobs to start" && sleep ${Delay}
 
 #----- PROVIDER SPECIFIC DEFINITIONS (Preemption method)
 # Preempt jobs (SIGTERM method test)

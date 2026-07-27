@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
 
     App_Trap(SIGUSR1);
     App_Trap(SIGUSR2);
+    App_Trap(SIGURG);
 
     // In fail mode test, we need to enable the tolerance level
     if (fail>=0) {
