@@ -137,7 +137,8 @@ export APP_VERBOSE_TIME=SECOND
 signal_mpi() {
    echo "Caught signal, signaling MPI process \$mpi_pid"
 #   kill -SIGUSR2 \$mpi_pid
-   pbsdsh -- kill -s SIGUSR2 \$mpi_pid
+#   pbsdsh -- kill -s SIGUSR2 \$mpi_pid
+   pbsdsh -- pkill -SIGUSR2 app
 }
 trap signal_mpi SIGTERM SIGUSR2 SIGUSR1 SIGURG
 #trap '' SIGTERM SIGUSR2 SIGUSR1 SIGURG
