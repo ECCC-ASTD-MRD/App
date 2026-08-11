@@ -57,6 +57,8 @@
 #define APP_ARGSTHREAD 0x10               //!< Use thread flag
 #define APP_ARGSTMPDIR 0x20               //!< Use tmp dir
 
+#define APP_LANGCOUNT  2                  //!< Default number of languages
+
 #ifdef __xlC__
 #   define APP_ONCE    ((1)<<3)
 #else
@@ -92,7 +94,8 @@ typedef enum {
     APP_LIBTDPACK = 17,
     APP_LIBMACH = 18,
     APP_LIBSPSDYN = 19,
-    APP_LIBMETA = 20
+    APP_LIBMETA = 20,
+    APP_LIBDICT = 21
 } TApp_Lib;
 
 //! Log levels
