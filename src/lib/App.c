@@ -30,17 +30,21 @@
 #include "str.h"
 
 static TApp AppInstance;                             //!< Static App instance
-__thread TApp  *App = &AppInstance;                  //!< Per thread App pointer
+__thread TApp * App = &AppInstance;                  //!< Per thread App pointer
 __thread char App_Buf[32];                           //!< Per thread char buffer
 static __thread char App_LastError[APP_ERRORSIZE];   //!< Last error is accessible through this
 
 static pthread_mutex_t App_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char* AppMemUnits[]    = { "KB", "MB", "GB", "TB" };
-static char* AppLibNames[]    = { "main", "rmn", "fst", "brp", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io", "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta" };
-static char* AppLibLog[]      = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|", "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|" };
-static char* AppLevelNames[]  = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING", "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA" };
-static char* AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW, "", APP_COLOR_BLUE, "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
+const static char * AppMemUnits[] = { "KB", "MB", "GB", "TB" };
+const static char * AppLibNames[] = { "main", "rmn", "fst", "brp", "wb", "gmm", "vgrid", "interpv", "georef", "rpnmpi", "iris", "io",
+    "mdlutil", "dyn", "phy", "midas", "eer", "tdpack", "mach", "spsdyn", "meta", "dict" };
+const static char * AppLibLog[] = { "", "RMN|", "FST|", "BRP|", "WB|", "GMM|", "VGRID|", "INTERPV|", "GEOREF|", "RPNMPI|", "IRIS|", "IO|",
+    "MDLUTIL|", "DYN|", "PHY|", "MIDAS|", "EER|", "TDPACK|", "MACH|", "SPSDYN|", "META|", "DICT|" };
+const static char * AppLevelNames[] = { "INFO", "FATAL", "SYSTEM", "ERROR", "WARNING",
+    "INFO", "STAT", "TRIVIAL", "DEBUG", "EXTRA" };
+const static char * AppLevelColors[] = { "", APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_RED, APP_COLOR_YELLOW,
+    "", APP_COLOR_BLUE, "", APP_COLOR_LIGHTCYAN, APP_COLOR_CYAN };
 
 unsigned int App_OnceTable[APP_MAXONCE];         //!< Log once table
 
@@ -981,7 +985,7 @@ int App_End(
 
     // Get a readable size and units
     double factor = 1.0 / 1024;
-    char * unit = AppMemUnits[1];
+    const char * unit = AppMemUnits[1];
 
     double avg = 0.0, var = 0.0, maxd = 0.0, mind = 0.0, fijk = 0.0;
     unsigned int imin = 0, imax = 0;
@@ -1320,7 +1324,7 @@ void Lib_Log(
         prefix[0] = '\0';
         if (effectiveLevel >= APP_ALWAYS) {
 
-            char *color = App->LogColor ? AppLevelColors[effectiveLevel] : AppLevelColors[APP_INFO];
+            const char * color = App->LogColor ? AppLevelColors[effectiveLevel] : AppLevelColors[APP_INFO];
             char time[32];
 
             if (App->LogTime) {
