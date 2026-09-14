@@ -1,4 +1,3 @@
-
 program mpmd_2
     use app_mpmd
     use app_test_mpmd_helper

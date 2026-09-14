@@ -16,6 +16,7 @@ program mpmd_3
     mpmd_3id = App_MPMD_Init()
     if (mpmd_3id < 0) call abort
     call App_Start()
+    ierror = app_toleranceno(APP_FATAL)
 
     mpmd_1id = App_MPMD_GetComponentId('mpmd_1')
     mpmd_2id = App_MPMD_GetComponentId('mpmd_2')

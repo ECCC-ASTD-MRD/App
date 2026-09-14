@@ -12,13 +12,47 @@ module app
     implicit none
 
     enum, bind(C)
-       enumerator :: APP_PROCESS = 0, APP_NODE = 1
-       enumerator :: APP_VERBATIM = -1, APP_ALWAYS = 0, APP_FATAL = 1, APP_SYSTEM = 2, APP_ERROR = 3, APP_WARNING = 4, APP_INFO = 5,          &
-          APP_TRIVIAL = 6, APP_DEBUG = 7, APP_EXTRA = 8, APP_QUIET = 9, APP_COLLECT = 128
-       enumerator :: APP_MAIN = 0, APP_LIBRMN = 1, APP_LIBFST = 2, APP_LIBBRP = 3, APP_LIBWB = 4, APP_LIBGMM = 5, APP_LIBVGRID = 6, APP_LIBINTERPV = 7,       &
-          APP_LIBGEOREF = 8, APP_LIBRPNMPI = 9, APP_LIBIRIS = 10, APP_LIBIO = 11, APP_LIBMDLUTIL = 12, APP_LIBDYN = 13, APP_LIBPHY = 14, &
-          APP_LIBMIDAS = 15, APP_LIBEER = 16, APP_LIBTDPACK = 17, APP_LIBMACH = 18, APP_LIBSPSDYN = 19, APP_LIBMETA = 20
-       enumerator :: APP_MASTER = 0, APP_THREAD = 1
+        enumerator :: &
+            APP_PROCESS = 0, &
+            APP_NODE = 1
+        enumerator :: &
+            APP_VERBATIM = -1, &
+            APP_ALWAYS = 0, &
+            APP_FATAL = 1, &
+            APP_SYSTEM = 2, &
+            APP_ERROR = 3, &
+            APP_WARNING = 4, &
+            APP_INFO = 5, &
+            APP_TRIVIAL = 6, &
+            APP_DEBUG = 7, &
+            APP_EXTRA = 8, &
+            APP_QUIET = 9, &
+            APP_COLLECT = 128
+        enumerator :: &
+            APP_MAIN = 0, &
+            APP_LIBRMN = 1, &
+            APP_LIBFST = 2, &
+            APP_LIBBRP = 3, &
+            APP_LIBWB = 4, &
+            APP_LIBGMM = 5, &
+            APP_LIBVGRID = 6, &
+            APP_LIBINTERPV = 7, &
+            APP_LIBGEOREF = 8, &
+            APP_LIBRPNMPI = 9, &
+            APP_LIBIRIS = 10, &
+            APP_LIBIO = 11, &
+            APP_LIBMDLUTIL = 12, &
+            APP_LIBDYN = 13, &
+            APP_LIBPHY = 14, &
+            APP_LIBMIDAS = 15, &
+            APP_LIBEER = 16, &
+            APP_LIBTDPACK = 17, &
+            APP_LIBMACH = 18, &
+            APP_LIBSPSDYN = 19, &
+            APP_LIBMETA = 20
+        enumerator :: &
+            APP_MASTER = 0, &
+            APP_THREAD = 1
     end enum
 
     integer, parameter :: APP_MAX_COMPONENT_NAME_LEN = 32       ! Maximum component lane length (including null character). Must be kept in sync with the definition in App.h
@@ -73,18 +107,18 @@ module app
         integer(C_INT), value :: status
     end FUNCTION
 
-    !   int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
-    integer(C_INT) FUNCTION app_getss(rss,pss,uss) BIND(C, name = "App_GetSS")
+    !   int   App_GetSS(int64_t *RSS, int64_t *PSS, int64_t *USS);
+    integer(C_INT) FUNCTION app_getss(rss, pss, uss) BIND(C, name = "App_GetSS")
         use, intrinsic :: iso_c_binding
         implicit none
-        integer(C_INT64_T):: rss,pss,uss
+        integer(C_INT64_T):: rss, pss, uss
     end FUNCTION
 
-    !   int   App_GetCPU(int32_t *FreqMin,int32_t *FreqMax,int32_t *TempMin,int32_t *TempMax);
-    integer(C_INT) FUNCTION app_getcpu(fmin,fmax,tmin,tmax) BIND(C, name = "App_GetCPU")
+    !   int   App_GetCPU(int32_t *FreqMin, int32_t *FreqMax, int32_t *TempMin, int32_t *TempMax);
+    integer(C_INT) FUNCTION app_getcpu(fmin, fmax, tmin, tmax) BIND(C, name = "App_GetCPU")
         use, intrinsic :: iso_c_binding
         implicit none
-        integer(C_INT32_T):: fmin,fmax,tmin,tmax
+        integer(C_INT32_T):: fmin, fmax, tmin, tmax
     end FUNCTION
 
     !   void  App_LogStats(char *Tag);
@@ -93,7 +127,7 @@ module app
         implicit none
         character(kind = C_CHAR), dimension(*), intent(in) :: tag
     end FUNCTION
-     
+
     !   void  App_LogStream(char *Stream);
     SUBROUTINE app_logstream4fortran(stream) BIND(C, name = "App_LogStream")
         use, intrinsic :: iso_c_binding
@@ -150,6 +184,12 @@ module app
         implicit none
         integer(C_INT), value :: lib
         character(kind = C_CHAR), dimension(*), intent(in) :: level
+    end FUNCTION
+
+    ! int   App_ToleranceNo(TApp_LogLevel Val);
+    integer(C_INT) FUNCTION app_toleranceno(level) BIND(C, name = "App_ToleranceNo")
+        use, intrinsic :: iso_c_binding
+        integer(C_INT), value :: level
     end FUNCTION
 
     !   int Lib_LogLevelNo(TApp_Lib Lib, TApp_LogLevel Val) {

@@ -1272,8 +1272,8 @@ void Lib_Log(
     //! \note If level is APP_FATAL or APP_SYSTEM, and APP_TOLERANCE is set to either of those, the application will exit, optionnally calling the finalize callback if define
     //! \note If adding APP_COLLECT (ie: APP_FATAL+APP_COLLECT) to the message level, an MPI collective call will be made to get the lowest error level through all PEs (and potentially exit depending on previous point)
 
-    pid_t tid=0, pid=0;
-    TApp_LogLevel level=Level;
+    pid_t tid = 0, pid = 0;
+    TApp_LogLevel level = Level;
 
     if (App->LogThread) {
        tid = (pid_t) syscall(SYS_gettid);
@@ -1485,7 +1485,7 @@ int Lib_LogLevel(
     }
 
     // Keep previous level
-    int previousLevel = App->LogLevel[lib];
+    const int previousLevel = App->LogLevel[lib];
 
     if (level && level[0] != ' ' && strlen(level)) {
         if (strncasecmp(level, "ERROR", 5) == 0) {
@@ -1496,20 +1496,20 @@ int Lib_LogLevel(
             App->LogLevel[lib] = APP_INFO;
         } else if (strncasecmp(level, "STAT", 4) == 0) {
             App->LogLevel[lib] = APP_STAT;
-            int n=5;
-            while(level[n]!='\0') {
+            int n = 5;
+            while(level[n] != '\0') {
                 if (strncasecmp(&level[n], "TIM", 3) == 0) {
-                    App->LogStat|=APP_STAT_TIME;
-                    n+=5;
+                    App->LogStat |= APP_STAT_TIME;
+                    n += 5;
                 } else if (strncasecmp(&level[n], "MEM", 3) == 0) {
-                    App->LogStat|=APP_STAT_MEM;
-                    n+=4;
+                    App->LogStat |= APP_STAT_MEM;
+                    n += 4;
                 } else if (strncasecmp(&level[n], "CPU", 3) == 0) {
-                    App->LogStat|=APP_STAT_CPU;
-                    n+=4;
+                    App->LogStat |= APP_STAT_CPU;
+                    n += 4;
                 } else if (strncasecmp(&level[n], "ALL", 3) == 0) {
-                    App->LogStat|=APP_STAT_ALLRANKS;
-                    n+=9;
+                    App->LogStat |= APP_STAT_ALLRANKS;
+                    n += 9;
                 } else {
                     break;
                 }
@@ -1567,7 +1567,7 @@ int Lib_LogLevelNo(
     const TApp_LogLevel Level
 ) {
     // Save previous level
-    int pl = App->LogLevel[Lib];
+    int previousLevel = App->LogLevel[Lib];
 
     // If not initialized yet
     if (!App->Tolerance) App_InitEnv();
@@ -1581,7 +1581,7 @@ int Lib_LogLevelNo(
     }
 
     //! \return Previous log level, or current if no level specified
-    return pl;
+    return previousLevel;
 }
 
 
@@ -1590,7 +1590,9 @@ int App_ToleranceLevel(
     //! [in] Niveau de tolerance ("ERROR", "SYSTEM", "FATAL", "QUIET")
     const char * const Level
 ) {
-    int pl = App->Tolerance;
+    if (!App->Tolerance) App_InitEnv();
+
+    const int previousLevel = App->Tolerance;
 
     if (Level) {
         if (strlen(Level)) {
@@ -1604,7 +1606,7 @@ int App_ToleranceLevel(
                 } else if (strncasecmp(Level, "QUIET", 5) == 0) {
                     App->Tolerance = APP_QUIET;
                 } else {
-                    char *endptr = NULL;
+                    char * endptr = NULL;
                     App->Tolerance = strtoul(Level, &endptr, 10);
                 }
             }
@@ -1612,19 +1614,22 @@ int App_ToleranceLevel(
     }
 
     //! \return Previous log level, or current if no level specified
-    return pl;
+    return previousLevel;
 }
+
 
 //! Definir le niveau de tolerance aux erreur pour l'application
 int App_ToleranceNo(
     //! [in] Niveau de tolerance (int)
     const TApp_LogLevel Level
 ) {
-    int pl = App->Tolerance;
+    if (!App->Tolerance) App_InitEnv();
+
+    const int previousLevel = App->Tolerance;
     if (Level >= APP_FATAL && Level <= APP_QUIET) App->Tolerance = Level;
 
     //! \return Previous log level, or current if no level specified
-    return pl;
+    return previousLevel;
 }
 
 

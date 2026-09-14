@@ -1,4 +1,3 @@
-
 program mpmd_1
     use mpi
     use app
