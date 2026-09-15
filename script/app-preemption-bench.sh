@@ -52,7 +52,7 @@ done
 QSystem=PBS                                                  # Queuing system
 Queue="development"                                          # Regular queue
 QueuePremptive=production                                    # Preemptive queue
-Delay=5                                                      # Delay before launching preemptive jobs
+Delay=10                                                      # Delay before launching preemptive jobs
 
 # Define specific MPI environment
 MPI_ENV="
@@ -95,12 +95,14 @@ prepjob() {
          command="qsub -q "
          cat <<EOT > job${id}.sh
 #!/bin/bash
-#PBS -l select=${nbnode}:ncpus=${sz}:mpiprocs=${sz}:ompthreads=1:mem=${MEM}G
+#PBS -l select=${nbnode}:ncpus=${NB_CORES}:mpiprocs=${sz}:ompthreads=1:mem=${MEM}G
 #PBS -l walltime=0:30:0
 
 #export I_MPI_HYDRA_BOOTSTRAP=rsh
 #export I_MPI_HYDRA_BOOTSTRAP_EXEC=/opt/pbs/bin/pbs_tmrsh
 #export I_MPI_JOB_SIGNAL_PROPAGATION=1
+#export I_MPI_JOB_ABORT_SIGNAL=15
+#export I_MPI_JOB_TIMEOUT_SIGNAL=15
 
 # Sequence number of job
 seq=\${PBS_JOBID}
@@ -136,12 +138,12 @@ export APP_VERBOSE_TIME=SECOND
 
 signal_mpi() {
    echo "Caught signal, signaling MPI process \$mpi_pid"
-#   kill -SIGUSR2 \$mpi_pid
-#   pbsdsh -- kill -s SIGUSR2 \$mpi_pid
-   pbsdsh -- pkill -SIGUSR2 app
+   sleep 20
+#   kill -s SIGTERM \$mpi_pid
+#   pbsdsh -- kill -s SIGTERM mpirun
+#   pbsdsh -- pkill -SIGUSR2 app
 }
 trap signal_mpi SIGTERM SIGUSR2 SIGUSR1 SIGURG
-#trap '' SIGTERM SIGUSR2 SIGUSR1 SIGURG
 
 # Script launch time
 secs0=$(date +%s)
@@ -151,10 +153,7 @@ ${MPI_ENV}
 
 # Start MPI
 export APP_LOG_FLUSH=TRUE
-mpirun -n ${sz} app -t ${id}-\${seq} -q \${secs0} -s ${step} -d 1 -v INFO -a ${trapd} -l ${id}-\${seq}.\$\$.out &
-mpi_pid=\$!
-echo "Waiting for \$mpi_pid"
-wait \$mpi_pid
+mpirun -n ${sz} app -t ${id}-\${seq} -q \${secs0} -s ${step} -d 1 -v INFO -a ${trapd} -l ${id}-\${seq}.\$\$.out 
 EOT
 }
 
