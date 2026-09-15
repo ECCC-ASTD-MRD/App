@@ -3,7 +3,8 @@
 #include <App.h>
 
 int main(void) {
-    TApp_Timer *timer = App_TimerCreate();
+    TApp_Timer * const timer = App_TimerCreate();
+    App_ToleranceNo(APP_FATAL);
 
     App_TimerStart(timer);
     #pragma omp parallel num_threads(8) default(none) shared(stderr)
@@ -15,7 +16,7 @@ int main(void) {
     }
 
     App_TimerStop(timer);
-    App_Log(APP_ALWAYS, "This is execution time %s\n",  App_TimeString(timer,APP_TOTAL));
+    App_Log(APP_ALWAYS, "This is execution time %s\n",  App_TimeString(timer, APP_TOTAL));
 
     return 0;
 }

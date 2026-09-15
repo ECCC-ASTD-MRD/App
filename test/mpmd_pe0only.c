@@ -34,6 +34,7 @@ int main(int argc, char * argv[]) {
     const int nbPe = atoi(argv[1]);
     snprintf(componentName, componentNameMaxLen, "mpmd_%03d", nbPe);
     App_Init(APP_MASTER, componentName, "test", "mpmd context attempt", "now");
+    App_ToleranceNo(APP_FATAL);
     int componentId = App_MPMD_Init();
     if (componentId < 0) return 1;
     App_Start();
@@ -92,7 +93,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    App_End(-1);
+    App_End(0);
     App_MPMD_Finalize();
 
     MPI_Finalize();
