@@ -388,6 +388,9 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
    App->LogRank = ___app_rank; \
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
 TApp* App_GetInstance(void);
 void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
@@ -442,11 +445,20 @@ int   App_NodeGroup();
 int   App_NodePrint();
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
 int   App_GetCPU(int32_t *Freq,int32_t *Numa,int32_t *Core,int32_t *TempMin,int32_t *TempMax);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_MPI
+#ifdef __cplusplus
+extern "C" {
+#endif
 void App_SetMPIComm(MPI_Comm Comm);
 int App_MPIProcCmp(const void *a, const void *b);
 int App_SameHost(MPI_Comm comm);
+#ifdef __cplusplus
+}
+#endif
 
 #include "App_MPMD.h"
 #endif
