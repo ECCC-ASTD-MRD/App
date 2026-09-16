@@ -1,3 +1,5 @@
+!> \file
+!> Fortran interface for App's Timer functionalities
 
 module App_Timer_Module
     use iso_c_binding

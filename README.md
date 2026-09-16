@@ -2,10 +2,10 @@
 
 # Table of Contents
 1. [Usage](#usage)
-2. [Environment variables](#environment_variables)
-3. [Example output log](#example_output_log)
-4. [Code Example](#code_example)
-5. [Building package](#building_package)
+2. [Environment variables](#environment-variables)
+3. [Example output log](#example-output-log)
+4. [Code Example](#code-example)
+5. [Building package](#building-package)
 
 ## Usage
 This packages manages various standard tasks needed by applications like:
@@ -30,7 +30,8 @@ This packages manages various standard tasks needed by applications like:
    - Shows count of error and warnings at end/close of log
    - Options to output system time, memory, and cpu statistics
 - Process signal trapping
-   - Signal trapping for stopping model on **SIGUSR2**/**SIGTERM**
+   - Signal trapping for stopping model on **SIGTERM** (other signals can be user added)
+   - Alarm function to exit when in a stuck processing
 - Timing functions
 - Processes and system information / statistics functions
 - Parallel process management OpenMP/MPI

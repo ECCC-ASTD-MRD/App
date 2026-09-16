@@ -32,7 +32,7 @@
 #define APP_COLOR_RED        "\x1b[0;31m"
 #define APP_COLOR_GREEN      "\x1b[0;32m"
 #define APP_COLOR_LIGHTGREEN "\x1b[1;32m"
-#define APP_COLOR_ORANGE     "\x1b[33m" 
+#define APP_COLOR_ORANGE     "\x1b[33m"
 #define APP_COLOR_YELLOW     "\x1b[1m\x1b[33m"
 #define APP_COLOR_BLUE       "\x1b[0;34m"
 #define APP_COLOR_MAGENTA    "\x1b[0;35m"
@@ -43,19 +43,21 @@
 #define APP_MASTER    0
 #define APP_THREAD    1
 
-#define APP_ERRORSIZE 2048
-#define APP_BUFMAX    32768               ///< Maximum input buffer length
-#define APP_LISTMAX   4096                ///< Maximum number of items in a flag list
-#define APP_SEED      1049731793          ///< Initial FIXED seed
-#define APP_LIBSMAX   64                  ///< Maximum number of libraries
+#define APP_ERRORSIZE 2048                //!< Maximum error message length
+#define APP_BUFMAX    32768               //!< Maximum input buffer length
+#define APP_LISTMAX   4096                //!< Maximum number of items in a flag list
+#define APP_SEED      1049731793          //!< Initial FIXED seed
+#define APP_LIBSMAX   64                  //!< Maximum number of libraries
 
-#define APP_NOARGSFLAG 0x00               ///< No flag specified
-#define APP_NOARGSFAIL 0x01               ///< Fail if no arguments are specified
-#define APP_ARGSLOG    0x02               ///< Use log flag
-#define APP_ARGSLANG   0x04               ///< Multilingual app
-#define APP_ARGSSEED   0x08               ///< Use seed flag
-#define APP_ARGSTHREAD 0x10               ///< Use thread flag
-#define APP_ARGSTMPDIR 0x20               ///< Use tmp dir
+#define APP_NOARGSFLAG 0x00               //!< No flag specified
+#define APP_NOARGSFAIL 0x01               //!< Fail if no arguments are specified
+#define APP_ARGSLOG    0x02               //!< Use log flag
+#define APP_ARGSLANG   0x04               //!< Multilingual app
+#define APP_ARGSSEED   0x08               //!< Use seed flag
+#define APP_ARGSTHREAD 0x10               //!< Use thread flag
+#define APP_ARGSTMPDIR 0x20               //!< Use tmp dir
+
+#define APP_LANGCOUNT  2                  //!< Default number of languages
 
 #ifdef __xlC__
 #   define APP_ONCE    ((1)<<3)
@@ -92,7 +94,8 @@ typedef enum {
     APP_LIBTDPACK = 17,
     APP_LIBMACH = 18,
     APP_LIBSPSDYN = 19,
-    APP_LIBMETA = 20
+    APP_LIBMETA = 20,
+    APP_LIBDICT = 21
 } TApp_Lib;
 
 //! Log levels
@@ -303,69 +306,70 @@ typedef struct {
 
 //! Application controller definition
 typedef struct {
-   char*          Name;                  ///< Name of applicaton
-   char*          Version;               ///< Version of application
-   char*          Desc;                  ///< Description of application
-   char*          TimeStamp;             ///< Compilation timestamp
-   char*          LogFile;               ///< Log file
-   int            LogSplit;              ///< Split the log file per MPI rank path
-   int            LogFlush;              ///< Forche buffer flush at every message
-   char*          Tag;                   ///< Identificateur
-   FILE*          LogStream;             ///< Log file associated stream
-   int            LogNoBox;              ///< Display header and footer boxes
-   int            LogRank;               ///< Force log from a single rank
-   int            LogThread;             ///< Display thread id
-   int            LogWarning;            ///< Number of warnings
-   int            LogError;              ///< Number of errors
-   int            LogColor;              ///< Use coloring in the logs
-   TApp_LogTime   LogTime;               ///< Display time in the logs
-   TApp_Stats     LogStat;               ///< Statistics to ouput when LogLevel=STAT (default=all)
-   TApp_LogLevel  LogLevel[APP_LIBSMAX]; ///< Level of log
-   TApp_LogLevel  Tolerance;             ///< Abort level
-   TApp_State     State;                 ///< State of application
-   TApp_Lang      Language;              ///< Language (default: $CMCLNG or APP_EN)
-   double         Percent;               ///< Percentage of execution done (0=not started, 100=finished)
-   int            UTC;                   ///< Use UTC or local time
-   struct timeval Time;                  ///< Timer for execution time
-   int            Type;                  ///< App object type (APP_MASTER, APP_THREAD)
-   int            Step;                  ///< Model step
+   char*          Name;                  //!< Name of applicaton
+   char*          Version;               //!< Version of application
+   char*          Desc;                  //!< Description of application
+   char*          TimeStamp;             //!< Compilation timestamp
+   char*          LogFile;               //!< Log file
+   int            LogSplit;              //!< Split the log file per MPI rank path
+   int            LogFlush;              //!< Forche buffer flush at every message
+   char*          Tag;                   //!< Identificateur
+   FILE*          LogStream;             //!< Log file associated stream
+   int            LogNoBox;              //!< Display header and footer boxes
+   int            LogRank;               //!< Force log from a single rank
+   int            LogThread;             //!< Display thread id
+   int            LogWarning;            //!< Number of warnings
+   int            LogError;              //!< Number of errors
+   int            LogColor;              //!< Use coloring in the logs
+   TApp_LogTime   LogTime;               //!< Display time in the logs
+   TApp_Stats     LogStat;               //!< Statistics to ouput when LogLevel=STAT (default=all)
+   TApp_LogLevel  LogLevel[APP_LIBSMAX]; //!< Level of log
+   TApp_LogLevel  Tolerance;             //!< Abort level
+   TApp_State     State;                 //!< State of application
+   TApp_Lang      Language;              //!< Language (default: $CMCLNG or APP_EN)
+   double         Percent;               //!< Percentage of execution done (0=not started, 100=finished)
+   int            UTC;                   //!< Use UTC or local time
+   struct timeval Time;                  //!< Timer for execution time
+   int            Type;                  //!< App object type (APP_MASTER, APP_THREAD)
+   int            Step;                  //!< Model step
 
    char*          LibsVersion[APP_LIBSMAX];
 
    int            Seed;
-   int           *OMPSeed;               ///< Random number generator seed
-   int           *TotalsMPI;             ///< MPI total number of items arrays
-   int           *CountsMPI;             ///< MPI count gathering arrays
-   int           *DisplsMPI;             ///< MPI displacement gathering arrays
-   int            NbMPI;                 ///< Number of MPI process \todo Figure out why this isn't in #ifdef HAVE_MPI
-   int            RankMPI;               ///< Rank of MPI process in the App->Comm communicator
-   int            NbThread;              ///< Number of OpenMP threads
-   int            Signal;                ///< Trapped signal (-1: Signal trap disabled)
-   TApp_Affinity  Affinity;              ///< Thread placement affinity
+   int           *OMPSeed;               //!< Random number generator seed
+   int           *TotalsMPI;             //!< MPI total number of items arrays
+   int           *CountsMPI;             //!< MPI count gathering arrays
+   int           *DisplsMPI;             //!< MPI displacement gathering arrays
+   int            NbMPI;                 //!< Number of MPI process \todo Figure out why this isn't in #ifdef HAVE_MPI
+   int            RankMPI;               //!< Rank of MPI process in the App->Comm communicator
+   int            NbThread;              //!< Number of OpenMP threads
+   int            Signal;                //!< Trapped signal (-1: Signal trap disabled)
+   int            Alarm;                 //!< Alarm timeout (0: No alarm defined)
+   TApp_Affinity  Affinity;              //!< Thread placement affinity
    int            NbNodeMPI;
-   int            NodeRankMPI;           ///< Number of MPI process on the current node
+   int            NodeRankMPI;           //!< Number of MPI process on the current node
 #ifdef HAVE_MPI
    MPI_Comm       Comm;
-   MPI_Comm       NodeComm;              ///< Communicator for the current node
-   MPI_Comm       NodeHeadComm;          ///< Communicator for the head nodes
+   MPI_Comm       NodeComm;              //!< Communicator for the current node
+   MPI_Comm       NodeHeadComm;          //!< Communicator for the head nodes
 
-   MPI_Comm       MainComm;              ///< Communicator that groups all executables from this context \todo Figure out if there is any case where this isn't going to be MPI_COMM_WORLD
-   int            WorldRank;             ///< Global rank of this PE
-   int            ComponentRank;         ///< Local rank of this PE (within its component)
-   TComponent *   SelfComponent;         ///< This PE's component
-   int            NumComponents;         ///< How many components are part of the MPMD context
-   TComponent *   AllComponents;         ///< Array of components in this context
-   int            NbSets;                ///< How many sets of components are stored in this context
-   int            SizeSets;              ///< Size of the array that stores sets of components
-   TComponentSet* Sets;                  ///< Array of sets that are already stored in this context
+   MPI_Comm       MainComm;              //!< Communicator that groups all executables from this context \todo Figure out if there is any case where this isn't going to be MPI_COMM_WORLD
+   int            WorldRank;             //!< Global rank of this PE
+   int            ComponentRank;         //!< Local rank of this PE (within its component)
+   TComponent *   SelfComponent;         //!< This PE's component
+   int            NumComponents;         //!< How many components are part of the MPMD context
+   TComponent *   AllComponents;         //!< Array of components in this context
+   int            NbSets;                //!< How many sets of components are stored in this context
+   int            SizeSets;              //!< Size of the array that stores sets of components
+   TComponentSet* Sets;                  //!< Array of sets that are already stored in this context
 #endif //HAVE_MPI
 
-   TApp_Timer     *TimerLog;             ///< Time spent on log printing
-   int32_t        (*Finalize)(void);     ///< Application specific finalization function
+   TApp_Timer     *TimerLog;             //!< Time spent on log printing
+   int32_t        (*Finalize)(void);     //!< Application specific finalization function
 } TApp;
 
 #ifndef APP_BUILD
-extern __thread TApp *App;               ///< Per thread App pointer
+extern __thread TApp * App;              //!< Per thread App pointer
 
 static inline char* App_TimeString(TApp_Timer *Timer,int Total) {
     snprintf(Timer->String,32,"%s%.3f ms%s",(App->LogColor?APP_COLOR_LIGHTGREEN:""),(Total?App_TimerTotalTime_ms(Timer):App_TimerLatestTime_ms(Timer)),(App->LogColor?APP_COLOR_RESET:""));
@@ -383,7 +387,10 @@ typedef int (TApp_InputParseProc) (void *Def, char *Token, char *Value, int Inde
    Lib_Log(APP_MAIN, LEVEL, __VA_ARGS__); \
    App->LogRank = ___app_rank; \
 }
-   
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 TApp *App_Init(const int Type, const char * const Name, const char * const Version, const char * const Desc, const char * const Stamp);
 TApp* App_GetInstance(void);
 void  App_LibRegister(const TApp_Lib Lib, const char * const Version);
@@ -405,7 +412,7 @@ void  App_LogClose(void);
 int   App_LogTime(const char * const Val);
 int   App_LogRank(const int NewRank);
 void  App_Progress(const float Percent, const char * const Format, ...);
-int   App_ParseArgs(TApp_Arg *AArgs, int argc, char *argv[], int Flags);
+int   App_ParseArgs(TApp_Arg * const AArgs, const int argc, char * argv[], const int Flags);
 int   App_ParseInput(void *Def, char *File, TApp_InputParseProc *ParseProc);
 int   App_ParseBool(char *Param, char *Value, char *Var);
 int   App_ParseDate(char *Param, char *Value, time_t *Var);
@@ -427,7 +434,8 @@ void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
 void  App_Trap(const int Signal);
-int   App_IsDone(void); 
+uint32_t  App_Alarm(const uint32_t Secs);
+int   App_IsDone(void);
 int   App_IsMPI(void);
 int   App_IsOMP(void);
 int   App_IsSingleNode(void);
@@ -437,11 +445,20 @@ int   App_NodeGroup();
 int   App_NodePrint();
 int   App_GetSS(int64_t *RSS,int64_t *PSS,int64_t *USS);
 int   App_GetCPU(int32_t *Freq,int32_t *Numa,int32_t *Core,int32_t *TempMin,int32_t *TempMax);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_MPI
+#ifdef __cplusplus
+extern "C" {
+#endif
 void App_SetMPIComm(MPI_Comm Comm);
 int App_MPIProcCmp(const void *a, const void *b);
 int App_SameHost(MPI_Comm comm);
+#ifdef __cplusplus
+}
+#endif
 
 #include "App_MPMD.h"
 #endif

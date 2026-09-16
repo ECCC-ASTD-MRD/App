@@ -81,6 +81,7 @@ static inline double App_TimerTimeSinceStart_ms(const TApp_Timer* Timer) {
    return((get_current_time_us() - Timer->Start) / 1000.0);
 }
 
+//! Do nothing for the specified number of microseconds. Uses the nanosleep function
 static inline void sleep_us(
     const int num_us //!< [in] How many microseconds we want to wait
 ) {

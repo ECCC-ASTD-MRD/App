@@ -16,16 +16,22 @@ if (EC_INIT_DONE LESS 2)
                 OUTPUT_VARIABLE MPI_IMPLEMENTATION
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
             if ("x${MPI_IMPLEMENTATION}" STREQUAL "xOpen MPI")
-                set(OVERSUBSCRIBE_FLAG "-oversubscribe")
+                set(EXTRA_MPI_FLAGS ${EXTRA_MPI_FLAGS} --oversubscribe)
+                if (CMAKE_Fortran_COMPILER_ID MATCHES ".*Flang")
+                    set(EXTRA_MPI_FLAGS ${EXTRA_MPI_FLAGS} -x LD_LIBRARY_PATH)
+                else()
+                    set(EXTRA_MPI_FLAGS ${EXTRA_MPI_FLAGS} --bind-to none)
+                endif()
             endif()
-            # message(WARNING "Oversubscribe flag: ${OVERSUBSCRIBE_FLAG}")
+            # message(WARNING "Extra MPI flags: ${EXTRA_MPI_FLAGS}")
         endif()
 
         # add_test(NAME app_env COMMAND env)
         # set_tests_properties(app_env PROPERTIES
         #     ENVIRONMENT "APP_TOLERANCE=FATAL"
         # )
-        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10)
+        add_test(NAME app COMMAND ${MPIEXEC_EXECUTABLE} -n 2 ${EXTRA_MPI_FLAGS} $<TARGET_FILE:app> -s 10)
+        add_dependencies(test_execs app)
         # add_test(NAME app_abort COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 2 $<TARGET_FILE:app> -s 10 -f 1)
         # set_tests_properties(app_abort PROPERTIES
         #     WILL_FAIL true
@@ -56,15 +62,39 @@ if (EC_INIT_DONE LESS 2)
         target_link_libraries(finalize_f App::App)
         add_dependencies(test_execs finalize_f)
 
+        add_executable(app_alarm_f EXCLUDE_FROM_ALL app_alarm.F90)
+        add_test(
+            NAME app_alarm_f
+            COMMAND $<TARGET_FILE:app_alarm_f>
+        )
+        target_link_libraries(app_alarm_f App::App)
+        add_dependencies(test_execs app_alarm_f)
+        set_tests_properties(app_alarm_f PROPERTIES
+            WILL_FAIL true
+        )
+
+        add_executable(msg_lvl EXCLUDE_FROM_ALL msg_lvl.c)
+        target_link_libraries(msg_lvl App::App)
+        add_dependencies(test_execs msg_lvl)
+        add_test(NAME msg_lvl_no_full_app_default COMMAND $<TARGET_FILE:msg_lvl>)
+        add_test(NAME msg_lvl_no_full_app_fatal COMMAND $<TARGET_FILE:msg_lvl> FATAL)
+        add_test(NAME msg_lvl_no_full_app_error COMMAND $<TARGET_FILE:msg_lvl> ERROR)
+        add_test(NAME msg_lvl_full_app_fatal COMMAND $<TARGET_FILE:msg_lvl> --full FATAL)
+        set_tests_properties(
+            msg_lvl_no_full_app_error
+            msg_lvl_full_app_fatal
+            PROPERTIES WILL_FAIL true
+        )
+
         if (TARGET App::App-ompi)
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general
-            add_test(NAME atomic COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 12 $<TARGET_FILE:atomic>)
+            add_test(NAME atomic COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS} -n 12 $<TARGET_FILE:atomic>)
             add_dependencies(test_execs atomic)
 
             add_executable(mutex EXCLUDE_FROM_ALL mutex.F90)
             target_link_libraries(mutex App::App-ompi) # The test uses MPI, even if it is not necessary for app_mutex in general
-            add_test(NAME mutex COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG} -n 6 $<TARGET_FILE:mutex>)
+            add_test(NAME mutex COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS} -n 6 $<TARGET_FILE:mutex>)
             add_dependencies(test_execs mutex)
 
             add_executable(multithread_noinit0 EXCLUDE_FROM_ALL multithread_noinit0.c)
@@ -108,69 +138,69 @@ if (EC_INIT_DONE LESS 2)
             target_link_libraries(same_host App::App-ompi)
             add_dependencies(test_execs same_host)
 
-            add_test(NAME App_MPMD_Init COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME App_MPMD_Init COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                 -n 2 $<TARGET_FILE:init1> :
                 -n 4 $<TARGET_FILE:init2>
             )
-            add_test(NAME set_comm COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME set_comm COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                 -n 2 $<TARGET_FILE:set_comm>
             )
-            add_test(NAME mpmd_pe0only COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd_pe0only COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n 3 $<TARGET_FILE:mpmd_pe0only> 3 :
                     -n 5 $<TARGET_FILE:mpmd_pe0only> 5 :
                     -n 7 $<TARGET_FILE:mpmd_pe0only> 7
             )
-            add_test(NAME mpmd1 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd1 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                 -n 1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd2 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd2 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                 -n 1 $<TARGET_FILE:mpmd_1> :
                 -n 4 $<TARGET_FILE:mpmd_2>
             )
-            add_test(NAME mpmd3 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd3 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n 4 $<TARGET_FILE:mpmd_2> :
                     -n 1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd4 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd4 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n 4 $<TARGET_FILE:mpmd_2> :
                     -n 1 $<TARGET_FILE:mpmd_1> :
                     -n 9 $<TARGET_FILE:mpmd_3>
             )
-            add_test(NAME mpmd5 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd5 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n 4 $<TARGET_FILE:mpmd_2> :
                     -n 9 $<TARGET_FILE:mpmd_3> :
                     -n 1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd6 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd6 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n  4 $<TARGET_FILE:mpmd_2> :
                     -n  9 $<TARGET_FILE:mpmd_3> :
                     -n 16 $<TARGET_FILE:mpmd_4> :
                     -n  1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd7 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd7 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n  9 $<TARGET_FILE:mpmd_3> :
                     -n 16 $<TARGET_FILE:mpmd_4> :
                     -n  4 $<TARGET_FILE:mpmd_2> :
                     -n  1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd8 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd8 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n  1 $<TARGET_FILE:mpmd_1> :
                     -n  4 $<TARGET_FILE:mpmd_2> :
                     -n  9 $<TARGET_FILE:mpmd_3> :
                     -n 16 $<TARGET_FILE:mpmd_4>
             )
-            add_test(NAME mpmd9 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd9 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n  9 $<TARGET_FILE:mpmd_3> :
                     -n 16 $<TARGET_FILE:mpmd_4> :
                     -n  4 $<TARGET_FILE:mpmd_2> :
                     -n  1 $<TARGET_FILE:mpmd_1>
             )
-            add_test(NAME mpmd10 COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME mpmd10 COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                     -n 1 $<TARGET_FILE:mpmd_1> :
                     -n 5 $<TARGET_FILE:mpmd_5>
             )
 
-            add_test(NAME same_host COMMAND ${MPIEXEC_EXECUTABLE} ${OVERSUBSCRIBE_FLAG}
+            add_test(NAME same_host COMMAND ${MPIEXEC_EXECUTABLE} ${EXTRA_MPI_FLAGS}
                 -n 1 $<TARGET_FILE:same_host> 1
             )
         endif()
