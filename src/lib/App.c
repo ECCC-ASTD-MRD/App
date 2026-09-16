@@ -1427,7 +1427,8 @@ void Lib_Log(
     App_TimerStop(App->TimerLog);
 
     // Exit application if error above tolerance level
-    if (App->Tolerance!=APP_QUIET && App->Tolerance >= effectiveLevel && (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM || effectiveLevel == APP_ERROR)) {
+    if (App->Tolerance != APP_QUIET && App->Tolerance >= effectiveLevel &&
+        (effectiveLevel == APP_FATAL || effectiveLevel == APP_SYSTEM || effectiveLevel == APP_ERROR)) {
         App_End(APP_EXIT + effectiveLevel);
     }
 }
@@ -1590,6 +1591,10 @@ int App_ToleranceLevel(
     //! [in] Niveau de tolerance ("ERROR", "SYSTEM", "FATAL", "QUIET")
     const char * const Level
 ) {
+    //! \warning Changing the tolerance level has no impact on the value returned by App_End(-1)!
+    //! If there were errors, App_End(-1) will still return a non-zero value even if the tolerance is set to FATAL.
+    //! \note If not done yet, this function will call App_InitEnv()
+
     if (!App->Tolerance) App_InitEnv();
 
     const int previousLevel = App->Tolerance;
@@ -1623,12 +1628,16 @@ int App_ToleranceNo(
     //! [in] Niveau de tolerance (int)
     const TApp_LogLevel Level
 ) {
+    //! \warning Changing the tolerance level has no impact on the value returned by App_End(-1)!
+    //! If there were errors, App_End(-1) will still return a non-zero value even if the tolerance is set to FATAL.
+    //! \note If not done yet, this function will call App_InitEnv()
+
     if (!App->Tolerance) App_InitEnv();
 
     const int previousLevel = App->Tolerance;
     if (Level >= APP_FATAL && Level <= APP_QUIET) App->Tolerance = Level;
 
-    //! \return Previous log level, or current if no level specified
+    //! \return Previous tolerance level, or current if no level specified
     return previousLevel;
 }
 

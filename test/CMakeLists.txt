@@ -73,6 +73,19 @@ if (EC_INIT_DONE LESS 2)
             WILL_FAIL true
         )
 
+        add_executable(msg_lvl EXCLUDE_FROM_ALL msg_lvl.c)
+        target_link_libraries(msg_lvl App::App)
+        add_dependencies(test_execs msg_lvl)
+        add_test(NAME msg_lvl_no_full_app_default COMMAND $<TARGET_FILE:msg_lvl>)
+        add_test(NAME msg_lvl_no_full_app_fatal COMMAND $<TARGET_FILE:msg_lvl> FATAL)
+        add_test(NAME msg_lvl_no_full_app_error COMMAND $<TARGET_FILE:msg_lvl> ERROR)
+        add_test(NAME msg_lvl_full_app_fatal COMMAND $<TARGET_FILE:msg_lvl> --full FATAL)
+        set_tests_properties(
+            msg_lvl_no_full_app_error
+            msg_lvl_full_app_fatal
+            PROPERTIES WILL_FAIL true
+        )
+
         if (TARGET App::App-ompi)
             add_executable(atomic EXCLUDE_FROM_ALL atomic.F90)
             target_link_libraries(atomic App::App-ompi) # The test uses MPI, even if it is not necessary for atomic in general
