@@ -5,6 +5,9 @@
 
 #include "App.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 int32_t App_MPMD_Init();
 void App_MPMD_Finalize();
 void App_MPMD_PrintSummary(void);
@@ -23,5 +26,8 @@ int App_MPMD_GetSelfComponentSize();
 int App_MPMD_GetComponentSize(const int componentId);
 int App_MPMD_GetComponentPeWRank(const int componentId, const int localRank);
 int32_t App_MPMD_NumComponents();
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MPMD_H__
